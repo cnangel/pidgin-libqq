@@ -56,7 +56,7 @@ enum {
 };
 
 /* default process, decrypt and dump */
-static void process_unknow_cmd(PurpleConnection *gc,const gchar *title, guint8 *data, gint data_len, guint16 cmd, guint16 seq)
+static void process_unknown_cmd(PurpleConnection *gc,const gchar *title, guint8 *data, gint data_len, guint16 cmd, guint16 seq)
 {
 	gchar *msg;
 
@@ -69,8 +69,8 @@ static void process_unknow_cmd(PurpleConnection *gc,const gchar *title, guint8 *
 			">>> [%d] %s -> [default] decrypt and dump",
 			seq, qq_get_cmd_desc(cmd));
 
-	msg = g_strdup_printf("Unknow command 0x%02X, %s", cmd, qq_get_cmd_desc(cmd));
-	purple_notify_info(gc, _("QQ Error"), title, msg);
+	msg = g_strdup_printf("Unknown command 0x%02X, %s", cmd, qq_get_cmd_desc(cmd));
+	//purple_notify_info(gc, _("QQ Error"), title, msg);
 	g_free(msg);
 }
 
@@ -531,7 +531,7 @@ void qq_proc_server_cmd(PurpleConnection *gc, guint16 cmd, guint16 seq, guint8 *
 			qq_process_buddy_change_status(data, data_len, gc);
 			break;
 		default:
-			process_unknow_cmd(gc, _("Unknown SERVER CMD"), data, data_len, cmd, seq);
+			process_unknown_cmd(gc, _("Unknown SERVER CMD"), data, data_len, cmd, seq);
 			break;
 	}
 }
@@ -895,20 +895,25 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[3]);
 			break;
 		case QQ_CMD_LOGIN:
-		default:
-			if (qd->client_version >= 2010) {
-				data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[2]);
+			data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[2]);
+			if (data_len >= 0) {
+				purple_debug_warning("QQ", "Decrypt login packet by Key0_VerifyE5\n");
+			} else {
+				/* network condition may has changed. please sign in again. */
+				data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[0]);	
 				if (data_len >= 0) {
-					purple_debug_warning("QQ", "Decrypt login packet by Key0_VerifyE5\n");
-				} else {
-					/* network condition may has changed. please sign in again. */
-					data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[0]);	
-					if (data_len >= 0) {
-						purple_debug_warning("QQ", "Decrypt login packet rarely by Key2_Auth\n");
-					}
+					purple_debug_warning("QQ", "Decrypt login packet rarely by Key2_Auth\n");
 				}
-			break;
 			}
+			break;
+		case QQ_CMD_LOGIN_E9:
+		case QQ_CMD_LOGIN_EA:
+		case QQ_CMD_LOGIN_EB:
+		case QQ_CMD_LOGIN_ED:
+		case QQ_CMD_LOGIN_EC:
+		default:
+			data_len = qq_decrypt(data, rcved, rcved_len, qd->session_key);
+			break;
 	}
 
 	if (data_len < 0) {
@@ -972,17 +977,30 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			}
 			break;
 		case QQ_CMD_LOGIN:
-			if (qd->client_version >= 2010) {
-				ret_8 = qq_process_login(gc, data, data_len);
-				if ( ret_8 == QQ_TOUCH_REPLY_REDIRECT) {
-                		qq_request_touch_server(gc);
-                		return QQ_LOGIN_REPLY_OK;
-            	}
-			}
-			if (ret_8 != QQ_LOGIN_REPLY_OK) {
+			ret_8 = qq_process_login(gc, data, data_len);
+			if ( ret_8 == QQ_TOUCH_REPLY_REDIRECT) {
+           		qq_request_touch_server(gc);
+				return QQ_LOGIN_REPLY_OK;
+           	}
+			if (ret_8 == QQ_LOGIN_REPLY_OK) {
+				qq_request_login_E9(gc);
+			} else {
 				return ret_8;
 			}
 
+			break;
+		case QQ_CMD_LOGIN_E9:
+			qq_request_login_EA(gc);
+			qq_request_login_EB(gc);
+			qq_request_login_ED(gc);
+			break;
+		case QQ_CMD_LOGIN_EA:
+		case QQ_CMD_LOGIN_EB:
+			break;
+		case QQ_CMD_LOGIN_ED:
+			qq_request_login_EC(gc);
+			break;
+		case QQ_CMD_LOGIN_EC:
 			purple_connection_update_progress(gc, _("Logging in"), QQ_CONNECT_STEPS - 1, QQ_CONNECT_STEPS);
 			purple_debug_info("QQ", "Login replies OK; everything is fine\n");
 			purple_connection_set_state(gc, PURPLE_CONNECTED);
@@ -997,7 +1015,7 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			qq_update_all(gc, 0);
 			break;
 		default:
-			process_unknow_cmd(gc, _("Unknown LOGIN CMD"), data, data_len, cmd, seq);
+			process_unknown_cmd(gc, _("Unknown LOGIN CMD"), data, data_len, cmd, seq);
 			return QQ_LOGIN_REPLY_ERR;
 	}
 	return QQ_LOGIN_REPLY_OK;
@@ -1014,7 +1032,7 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 	guint8 ret_8 = 0;
 	guint16 ret_16 = 0;
 	guint32 ret_32 = 0;
-	gboolean is_unknow = FALSE;
+	gboolean is_unknown = FALSE;
 
 	g_return_if_fail(rcved_len > 0);
 
@@ -1121,11 +1139,11 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 			purple_debug_info("QQ", "Should NOT be here...\n");
 			break;
 		default:
-			process_unknow_cmd(gc, _("Unknown CLIENT CMD"), data, data_len, cmd, seq);
-			is_unknow = TRUE;
+			process_unknown_cmd(gc, _("Unknown CLIENT CMD"), data, data_len, cmd, seq);
+			is_unknown = TRUE;
 			break;
 	}
-	if (is_unknow)
+	if (is_unknown)
 		return;
 
 	if (update_class == QQ_CMD_CLASS_NONE)

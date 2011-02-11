@@ -327,6 +327,11 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 		case QQ_CMD_VERIFY_E5:
 		case QQ_CMD_VERIFY_E3:
 		case QQ_CMD_LOGIN:
+		case QQ_CMD_LOGIN_E9:
+		case QQ_CMD_LOGIN_EA:
+		case QQ_CMD_LOGIN_EB:
+		case QQ_CMD_LOGIN_ED:
+		case QQ_CMD_LOGIN_EC:
 			ret = qq_proc_login_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship32);
 			if (ret != QQ_LOGIN_REPLY_OK) {
 				if (ret == QQ_TOUCH_REPLY_REDIRECT) {

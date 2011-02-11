@@ -42,7 +42,7 @@ enum {
 				/* get onlines from tencent */
 	QQ_CMD_UPDATE_INFO = 0x0004,			/* update information */
 	QQ_CMD_SEARCH_USER = 0x0005,			/* search for user */
-	QQ_CMD_GET_BUDDY_INFO = 0x0006,			/* get user information */
+	QQ_CMD_GET_BUDDY_INFO = 0x003C,			/* get user information */
 	QQ_CMD_ADD_BUDDY_NO_AUTH = 0x0009,		/* add buddy without auth */
 	QQ_CMD_REMOVE_BUDDY = 0x000a,			/* delete a buddy  */
 	QQ_CMD_ADD_BUDDY_AUTH = 0x000b,			/* buddy authentication */
@@ -70,6 +70,11 @@ enum {
 	QQ_CMD_VERIFY_E5 = 0x00E5,
 	QQ_CMD_VERIFY_E3 = 0x00E3,
 	QQ_CMD_LOGIN = 0x0030,
+	QQ_CMD_LOGIN_E9 = 0x00E9,
+	QQ_CMD_LOGIN_EA = 0x00EA,
+	QQ_CMD_LOGIN_EB = 0x00EB,
+	QQ_CMD_LOGIN_EC = 0x00EC,
+	QQ_CMD_LOGIN_ED = 0x00ED,
 	QQ_CMD_KEEP_ALIVE = 0x0058,
 
 	QQ_CMD_AUTH_CODE = 0x00AE,				/* the request verification of information */

@@ -416,7 +416,6 @@ guint32 qq_process_get_buddies_and_rooms(guint8 *data, gint data_len, PurpleConn
 	return position;
 }
 
-#define QQ_MISC_STATUS_HAVING_VIIDEO      0x00000001
 #define QQ_CHANGE_ONLINE_STATUS_REPLY_OK 	0x30	/* ASCII value of "0" */
 
 /* TODO: figure out what's going on with the IP region. Sometimes I get valid IP addresses,
@@ -457,7 +456,7 @@ void qq_request_change_status(PurpleConnection *gc, guint32 update_class)
 	guint8 raw_data[16] = {0};
 	gint bytes = 0;
 	guint8 away_cmd;
-	guint32 misc_status;
+	guint16 misc_status;
 	gboolean fake_video;
 
 	qd = (qq_data *) gc->proto_data;
@@ -466,20 +465,20 @@ void qq_request_change_status(PurpleConnection *gc, guint32 update_class)
 
 	away_cmd = get_status_from_purple(gc);
 
-	misc_status = 0x00000000;
+	misc_status = 0x0000;
 	fake_video = purple_prefs_get_bool("/plugins/prpl/qq/show_fake_video");
 	if (fake_video)
-		misc_status |= QQ_MISC_STATUS_HAVING_VIIDEO;
+		misc_status |= 0x0001;
 
 	if (qd->client_version >= 2010) {
 		bytes = 0;
 		bytes += qq_put8(raw_data + bytes, away_cmd);
 		/* status version */
 		bytes += qq_put16(raw_data + bytes, 0);
-		bytes += qq_put16(raw_data + bytes, 0);
-		bytes += qq_put32(raw_data + bytes, misc_status);
+		bytes += qq_put16(raw_data + bytes, misc_status);
 		/* Fixme: custom status message, now is empty */
 		bytes += qq_put16(raw_data + bytes, 0);
+		bytes += qq_put32(raw_data + bytes, 0);
 	}
 	qq_send_cmd_mess(gc, QQ_CMD_CHANGE_STATUS, raw_data, bytes, update_class, 0);
 }

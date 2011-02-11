@@ -224,12 +224,28 @@ static void info_display_only(PurpleConnection *gc, gchar **segments)
 void qq_request_buddy_info(PurpleConnection *gc, guint32 uid,
 		guint32 update_class, int action)
 {
-	gchar raw_data[16] = {0};
+	guint8 raw_data[1024];
+	guint bytes;
+	static guint8 info[] = {
+		0x00, 0x1A, 0x4E, 0x22, 0x4E, 0x25, 0x4E, 0x26, 
+		0x4E, 0x27, 0x4E, 0x29, 0x4E, 0x2A, 0x4E, 0x2B, 
+		0x4E, 0x2C, 0x4E, 0x2D, 0x4E, 0x2E, 0x4E, 0x2F, 
+		0x4E, 0x30, 0x4E, 0x31, 0x4E, 0x33, 0x4E, 0x35, 
+		0x4E, 0x36, 0x4E, 0x37, 0x4E, 0x38, 0x4E, 0x3F, 
+		0x4E, 0x40, 0x4E, 0x41, 0x4E, 0x42, 0x4E, 0x43, 
+		0x4E, 0x45, 0x52, 0x0B, 0x52, 0x0F
+	};
 
 	g_return_if_fail(uid != 0);
 
-	g_snprintf(raw_data, sizeof(raw_data), "%u", uid);
-	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDY_INFO, (guint8 *) raw_data, strlen(raw_data),
+	bytes = 0;
+	bytes += qq_put16(raw_data+bytes, 0x0001);
+	bytes += qq_put32(raw_data+bytes, uid);
+	memset(raw_data+bytes, 0, 22);
+	bytes += 22;
+	bytes += qq_putdata(raw_data+bytes, info, sizeof(info));
+
+	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDY_INFO, raw_data, bytes,
 			update_class, action);
 }
 

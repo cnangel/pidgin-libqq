@@ -508,7 +508,7 @@ void qq_process_room_buddy_approved(guint8 *data, gint len, guint32 id, PurpleCo
 	bytes += qq_get32(&admin_uid, data + bytes);
 
 	g_return_if_fail(ext_id > 0 && admin_uid > 0);
-	/* it is also a "æ— " here, so do not display */
+	/* it is also a "ÎÞ" here, so do not display */
 	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, data + bytes);
 
 	qq_room_find_or_new(gc, id, ext_id);

@@ -84,4 +84,11 @@ guint8 qq_process_verify_E3(PurpleConnection *gc, guint8 *data, guint8 data_len)
 
 void qq_request_login(PurpleConnection *gc);
 guint8 qq_process_login( PurpleConnection *gc, guint8 *data, gint data_len);
+
+void qq_request_login_E9(PurpleConnection *gc);
+void qq_request_login_EA(PurpleConnection *gc);
+void qq_request_login_EB(PurpleConnection *gc);
+void qq_request_login_EC(PurpleConnection *gc);
+void qq_request_login_ED(PurpleConnection *gc);
+
 #endif

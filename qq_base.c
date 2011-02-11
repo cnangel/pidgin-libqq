@@ -81,8 +81,8 @@ void qq_request_keep_alive(PurpleConnection *gc)
 	/* In fact, we can send whatever we like to server
 	 * with this command, server return the same result including
 	 * the amount of online QQ users, my ip and port */
-	len = g_snprintf(qq, 11, "%d", qd->uid);
-	bytes += qq_putdata(raw_data + bytes, (guint8 *)qq, len-1);
+	len = g_snprintf(qq, 11, "%u", qd->uid);
+	bytes += qq_putdata(raw_data + bytes, (guint8 *)qq, len);
 	qq_send_cmd(gc, QQ_CMD_KEEP_ALIVE, raw_data, bytes);
 }
 
@@ -1020,6 +1020,73 @@ guint8 qq_process_login( PurpleConnection *gc, guint8 *data, gint data_len)
 			return QQ_LOGIN_REPLY_OK;
 	}
 	return QQ_TOUCH_REPLY_REDIRECT;
+}
+
+void qq_request_login_E9( PurpleConnection *gc )
+{
+	qq_data *qd;
+	guint8 raw_data[4] = {0};
+	gint bytes= 0;
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes += qq_put16(raw_data, 0x0101);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_E9, raw_data, bytes);
+}
+
+void qq_request_login_EA( PurpleConnection *gc )
+{
+	qq_data *qd;
+	guint8 raw_data[2] = {0};
+	gint bytes= 0;
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes += qq_put8(raw_data, 0x01);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_EA, raw_data, bytes);
+}
+
+void qq_request_login_EB( PurpleConnection *gc )
+{
+	qq_data *qd;
+	guint8 raw_data[16] = {0};
+	gint bytes= 0;
+	static guint8 fill[] = {
+		0x01, 0x00, 0x00, 0x00,
+		0x0F, 0x4D, 0x2F, 0x1A, 0xFE,
+		0x00, 0x01
+	};
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes += qq_putdata(raw_data, fill, sizeof(fill));
+	qq_send_cmd(gc, QQ_CMD_LOGIN_EB, raw_data, bytes);
+}
+
+void qq_request_login_ED( PurpleConnection *gc )
+{
+	qq_data *qd;
+	guint8 raw_data[2] = {0};
+	gint bytes= 0;
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes += qq_put8(raw_data, 0x01);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_ED, raw_data, bytes);
+}
+
+
+void qq_request_login_EC( PurpleConnection *gc )
+{
+	qq_data *qd;
+	guint8 raw_data[4] = {0};
+	gint bytes= 0;
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes += qq_put16(raw_data, 0x0100);
+	bytes += qq_put8(raw_data+bytes, 0x0A);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_EC, raw_data, bytes);
 }
 
 

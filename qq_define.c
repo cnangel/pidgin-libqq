@@ -161,6 +161,16 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_REMOVE_ME";
 	case QQ_CMD_LOGIN:
 		return "CMD_LOGIN";
+	case QQ_CMD_LOGIN_E9:
+		return "QQ_CMD_LOGIN_E9";
+	case QQ_CMD_LOGIN_EA:
+		return "QQ_CMD_LOGIN_EA";
+	case QQ_CMD_LOGIN_EB:
+		return "QQ_CMD_LOGIN_EB";
+	case QQ_CMD_LOGIN_EC:
+		return "QQ_CMD_LOGIN_EC";
+	case QQ_CMD_LOGIN_ED:
+		return "QQ_CMD_LOGIN_ED";
 	case QQ_CMD_GET_BUDDIES_LIST:
 		return "CMD_GET_BUDDIES_LIST";
 	case QQ_CMD_GET_BUDDIES_ONLINE:
@@ -198,7 +208,7 @@ const gchar *qq_get_cmd_desc(gint cmd)
 	case QQ_CMD_BUDDY_MEMO:
 		return "CMD_BUDDY_MEMO";
 	default:
-		return "CMD_UNKNOW";
+		return "CMD_UNKNOWN";
 	}
 }
 
@@ -254,7 +264,7 @@ const gchar *qq_get_room_cmd_desc(gint room_cmd)
 	case QQ_ROOM_CMD_TEMP_GET_MEMBERS:
 		return "ROOM_CMD_TEMP_GET_MEMBERS";
 	default:
-		return "ROOM_CMD_UNKNOW";
+		return "ROOM_CMD_UNKNOWN";
 	}
 }
 
