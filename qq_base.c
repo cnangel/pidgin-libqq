@@ -1085,7 +1085,7 @@ void qq_request_login_EC( PurpleConnection *gc )
 	qd = (qq_data *) gc->proto_data;
 
 	bytes += qq_put16(raw_data, 0x0100);
-	bytes += qq_put8(raw_data+bytes, 0x0A);
+	bytes += qq_put8(raw_data+bytes, qd->login_mode);
 	qq_send_cmd(gc, QQ_CMD_LOGIN_EC, raw_data, bytes);
 }
 

@@ -440,9 +440,9 @@ static guint8  get_status_from_purple(PurpleConnection *gc)
 			ret = QQ_BUDDY_ONLINE_BUSY;
 		}
 	} else if (purple_presence_is_status_primitive_active(presence, PURPLE_STATUS_AWAY)
-			|| purple_presence_is_status_primitive_active(presence, PURPLE_STATUS_EXTENDED_AWAY)
-			|| purple_presence_is_status_primitive_active(presence, PURPLE_STATUS_UNAVAILABLE)) {
-		ret = QQ_BUDDY_ONLINE_AWAY;
+		|| purple_presence_is_status_primitive_active(presence, PURPLE_STATUS_EXTENDED_AWAY)
+		|| purple_presence_is_status_primitive_active(presence, PURPLE_STATUS_UNAVAILABLE)) {
+			ret = QQ_BUDDY_ONLINE_AWAY;
 	} else {
 		ret = QQ_BUDDY_ONLINE_NORMAL;
 	}
