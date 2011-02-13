@@ -457,7 +457,7 @@ guint8 qq_process_captcha(PurpleConnection *gc, guint8 *data, gint data_len)
 	qd = (qq_data *) gc->proto_data;
 
 	bytes = 0;
-	bytes += qq_get8(&captcha_cmd, data + bytes); /* 03: ok; 04: need verifying */
+	bytes += qq_get8(&captcha_cmd, data + bytes); 
 	bytes += 2;	/* 0x(00 05) */
 	bytes += qq_get8(&need_captcha, data + bytes);
 	bytes += 4;		/* 00 00 01 23 */
@@ -793,7 +793,7 @@ guint8 qq_process_verify_E5( PurpleConnection *gc, guint8 *data, guint8 data_len
 	bytes += qq_getIP(&qd->my_ip, data+bytes);
 	bytes += 8;
 
-	if (qd->ld.token_verify == NULL) qd->ld.token_verify = g_new0(guint8 *, 2);
+	if (qd->ld.token_verify == NULL) qd->ld.token_verify = g_new0(guint8 *, 3);
 
 	bytes += qq_get16(&qd->ld.token_verify_len[0], data+bytes);
 	if (qd->ld.token_verify[0] != NULL) g_free(qd->ld.token_verify[0]);
