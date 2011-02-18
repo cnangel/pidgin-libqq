@@ -31,7 +31,7 @@
 #include "roomlist.h"
 #include "qq.h"
 
-#define PURPLE_GROUP_QQ_QUN         "QQ Ⱥ"
+#define PURPLE_GROUP_QQ_ROOM         "QQ Ⱥ"
 
 typedef enum {
 	QQ_ROOM_ROLE_NO = 0x00,	/* default 0x00 means not member */

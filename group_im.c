@@ -233,7 +233,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	bytes += qq_get32(&(im_text.ext_id), data + bytes);
 	bytes += qq_get8(&(im_text.type8), data + bytes);
 
-	if(QQ_MSG_TEMP_QUN_IM == msg_type) {
+	if(QQ_MSG_TEMP_ROOM_IM == msg_type) {
 		bytes += qq_get32(&temp_id, data + bytes);
 	}
 
@@ -253,7 +253,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	}
 
 	g_return_if_fail(im_text.msg_len > 0 && bytes + im_text.msg_len <= data_len);
-	if(msg_type != QQ_MSG_QUN_IM_UNKNOWN) {
+	if(msg_type != QQ_MSG_ROOM_IM_UNKNOWN) {
 		g_return_if_fail(im_text.msg_len >= 10);
 
 		bytes += qq_get16(&content_type, data + bytes);

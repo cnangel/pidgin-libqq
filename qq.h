@@ -193,6 +193,9 @@ struct _qq_data {
 	guint16 my_icon;		/* my icon index */
 	guint32 online_total;		/* the number of online QQ users */
 	time_t online_last_update;		/* last time send get_friends_online packet */
+	guint8 onlineTime;
+	guint16 level;
+	guint16 activeDays;
 
 	PurpleRoomlist *roomlist;
 

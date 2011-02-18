@@ -29,7 +29,7 @@
 #include "connection.h"
 #include "group.h"
 
-#define QQ_QUN_MEMBER_MAX       80	/* max number of the group */
+#define QQ_ROOM_MEMBER_MAX       80	/* max number of the group */
 
 typedef struct _qq_room_req {
 	PurpleConnection *gc;

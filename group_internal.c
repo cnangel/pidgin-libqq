@@ -139,7 +139,7 @@ static PurpleChat *chat_new(PurpleConnection *gc, qq_room_data *rmd)
 	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_TITLE_UTF8), g_strdup(rmd->title_utf8));
 
 	chat = purple_chat_new(purple_connection_get_account(gc), rmd->title_utf8, components);
-	g = qq_group_find_or_new(PURPLE_GROUP_QQ_QUN);
+	g = qq_group_find_or_new(PURPLE_GROUP_QQ_ROOM);
 	purple_blist_add_chat(chat, g, NULL);
 
 	return chat;
@@ -384,7 +384,7 @@ void qq_room_data_initial(PurpleConnection *gc)
 	qd = (qq_data *) gc->proto_data;
 
 	purple_debug_info("QQ", "Initial QQ Qun configurations\n");
-	purple_group = purple_find_group(PURPLE_GROUP_QQ_QUN);
+	purple_group = purple_find_group(PURPLE_GROUP_QQ_ROOM);
 	if (purple_group == NULL) {
 		purple_debug_info("QQ", "We have no QQ Qun\n");
 		return;

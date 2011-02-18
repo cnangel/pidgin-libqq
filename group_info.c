@@ -211,9 +211,9 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	bytes += qq_get16(&max_members, data + bytes);
 	bytes += qq_get8(&unknown1, data + bytes);
 	/* the following, while Eva:
-	 * 4(unk), 4(verID), 1(nameLen), nameLen(qunNameContent), 1(0x00),
-	 * 2(qunNoticeLen), qunNoticeLen(qunNoticeContent, 1(qunDescLen),
-	 * qunDestLen(qunDestcontent)) */
+	 * 4(unk), 4(verID), 1(nameLen), nameLen(roomNameContent), 1(0x00),
+	 * 2(roomNoticeLen), roomNoticeLen(roomNoticeContent, 1(roomDescLen),
+	 * roomDestLen(roomDestcontent)) */
 	bytes += qq_get8(&unknown1, data + bytes);
 	purple_debug_info("QQ", "type: %u creator: %u category: %u maxmembers: %u\n",
 			rmd->type8, rmd->creator_uid, rmd->category, max_members);
@@ -262,7 +262,7 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 
 	/* filter \r\n in notice */
 	qq_filter_str(notice);
-	rmd->notice_utf8 = strdup(notice);
+	rmd->notice_utf8 = g_strdup(notice);
 	g_free(notice);
 
 	qq_room_update_chat_info(chat, rmd);

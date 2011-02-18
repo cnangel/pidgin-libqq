@@ -141,9 +141,9 @@ void qq_group_modify_members(PurpleConnection *gc, qq_room_data *rmd, guint32 *n
 	if (new_members[0] == 0xffffffff)
 		return;
 
-	old_members = g_newa(guint32, QQ_QUN_MEMBER_MAX);
-	del_members = g_newa(guint32, QQ_QUN_MEMBER_MAX);
-	add_members = g_newa(guint32, QQ_QUN_MEMBER_MAX);
+	old_members = g_newa(guint32, QQ_ROOM_MEMBER_MAX);
+	del_members = g_newa(guint32, QQ_ROOM_MEMBER_MAX);
+	add_members = g_newa(guint32, QQ_ROOM_MEMBER_MAX);
 
 	/* construct the old member list */
 	list = rmd->members;

@@ -234,7 +234,7 @@ static void request_remove_buddy_ex(PurpleConnection *gc,
 	qq_send_cmd_mess(gc, QQ_CMD_REMOVE_BUDDY, raw_data, bytes, 0, uid);
 }
 
-void qq_request_auth_code(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 uid)
+void qq_request_auth_token(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 dataptr, guint32 uid)
 {
 	guint8 raw_data[16];
 	gint bytes;
@@ -245,10 +245,10 @@ void qq_request_auth_code(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, gui
 	bytes += qq_put16(raw_data + bytes, sub_cmd);
 	bytes += qq_put32(raw_data + bytes, uid);
 
-	qq_send_cmd_mess(gc, QQ_CMD_AUTH_CODE, raw_data, bytes, 0, uid);
+	qq_send_cmd_mess(gc, QQ_CMD_AUTH_TOKEN, raw_data, bytes, dataptr, uid);
 }
 
-void qq_process_auth_code(PurpleConnection *gc, guint8 *data, gint data_len, guint32 uid)
+void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, guint32 dataptr, guint32 uid)
 {
 	gint bytes;
 	guint8 cmd, reply;
@@ -259,7 +259,7 @@ void qq_process_auth_code(PurpleConnection *gc, guint8 *data, gint data_len, gui
 	g_return_if_fail(data != NULL && data_len != 0);
 	g_return_if_fail(uid != 0);
 
-	qq_show_packet("qq_process_auth_code", data, data_len);
+	qq_show_packet("qq_process_auth_token", data, data_len);
 	bytes = 0;
 	bytes += qq_get8(&cmd, data + bytes);
 	bytes += qq_get16(&sub_cmd, data + bytes);
@@ -278,6 +278,10 @@ void qq_process_auth_code(PurpleConnection *gc, guint8 *data, gint data_len, gui
 	}
 	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_ADD_BUDDY) {
 		add_buddy_authorize_input(gc, uid, code, code_len);
+		return;
+	}
+	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_UPDATE_BUDDY_INFO) {
+		request_change_info(gc, (guint8 *)dataptr, code, code_len);
 		return;
 	}
 	purple_debug_info("QQ", "Got auth info cmd 0x%x, sub 0x%x, reply 0x%x\n",
@@ -837,7 +841,7 @@ void qq_process_add_buddy_no_auth_ex(PurpleConnection *gc,
 		case 0x00:	/* no authorize */
 			break;
 		case 0x01:	/* authorize */
-			qq_request_auth_code(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_ADD_BUDDY, uid);
+			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_ADD_BUDDY, 0, uid);
 			break;
 		case 0x02:	/* disable */
 			break;
@@ -868,7 +872,7 @@ void qq_remove_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *grou
 	uid = purple_name_to_uid(purple_buddy_get_name(buddy));
 	if (uid > 0 && uid != qd->uid) {
 		if (qd->client_version >= 2010) {
-			qq_request_auth_code(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_REMOVE_BUDDY, uid);
+			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_REMOVE_BUDDY, 0, uid);
 		}	}
 
 	if ((bd = purple_buddy_get_protocol_data(buddy)) != NULL) {

@@ -29,7 +29,7 @@
 #include "utils.h"
 #include "packet_parse.h"
 #include "buddy_info.h"
-#include "buddy_memo.h"
+#include "buddy_alias.h"
 #include "buddy_list.h"
 #include "buddy_opt.h"
 #include "char_conv.h"
@@ -41,8 +41,6 @@
 
 #include "qq_network.h"
 
-#define QQ_GET_ONLINE_BUDDY_02          0x02
-#define QQ_GET_ONLINE_BUDDY_03          0x03	/* unknown function */
 
 typedef struct _qq_buddy_online {
 	guint16 unknown1;
@@ -64,7 +62,7 @@ void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint3
 	 * only 0x02 and 0x03 returns info from server, other valuse all return 0xff
 	 * I can also only send the first byte (0x02, or 0x03)
 	 * and the result is the same */
-	bytes += qq_put8(raw_data + bytes, QQ_GET_ONLINE_BUDDY_02);
+	bytes += qq_put8(raw_data + bytes, 0x02);
 	/* 001-001 seems it supports 255 online buddies at most */
 	bytes += qq_put8(raw_data + bytes, position);
 	/* 002-002 */
@@ -77,7 +75,7 @@ void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint3
 
 /* position starts with 0x0000,
  * server may return a position tag if list is too long for one packet */
-void qq_request_get_buddies(PurpleConnection *gc, guint16 position, guint32 update_class)
+void qq_request_get_buddies_list(PurpleConnection *gc, guint16 position, guint32 update_class)
 {
 	qq_data *qd;
 	guint8 raw_data[16] = {0};
@@ -85,36 +83,17 @@ void qq_request_get_buddies(PurpleConnection *gc, guint16 position, guint32 upda
 
 	qd = (qq_data *) gc->proto_data;
 
-	/* 000-001 starting position, can manually specify */
-	bytes += qq_put16(raw_data + bytes, position);
-	/* before Mar 18, 2004, any value can work, and we sent 00
-	 * I do not know what data QQ server is expecting, as QQ2003iii 0304 itself
-	 * even can sending packets 00 and get no response.
-	 * Now I tested that 00,00,00,00,00,01 work perfectly
-	 * March 22, found the 00,00,00 starts to work as well */
-	bytes += qq_put8(raw_data + bytes, 0x00);
-	if (qd->client_version >= 2010) {
-		bytes += qq_put16(raw_data + bytes, 0x0000);
-	}
+	
+	bytes += qq_put16(raw_data + bytes, 0x0100);
+	bytes += qq_put32(raw_data + bytes, 0x00000000);
+	bytes += qq_put32(raw_data + bytes, 0x00000002);
+
+	/* starting position, can manually specify */
+	bytes += qq_put16(raw_data+bytes, position);
+
+	bytes += qq_put16(raw_data+bytes, 0);
 
 	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_LIST, raw_data, bytes, update_class, 0);
-}
-
-/* get all list, buddies & Quns with groupsid support */
-void qq_request_get_buddies_and_rooms(PurpleConnection *gc, guint32 position, guint32 update_class)
-{
-	guint8 raw_data[16] = {0};
-	gint bytes = 0;
-
-	/* 0x01 download, 0x02, upload */
-	bytes += qq_put8(raw_data + bytes, 0x01);
-	/* unknown 0x02 */
-	bytes += qq_put8(raw_data + bytes, 0x02);
-	/* unknown 00 00 00 00 */
-	bytes += qq_put32(raw_data + bytes, 0x00000000);
-	bytes += qq_put32(raw_data + bytes, position);
-
-	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_AND_ROOMS, raw_data, bytes, update_class, 0);
 }
 
 /* parse the data into qq_buddy_status */
@@ -140,13 +119,13 @@ static gint get_buddy_status(qq_buddy_status *bs, guint8 *data)
 	/* 012-012: status */
 	bytes += qq_get8(&bs->status, data + bytes);
 	/* 013-014: client tag */
-	bytes += qq_get16(&bs->unknown3, data + bytes);
+	bytes += qq_get16(&bs->version, data + bytes);
 	/* 015-030: unknown key */
-	bytes += qq_getdata(&(bs->unknown_key[0]), QQ_KEY_LENGTH, data + bytes);
+	bytes += qq_getdata(bs->key, QQ_KEY_LENGTH, data + bytes);
 
 	purple_debug_info("QQ", "Status:%d, uid: %u, ip: %s:%d, U: %d - %d - %04X\n",
 			bs->status, bs->uid, inet_ntoa(bs->ip), bs->port,
-			bs->unknown1, bs->unknown2, bs->unknown3);
+			bs->unknown1, bs->unknown2, bs->version);
 
 	return bytes;
 }
@@ -161,7 +140,7 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 	gchar *who;
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
-	int entry_len = 38;
+	int entry_len = 42;
 
 	qq_buddy_status bs;
 	struct {
@@ -177,7 +156,6 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 	qd = (qq_data *) gc->proto_data;
 
 	/* qq_show_packet("Get buddies online reply packet", data, len); */
-	if (qd->client_version >= 2010)	entry_len += 4;
 
 	bytes = 0;
 	bytes += qq_get8(&position, data + bytes);
@@ -207,8 +185,8 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 		bytes += qq_get16(&packet.unknown2, data + bytes);
 		/* 037-037: */
 		bytes += qq_get8(&packet.ending, data + bytes);	/* 0x00 */
-		/* skip 4 bytes in qq2007 */
-		if (qd->client_version >= 2010)	bytes += 4;
+
+		bytes += 4;
 
 		if (bs.uid == 0 || (bytes - bytes_start) != entry_len) {
 			purple_debug_error("QQ", "uid=0 or entry complete len(%d) != %d\n",
@@ -262,13 +240,13 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 
 
 /* process reply for get_buddies_list */
-guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc)
+guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnection *gc)
 {
 	qq_data *qd;
 	qq_buddy_data bd;
 	gint bytes_expected, count;
 	gint bytes, buddy_bytes;
-	gint nickname_len;
+	guint8 nickname_len;
 	guint16 position, unknown;
 	PurpleBuddy *buddy;
 
@@ -281,11 +259,13 @@ guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc
 		return -1;
 	}
 	/* qq_show_packet("QQ get buddies list", data, data_len); */
-	bytes = 0;
+	bytes = 10;
 	bytes += qq_get16(&position, data + bytes);
+	bytes += 5;
 	/* the following data is buddy list in this packet */
 	count = 0;
-	while (bytes < data_len) {
+	while (bytes < data_len-5) /* end with 04 4D XX XX XX */
+	{
 		memset(&bd, 0, sizeof(bd));
 		/* set flag */
 		buddy_bytes = bytes;
@@ -298,8 +278,14 @@ guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc
 		/* 007-007: gender */
 		bytes += qq_get8(&bd.gender, data + bytes);
 
-		nickname_len = qq_get_vstr(&bd.nickname, QQ_CHARSET_DEFAULT, data + bytes);
-		bytes += nickname_len;
+		bytes += qq_get8(&nickname_len, data+bytes);
+
+		if (nickname_len == 0) {
+			bd.nickname = g_strdup("");
+		} else {
+			bd.nickname = (gchar *)g_malloc0(nickname_len+1);
+			bytes += qq_getdata(bd.nickname, nickname_len, data+bytes);
+		}
 		qq_filter_str(bd.nickname);
 
 		/* Fixme: merge following as 32bit flag */
@@ -307,10 +293,8 @@ guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc
 		bytes += qq_get8(&bd.ext_flag, data + bytes);
 		bytes += qq_get8(&bd.comm_flag, data + bytes);
 
-		if (qd->client_version >= 2010) {
-			bytes += 4;		/* skip 4 bytes */
-			bytes_expected = 16 + nickname_len;
-		}
+		bytes += 32-4;
+		bytes_expected = 40 + 1 + nickname_len;
 
 		if (bd.uid == 0 || (bytes - buddy_bytes) != bytes_expected) {
 			purple_debug_info("QQ",
@@ -340,79 +324,18 @@ guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc
 		/* nickname has been copy to buddy_data do not free
 		   g_free(bd.nickname);
 		*/
-		/*qq_request_buddy_memo(gc, ((qq_buddy_data*)buddy->proto_data)->uid, 0, QQ_BUDDY_MEMO_GET);*/
-		qq_request_buddy_memo(gc, bd.uid, bd.uid, QQ_BUDDY_MEMO_GET);
+		/*qq_request_buddy_alias(gc, ((qq_buddy_data*)buddy->proto_data)->uid, 0, QQ_BUDDY_ALIAS_GET);*/
 	}
+
+	qq_request_buddy_alias(gc, 0 , QQ_BUDDY_ALIAS_GET);
 
 	if(bytes > data_len) {
 		purple_debug_error("QQ",
-				"qq_process_get_buddies: Dangerous error! maybe protocol changed, notify developers!\n");
+				"qq_process_get_buddies_list: Dangerous error! maybe protocol changed, notify developers!\n");
 	}
 
 	purple_debug_info("QQ", "Received %d buddies, nextposition=%u\n",
 		count, (guint) position);
-	return position;
-}
-
-guint32 qq_process_get_buddies_and_rooms(guint8 *data, gint data_len, PurpleConnection *gc)
-{
-	gint i, j;
-	gint bytes;
-	guint8 sub_cmd, reply_code;
-	guint32 unknown, position;
-	guint32 uid;
-	guint8 type;
-	qq_room_data *rmd;
-
-	g_return_val_if_fail(data != NULL && data_len != 0, -1);
-
-	bytes = 0;
-	bytes += qq_get8(&sub_cmd, data + bytes);
-	g_return_val_if_fail(sub_cmd == 0x01, -1);
-
-	bytes += qq_get8(&reply_code, data + bytes);
-	if(0 != reply_code) {
-		purple_debug_warning("QQ", "qq_process_get_buddies_and_rooms, %d\n", reply_code);
-	}
-
-	bytes += qq_get32(&unknown, data + bytes);
-	bytes += qq_get32(&position, data + bytes);
-	/* the following data is all list in this packet */
-	i = 0;
-	j = 0;
-	while (bytes < data_len) {
-		/* 00-03: uid */
-		bytes += qq_get32(&uid, data + bytes);
-		/* 04: type 0x1:buddy 0x4:Qun */
-		bytes += qq_get8(&type, data + bytes);
-		/* 05: skip unknow 0x00 */
-		bytes += 1;
-		if (uid == 0 || (type != 0x1 && type != 0x4)) {
-			purple_debug_info("QQ", "Buddy entry, uid=%u, type=%d\n", uid, type);
-			continue;
-		}
-		if(0x1 == type) { /* a buddy */
-			/* don't do anything but count - buddies are handled by
-			 * qq_request_get_buddies */
-			++i;
-		} else { /* a group */
-			rmd = qq_room_data_find(gc, uid);
-			if(rmd == NULL) {
-				purple_debug_info("QQ", "Unknown room id %u\n", uid);
-				qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_INFO, uid);
-			} else {
-				rmd->my_role = QQ_ROOM_ROLE_YES;
-			}
-			++j;
-		}
-	}
-
-	if(bytes > data_len) {
-		purple_debug_error("QQ",
-				"qq_process_get_buddies_and_rooms: Dangerous error! maybe protocol changed, notify developers!\n");
-	}
-
-	purple_debug_info("QQ", "Received %d buddies and %d groups, nextposition=%u\n", i, j, (guint) position);
 	return position;
 }
 

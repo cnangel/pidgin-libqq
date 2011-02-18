@@ -329,7 +329,7 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 		case QQ_CMD_LOGIN:
 		case QQ_CMD_LOGIN_E9:
 		case QQ_CMD_LOGIN_EA:
-		case QQ_CMD_LOGIN_EB:
+		case QQ_CMD_LOGIN_GETLIST:
 		case QQ_CMD_LOGIN_ED:
 		case QQ_CMD_LOGIN_EC:
 			ret = qq_proc_login_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship32);
@@ -1251,11 +1251,11 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 	g_return_val_if_fail(gc != NULL && gc->proto_data != NULL, -1);
 	qd = (qq_data *) gc->proto_data;
 
-	buf = g_newa(guint8, MAX_PACKET_SIZE);
-	memset(buf, 0, MAX_PACKET_SIZE);
+	buf = g_newa(guint8, 16+data_len);
+	memset(buf, 0, 16+data_len);
 
 	/* encap room_cmd and room id to buf*/
-	buf_len = 0;
+	buf_len = qq_put8(buf, 0x1F);
 	buf_len += qq_put8(buf + buf_len, room_cmd);
 	if (room_id != 0) {
 		/* id 0 is for QQ Demo Group, now they are closed*/

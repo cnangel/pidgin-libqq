@@ -89,4 +89,5 @@ void qq_request_get_buddies_level(PurpleConnection *gc, guint32 update_class);
 void qq_process_get_level_reply(guint8 *buf, gint buf_len, PurpleConnection *gc);
 
 void qq_update_buddy_icon(PurpleAccount *account, const gchar *who, gint face);
+void request_change_info(PurpleConnection *gc, guint8 *data, guint8 *token, guint token_size);
 #endif

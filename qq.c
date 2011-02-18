@@ -36,7 +36,7 @@
 #include "util.h"
 
 #include "buddy_info.h"
-#include "buddy_memo.h"
+#include "buddy_alias.h"
 #include "buddy_opt.h"
 #include "buddy_list.h"
 #include "char_conv.h"
@@ -650,9 +650,9 @@ static void action_about_openq(PurplePluginAction *action)
 
 	g_string_append(info, _("<p><b>Lovely Patch Writers</b>:<br>\n"));
 	g_string_append(info, "gnap : message displaying, documentation<br>\n");
-	g_string_append(info, "manphiz : qun processing<br>\n");
-	g_string_append(info, "moo : qun processing<br>\n");
-	g_string_append(info, "Coly Li : qun processing<br>\n");
+	g_string_append(info, "manphiz : room processing<br>\n");
+	g_string_append(info, "moo : room processing<br>\n");
+	g_string_append(info, "Coly Li : room processing<br>\n");
 	g_string_append(info, "Emil Alexiev : captcha verification on login based on LumaQQ for MAC (2007), login, add buddy, remove buddy, message exchange and logout<br>\n");
 	g_string_append(info, "Chengming Wang : buddy memo<br>\n");
 	g_string_append(info, "lonicerae : chat room window bugfix, server list bugfix, buddy memo<br>\n");
@@ -826,7 +826,7 @@ static void qq_add_buddy_from_menu_cb(PurpleBlistNode *node, gpointer data)
 	qq_add_buddy(gc, buddy, NULL);
 }
 
-static void qq_modify_buddy_memo_from_menu_cb(PurpleBlistNode *node, gpointer data)
+static void qq_modify_buddy_alias_from_menu_cb(PurpleBlistNode *node, gpointer data)
 {
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
@@ -848,7 +848,7 @@ static void qq_modify_buddy_memo_from_menu_cb(PurpleBlistNode *node, gpointer da
 	/* param: gc, uid, update_class, action
 	 * here, update_class is set to bd_uid. because some memo packages returned
 	 * without uid, which will make us confused */
-	qq_request_buddy_memo(gc, bd_uid, bd_uid, QQ_BUDDY_MEMO_MODIFY);
+	qq_request_buddy_alias(gc, 0, QQ_BUDDY_ALIAS_MODIFY);
 }
 
 static GList *qq_buddy_menu(PurpleBuddy *buddy)
@@ -866,8 +866,8 @@ static GList *qq_buddy_menu(PurpleBuddy *buddy)
 	}
 
 
-	act = purple_menu_action_new(_("Modify Buddy Memo"),
-			PURPLE_CALLBACK(qq_modify_buddy_memo_from_menu_cb),
+	act = purple_menu_action_new(_("Modify Buddy Alias"),
+			PURPLE_CALLBACK(qq_modify_buddy_alias_from_menu_cb),
 			NULL, NULL);
 	m = g_list_append(m, act);
 

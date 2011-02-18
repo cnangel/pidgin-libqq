@@ -165,8 +165,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "QQ_CMD_LOGIN_E9";
 	case QQ_CMD_LOGIN_EA:
 		return "QQ_CMD_LOGIN_EA";
-	case QQ_CMD_LOGIN_EB:
-		return "QQ_CMD_LOGIN_EB";
+	case QQ_CMD_LOGIN_GETLIST:
+		return "QQ_CMD_LOGIN_GETLIST";
 	case QQ_CMD_LOGIN_EC:
 		return "QQ_CMD_LOGIN_EC";
 	case QQ_CMD_LOGIN_ED:
@@ -177,8 +177,6 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_GET_BUDDIES_ONLINE";
 	case QQ_CMD_ROOM:
 		return "CMD_ROOM";
-	case QQ_CMD_GET_BUDDIES_AND_ROOMS:
-		return "CMD_GET_BUDDIES_AND_ROOMS";
 	case QQ_CMD_GET_LEVEL:
 		return "CMD_GET_LEVEL";
 	case QQ_CMD_RECV_MSG_SYS:
@@ -195,8 +193,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_VERIFY_E5";
 	case QQ_CMD_VERIFY_E3:
 		return "CMD_VERIFY_E3";
-	case QQ_CMD_AUTH_CODE:
-		return "CMD_AUTH_CODE";
+	case QQ_CMD_AUTH_TOKEN:
+		return "CMD_AUTH_TOKEN";
 	case QQ_CMD_ADD_BUDDY_NO_AUTH_EX:
 		return "CMD_ADD_BUDDY_NO_AUTH_EX";
 	case QQ_CMD_ADD_BUDDY_AUTH_EX:
@@ -205,8 +203,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_BUDDY_CHECK_CODE";
 	case QQ_CMD_BUDDY_QUESTION:
 		return "CMD_BUDDY_QUESTION";
-	case QQ_CMD_BUDDY_MEMO:
-		return "CMD_BUDDY_MEMO";
+	case QQ_CMD_BUDDY_ALIAS:
+		return "CMD_BUDDY_ALIAS";
 	default:
 		return "CMD_UNKNOWN";
 	}

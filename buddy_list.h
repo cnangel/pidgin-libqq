@@ -36,17 +36,17 @@ typedef struct _qq_buddy_status {
 	guint16 port;
 	guint8 unknown2;
 	guint8 status;
-	guint16 unknown3;
-	guint8 unknown_key[QQ_KEY_LENGTH];
+	guint16 version;
+	guint8 key[QQ_KEY_LENGTH];
 } qq_buddy_status;
 
 void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint32 update_class);
 guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnection *gc);
 
-void qq_request_get_buddies(PurpleConnection *gc, guint16 position, guint32 update_class);
-guint16 qq_process_get_buddies(guint8 *data, gint data_len, PurpleConnection *gc);
+void qq_request_get_buddies_list(PurpleConnection *gc, guint16 position, guint32 update_class);
+guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnection *gc);
 
-void qq_request_get_buddies_and_rooms(PurpleConnection *gc, guint32 position, guint32 update_class);
+void qq_request_get_rooms(PurpleConnection *gc, guint32 position, guint32 update_class);
 guint32 qq_process_get_buddies_and_rooms(guint8 *data, gint data_len, PurpleConnection *gc);
 
 void qq_request_change_status(PurpleConnection *gc, guint32 update_class);

@@ -66,8 +66,8 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 
 void qq_process_buddy_check_code(PurpleConnection *gc, guint8 *data, gint data_len);
 
-void qq_request_auth_code(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 uid);
-void qq_process_auth_code(PurpleConnection *gc, guint8 *data, gint data_len, guint32 uid);
+void qq_request_auth_token(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 dataptr, guint32 uid);
+void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, guint32 dataptr, guint32 uid);
 void qq_request_question(PurpleConnection *gc,
 		guint8 cmd, guint32 uid, const gchar *question_utf8, const gchar *answer_utf8);
 void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guint32 uid);

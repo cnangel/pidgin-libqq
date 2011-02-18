@@ -38,7 +38,7 @@ const gchar *qq_get_ver_desc(gint source);
 
 /* list of known QQ commands */
 enum {
-	QQ_CMD_LOGOUT = 0x0001,				/* log out */
+	QQ_CMD_LOGOUT = 0x0062,				/* log out */
 				/* get onlines from tencent */
 	QQ_CMD_UPDATE_INFO = 0x0004,			/* update information */
 	QQ_CMD_SEARCH_USER = 0x0005,			/* search for user */
@@ -53,15 +53,14 @@ enum {
 	QQ_CMD_REMOVE_ME = 0x001c,			/* remove self */
 	QQ_CMD_REQUEST_KEY = 0x001d,			/* request key for file transfer */
 	QQ_CMD_CELL_PHONE_1 = 0x0021,			/* cell phone 1 */
-	QQ_CMD_GET_BUDDIES_LIST = 0x0026,		/* get buddies list */
+	QQ_CMD_GET_BUDDIES_LIST = 0x0126,		/* get buddies list */
 	QQ_CMD_GET_BUDDIES_ONLINE = 0x0027,		/* get online buddies list */
 	QQ_CMD_CELL_PHONE_2 = 0x0029,			/* cell phone 2 */
 	QQ_CMD_ROOM = 0x0031,			/* room command */
-	QQ_CMD_GET_BUDDIES_AND_ROOMS = 0x0059,
 	QQ_CMD_GET_LEVEL = 0x005C,			/* get level for one or more buddies */
 	QQ_CMD_RECV_MSG_SYS = 0x0080,			/* receive a system message */
 	QQ_CMD_BUDDY_CHANGE_STATUS = 0x0081,	/* buddy change status */
-	QQ_CMD_BUDDY_MEMO = 0x003E,    /* the message about buddy memo */
+	QQ_CMD_BUDDY_ALIAS = 0x003E,    /* the message about buddy memo */
 
     /* for QQ2010*/
 	QQ_CMD_TOUCH_SERVER = 0x0091,					/* touch login server */
@@ -72,12 +71,12 @@ enum {
 	QQ_CMD_LOGIN = 0x0030,
 	QQ_CMD_LOGIN_E9 = 0x00E9,
 	QQ_CMD_LOGIN_EA = 0x00EA,
-	QQ_CMD_LOGIN_EB = 0x00EB,
+	QQ_CMD_LOGIN_GETLIST = 0x00EB,
 	QQ_CMD_LOGIN_EC = 0x00EC,
 	QQ_CMD_LOGIN_ED = 0x00ED,
 	QQ_CMD_KEEP_ALIVE = 0x0058,
 
-	QQ_CMD_AUTH_CODE = 0x00AE,				/* the request verification of information */
+	QQ_CMD_AUTH_TOKEN = 0x00AE,				/* the request verification of information */
 	QQ_CMD_ADD_BUDDY_NO_AUTH_EX = 0x00A7,			/* add friend without auth */
 	QQ_CMD_ADD_BUDDY_AUTH_EX = 0x00A8, 				/* add buddy with auth */
 	QQ_CMD_BUDDY_CHECK_CODE =  0x00B5,
@@ -87,10 +86,10 @@ enum {
 const gchar *qq_get_cmd_desc(gint type);
 
 enum {
-	QQ_ROOM_CMD_CREATE = 0x01,
+	QQ_ROOM_CMD_GET_INFO = 0x01,
+	QQ_ROOM_CMD_CREATE = 0x04,	//Deprecated
 	QQ_ROOM_CMD_MEMBER_OPT = 0x02,
 	QQ_ROOM_CMD_CHANGE_INFO = 0x03,
-	QQ_ROOM_CMD_GET_INFO = 0x04,
 	QQ_ROOM_CMD_ACTIVATE = 0x05,
 	QQ_ROOM_CMD_SEARCH = 0x06,
 	QQ_ROOM_CMD_JOIN = 0x07,

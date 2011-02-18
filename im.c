@@ -1130,7 +1130,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 			if (new_string->len + append_utf8->len + 2 > QQ_MSG_IM_MAX) {
 				/* enough chars to send */
 				im_convert_and_merge(new_string, append_utf8);
-				string_list = g_slist_append(string_list, strdup(new_string->str));
+				string_list = g_slist_append(string_list, g_strdup(new_string->str));
 				g_string_set_size(new_string, 0);
 				continue;
 			}
@@ -1158,7 +1158,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 		if (new_string->len + append_utf8->len + len > QQ_MSG_IM_MAX) {
 			/* enough chars to send */
 			im_convert_and_merge(new_string, append_utf8);
-			string_list = g_slist_append(string_list, strdup(new_string->str));
+			string_list = g_slist_append(string_list, g_strdup(new_string->str));
 			g_string_set_size(new_string, 0);
 		}
 		g_string_append_len(append_utf8, p, len);
@@ -1166,7 +1166,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 
 	if (new_string->len + append_utf8->len > 0) {
 		im_convert_and_merge(new_string, append_utf8);
-		string_list = g_slist_append(string_list, strdup(new_string->str));
+		string_list = g_slist_append(string_list, g_strdup(new_string->str));
 	}
 	g_string_free(new_string, TRUE);
 	g_string_free(append_utf8, TRUE);

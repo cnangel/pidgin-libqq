@@ -40,6 +40,7 @@
 #include "qq.h"
 #include "qq_network.h"
 #include "utils.h"
+#include "group_internal.h"
 
 /* generate a md5 key using uid and session_key */
 static void get_session_md5(guint8 *session_md5, guint32 uid, guint8 *session_key)
@@ -58,10 +59,14 @@ void qq_request_logout(PurpleConnection *gc)
 {
 	gint i;
 	qq_data *qd;
+	guint8 *logout_fill;
 
 	qd = (qq_data *) gc->proto_data;
+	logout_fill = (guint8 *) g_alloca(16);
+	memset(logout_fill, 0x00,16);
+
 	for (i = 0; i < 4; i++)
-		qq_send_cmd(gc, QQ_CMD_LOGOUT, qd->ld.pwd_twice_md5, QQ_KEY_LENGTH);
+		qq_send_cmd(gc, QQ_CMD_LOGOUT, logout_fill, QQ_KEY_LENGTH);
 
 	qd->is_login = FALSE;	/* update login status AFTER sending logout packets */
 }
@@ -107,11 +112,13 @@ gboolean qq_process_keep_alive(guint8 *data, gint data_len, PurpleConnection *gc
 		purple_connection_error_reason(gc,
 				PURPLE_CONNECTION_ERROR_NETWORK_ERROR,
 				_("Lost connection with server"));
+	} else {
+		purple_debug_info("QQ", "Online QQ Account Number : %d", qd->online_total);
 	}
 
 	bytes += qq_getIP(&qd->my_ip, data + bytes);
 	bytes += qq_get16(&qd->my_port, data + bytes);
-	/* skip 2 byytes, 0x(00 3c) */
+	/* skip 2 bytes, 0x(00 3c) */
 	bytes += 2;
 	bytes += qq_gettime(&server_time, data + bytes);
 	/* skip 5 bytes, all are 0 */
@@ -633,7 +640,7 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 	guint8 ret;
 	gchar *error = NULL;
 	guint16 length;
-	gchar *msg, *msg_utf8;
+	gchar *msg;
 	guint16 msg_len;
 	guint8 i;
 	PurpleConnectionError reason = PURPLE_CONNECTION_ERROR_AUTHENTICATION_FAILED;
@@ -710,14 +717,12 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 	bytes += qq_get16(&msg_len, data + bytes);
 
 	msg = g_strndup((gchar *)data + bytes, msg_len);
-	msg_utf8 = qq_to_utf8(msg, QQ_CHARSET_DEFAULT);
 
-	purple_debug_error("QQ", "%s: %s\n", error, msg_utf8);
-	purple_connection_error_reason(gc, reason, msg_utf8);
+	purple_debug_error("QQ", "%s: %s\n", error, msg);
+	purple_connection_error_reason(gc, reason, msg);
 
 	g_free(error);
 	g_free(msg);
-	g_free(msg_utf8);
 	return QQ_LOGIN_REPLY_ERR;
 }
 
@@ -775,7 +780,7 @@ void qq_request_verify_E5(PurpleConnection *gc)
 
 }
 
-guint8 qq_process_verify_E5( PurpleConnection *gc, guint8 *data, guint8 data_len )
+guint8 qq_process_verify_E5( PurpleConnection *gc, guint8 *data, gint data_len )
 {
 	qq_data *qd;
 	int bytes;
@@ -865,7 +870,7 @@ void qq_request_verify_E3( PurpleConnection *gc )
 }
 
 
-guint8 qq_process_verify_E3( PurpleConnection *gc, guint8 *data, guint8 data_len )
+guint8 qq_process_verify_E3( PurpleConnection *gc, guint8 *data, gint data_len )
 {
 	qq_data *qd;
 	int bytes;
@@ -1046,21 +1051,24 @@ void qq_request_login_EA( PurpleConnection *gc )
 	qq_send_cmd(gc, QQ_CMD_LOGIN_EA, raw_data, bytes);
 }
 
-void qq_request_login_EB( PurpleConnection *gc )
+void qq_request_login_getlist( PurpleConnection *gc )
 {
 	qq_data *qd;
 	guint8 raw_data[16] = {0};
 	gint bytes= 0;
-	static guint8 fill[] = {
-		0x01, 0x00, 0x00, 0x00,
-		0x0F, 0x4D, 0x2F, 0x1A, 0xFE,
-		0x00, 0x01
-	};
 
 	qd = (qq_data *) gc->proto_data;
 
-	bytes += qq_putdata(raw_data, fill, sizeof(fill));
-	qq_send_cmd(gc, QQ_CMD_LOGIN_EB, raw_data, bytes);
+	bytes += qq_put32(raw_data+bytes, 0x01000000);
+	
+	bytes += qq_put8(raw_data+bytes,0x00);
+	bytes += qq_put32(raw_data+bytes, 0x00000000);	
+	/* first login is all zero, while response a hash like 02 4D 5D CF AE
+		02 list entry number, 4D 5D CF AE update time
+		next time request with it, to verify if list has changed	*/
+
+	bytes += qq_put16(raw_data+bytes, 0x0001);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_GETLIST, raw_data, bytes);
 }
 
 void qq_request_login_ED( PurpleConnection *gc )
@@ -1087,6 +1095,51 @@ void qq_request_login_EC( PurpleConnection *gc )
 	bytes += qq_put16(raw_data, 0x0100);
 	bytes += qq_put8(raw_data+bytes, qd->login_mode);
 	qq_send_cmd(gc, QQ_CMD_LOGIN_EC, raw_data, bytes);
+}
+
+guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_len )
+{
+	qq_data *qd;
+	gint bytes;
+	guint8 ret;
+	guint16 num;
+	guint i;
+	guint32 id;
+	guint16 type;
+	PurpleBuddy *buddy;
+	qq_room_data *rmd;
+
+	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
+
+	qd = (qq_data *) gc->proto_data;
+
+	bytes = 1;
+	qq_get8(&ret, data + bytes);
+	if (ret) {
+		purple_debug_info("QQ", "No Need to Refresh List");
+		return QQ_LOGIN_REPLY_OK;
+	}
+	bytes = 18;
+	bytes += qq_get16(&num, data+bytes);
+	
+	for (i=0; i<8; i++) {
+		bytes += qq_get32(&id, data+bytes);
+		bytes += qq_get16(&type, data+bytes);
+
+		if (type == 0x0100)		//buddy
+		{
+			buddy = qq_buddy_find_or_new(gc, id);
+		} else if (type == 0x0400) {
+			rmd = qq_room_data_find(gc, id);
+			if(rmd == NULL) {
+				purple_debug_info("QQ", "Unknown room id %u\n", id);
+				qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_INFO, id);
+			} else {
+				rmd->my_role = QQ_ROOM_ROLE_YES;
+			}
+		}
+	}
+	return QQ_LOGIN_REPLY_OK;
 }
 
 
