@@ -70,10 +70,9 @@ static gchar *do_convert(const gchar *str, gssize len, guint8 *out_len, const gc
  */
 gint qq_get_vstr(gchar **ret, const gchar *from_charset, guint8 *data)
 {
-	gssize len;
-	guint8 out_len;
+	guint8 len;
 
-	g_return_val_if_fail(data != NULL && from_charset != NULL, -1);
+	g_return_val_if_fail(data != NULL, -1);
 
 	len = data[0];
 	if (len == 0) {
@@ -82,13 +81,14 @@ gint qq_get_vstr(gchar **ret, const gchar *from_charset, guint8 *data)
 	}
 	if (from_charset == NULL)
 	{
-		*ret = (gchar *)g_malloc0(len);
+		*ret = (gchar *)g_malloc0(len+1);
 		g_memmove(*ret, data+1, len);
+		len;
 	} else {
-		*ret = do_convert((gchar *) (data + 1), len, &out_len, UTF8, from_charset);
+		*ret = do_convert((gchar *) (data + 1), len, &len, UTF8, from_charset);
 	}
 
-	return out_len + 1;
+	return len + 1;
 }
 
 gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, const gchar *to_charset)

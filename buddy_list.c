@@ -241,7 +241,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 	qq_buddy_data bd;
 	gint bytes_expected, count;
 	gint bytes, buddy_bytes;
-	guint8 nickname_len;
+	gint nickname_len;
 	guint16 position, unknown;
 	PurpleBuddy *buddy;
 
@@ -273,14 +273,8 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 		/* 007-007: gender */
 		bytes += qq_get8(&bd.gender, data + bytes);
 
-		bytes += qq_get8(&nickname_len, data+bytes);
+		bytes += nickname_len = qq_get_vstr(&bd.nickname, NULL, data+bytes);
 
-		if (nickname_len == 0) {
-			bd.nickname = g_strdup("");
-		} else {
-			bd.nickname = (gchar *)g_malloc0(nickname_len+1);
-			bytes += qq_getdata(bd.nickname, nickname_len, data+bytes);
-		}
 		qq_filter_str(bd.nickname);
 
 		/* Fixme: merge following as 32bit flag */
@@ -289,7 +283,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 		bytes += qq_get8(&bd.comm_flag, data + bytes);
 
 		bytes += 32-4;
-		bytes_expected = 40 + 1 + nickname_len;
+		bytes_expected = 40 + nickname_len;
 
 		if (bd.uid == 0 || (bytes - buddy_bytes) != bytes_expected) {
 			purple_debug_info("QQ",
