@@ -162,7 +162,7 @@ PurpleBuddy *qq_buddy_new(PurpleConnection *gc, guint32 uid)
 	return buddy;
 }
 
-static void qq_buddy_free(PurpleBuddy *buddy)
+void qq_buddy_free(PurpleBuddy *buddy)
 {
 	qq_buddy_data *bd;
 
@@ -657,9 +657,7 @@ void qq_add_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *group)
 
 	uid = purple_name_to_uid(purple_buddy_get_name(buddy));
 	if (uid > 0) {
-		if (qd->client_version >= 2010) {
 			request_add_buddy_no_auth(gc, uid);
-		}
 		return;
 	}
 

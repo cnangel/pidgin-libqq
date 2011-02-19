@@ -1104,7 +1104,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	guint8 ret;
 	guint16 num;
 	guint i;
-	guint32 id;
+	guint32 uid;
 	guint16 type;
 	PurpleBuddy *buddy;
 	qq_room_data *rmd;
@@ -1119,27 +1119,45 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 		purple_debug_info("QQ", "No Need to Refresh List");
 		return QQ_LOGIN_REPLY_OK;
 	}
+	qq_clean_buddy_list(gc);
+
 	bytes = 18;
 	bytes += qq_get16(&num, data+bytes);
 	
-	for (i=0; i<8; i++) {
-		bytes += qq_get32(&id, data+bytes);
+	for (i=0; i<num; i++) {
+		bytes += qq_get32(&uid, data+bytes);
 		bytes += qq_get16(&type, data+bytes);
 
 		if (type == 0x0100)		//buddy
 		{
-			buddy = qq_buddy_find_or_new(gc, id);
+			buddy = qq_buddy_find_or_new(gc, uid);
 		} else if (type == 0x0400) {
-			rmd = qq_room_data_find(gc, id);
+			rmd = qq_room_data_find(gc, uid);
 			if(rmd == NULL) {
-				purple_debug_info("QQ", "Unknown room id %u\n", id);
-				qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_INFO, id);
+				purple_debug_info("QQ", "Unknown room uid %u\n", uid);
+				qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_INFO, uid);
 			} else {
 				rmd->my_role = QQ_ROOM_ROLE_YES;
 			}
 		}
 	}
 	return QQ_LOGIN_REPLY_OK;
+}
+
+void qq_clean_buddy_list( PurpleConnection *gc )
+{
+	PurpleBuddy * bd;
+	GSList * list;
+	g_return_if_fail(gc == NULL || gc->account == NULL);
+
+	for ( list=purple_find_buddies(gc->account, NULL); list; list=list->next )
+	{
+		bd = (PurpleBuddy *)list->data;
+		qq_buddy_free(bd);
+	}
+	
+	qq_buddy_free(NULL);
+	g_free(list);
 }
 
 

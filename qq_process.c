@@ -988,6 +988,7 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			qq_request_login_ED(gc);
 			break;
 		case QQ_CMD_LOGIN_EA:
+			break;
 		case QQ_CMD_LOGIN_GETLIST:
 			qq_process_login_getlist(gc, data, data_len);
 			break;
