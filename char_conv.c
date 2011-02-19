@@ -62,6 +62,7 @@ static gchar *do_convert(const gchar *str, gssize len, guint8 *out_len, const gc
 }
 
 /*
+ * Changed!!!! Check Every Invoke!!!!
  * take the input as a pascal string and return a converted c-string in UTF-8
  * returns the number of bytes read, return -1 if fatal error
  * the converted UTF-8 will be saved in ret
@@ -79,7 +80,13 @@ gint qq_get_vstr(gchar **ret, const gchar *from_charset, guint8 *data)
 		*ret = g_strdup("");
 		return 1;
 	}
-	*ret = do_convert((gchar *) (data + 1), len, &out_len, UTF8, from_charset);
+	if (from_charset == NULL)
+	{
+		*ret = (gchar *)g_malloc0(len);
+		g_memmove(*ret, data+1, len);
+	} else {
+		*ret = do_convert((gchar *) (data + 1), len, &out_len, UTF8, from_charset);
+	}
 
 	return out_len + 1;
 }

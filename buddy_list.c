@@ -29,7 +29,7 @@
 #include "utils.h"
 #include "packet_parse.h"
 #include "buddy_info.h"
-#include "buddy_alias.h"
+#include "buddy_memo.h"
 #include "buddy_list.h"
 #include "buddy_opt.h"
 #include "char_conv.h"
@@ -122,10 +122,17 @@ static gint get_buddy_status(qq_buddy_status *bs, guint8 *data)
 	bytes += qq_get16(&bs->version, data + bytes);
 	/* 015-030: unknown key */
 	bytes += qq_getdata(bs->key, QQ_KEY_LENGTH, data + bytes);
+	/* 031-032: */
+	bytes += qq_get16(&bs->unknown3, data + bytes);
+	/* 033-033: ext_flag */
+	bytes += qq_get8(&bs->ext_flag, data + bytes);
+	/* 034-034: comm_flag */
+	bytes += qq_get8(&bs->comm_flag, data + bytes);
 
-	purple_debug_info("QQ", "Status:%d, uid: %u, ip: %s:%d, U: %d - %d - %04X\n",
+	purple_debug_info("QQ", "Status: %d, uid: %u, ip: %s:%d, Flag: 0x%X - 0x%X, U: %d - %d - %d, Ver: %04X\n",
 			bs->status, bs->uid, inet_ntoa(bs->ip), bs->port,
-			bs->unknown1, bs->unknown2, bs->version);
+			bs->ext_flag, bs->comm_flag, 
+			bs->unknown1, bs->unknown2, bs->unknown3, bs->version);
 
 	return bytes;
 }
@@ -143,13 +150,8 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 	int entry_len = 42;
 
 	qq_buddy_status bs;
-	struct {
-		guint16 unknown1;
-		guint8 ext_flag;
-		guint8 comm_flag;
-		guint16 unknown2;
-		guint8 ending;		/* 0x00 */
-	} packet;
+	guint16 unknown;
+	guint8 ending;		/* 0x00 */
 
 	g_return_val_if_fail(data != NULL && data_len != 0, -1);
 
@@ -168,23 +170,16 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 			break;
 		}
 		memset(&bs, 0 ,sizeof(bs));
-		memset(&packet, 0 ,sizeof(packet));
 
 		/* set flag */
 		bytes_start = bytes;
 		/* based on one online buddy entry */
-		/* 000-030 qq_buddy_status */
+		/* 000-034 qq_buddy_status */
 		bytes += get_buddy_status(&bs, data + bytes);
-		/* 031-032: */
-		bytes += qq_get16(&packet.unknown1, data + bytes);
-		/* 033-033: ext_flag */
-		bytes += qq_get8(&packet.ext_flag, data + bytes);
-		/* 034-034: comm_flag */
-		bytes += qq_get8(&packet.comm_flag, data + bytes);
 		/* 035-036: */
-		bytes += qq_get16(&packet.unknown2, data + bytes);
+		bytes += qq_get16(&unknown, data + bytes);
 		/* 037-037: */
-		bytes += qq_get8(&packet.ending, data + bytes);	/* 0x00 */
+		bytes += qq_get8(&ending, data + bytes);	/* 0x00 */
 
 		bytes += 4;
 
@@ -216,14 +211,14 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 		if(0 != fe->s->client_tag)
 			q_bud->client_tag = fe->s->client_tag;
 		*/
-		if (bd->status != bs.status || bd->comm_flag != packet.comm_flag) {
+		if (bd->status != bs.status || bd->comm_flag != bs.comm_flag) {
 			bd->status = bs.status;
-			bd->comm_flag = packet.comm_flag;
+			bd->comm_flag = bs.comm_flag;
 			qq_update_buddy_status(gc, bd->uid, bd->status, bd->comm_flag);
 		}
 		bd->ip.s_addr = bs.ip.s_addr;
 		bd->port = bs.port;
-		bd->ext_flag = packet.ext_flag;
+		bd->ext_flag = bs.ext_flag;
 		bd->last_update = time(NULL);
 		count++;
 	}
@@ -321,13 +316,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 		qq_update_buddy_status(gc, bd.uid, bd.status, bd.comm_flag);
 
 		g_memmove(purple_buddy_get_protocol_data(buddy), &bd, sizeof(qq_buddy_data));
-		/* nickname has been copy to buddy_data do not free
-		   g_free(bd.nickname);
-		*/
-		/*qq_request_buddy_alias(gc, ((qq_buddy_data*)buddy->proto_data)->uid, 0, QQ_BUDDY_ALIAS_GET);*/
 	}
-
-	qq_request_buddy_alias(gc, 0 , QQ_BUDDY_ALIAS_GET);
 
 	if(bytes > data_len) {
 		purple_debug_error("QQ",
@@ -458,7 +447,7 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 	bytes = 0;
 	/* 000-030: qq_buddy_status */
 	bytes += get_buddy_status(&bs, data + bytes);
-	/* 031-034:  Unknow, maybe my uid */
+	/* 034-037:  my uid */
 	/* This has a value of 0 when we've changed our status to
 	 * QQ_BUDDY_ONLINE_INVISIBLE */
 	bytes += qq_get32(&my_uid, data + bytes);
@@ -488,9 +477,7 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 	bd->last_update = time(NULL);
 
 	if (bd->status == QQ_BUDDY_ONLINE_NORMAL && bd->level <= 0) {
-		if (qd->client_version >= 2010) {
 			qq_request_get_level(gc, bd->uid);
-		}
 	}
 }
 

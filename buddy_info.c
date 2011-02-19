@@ -194,7 +194,7 @@ static void info_debug(gchar **segments)
 static void info_display_only(PurpleConnection *gc, guint8 *data)
 {
 	PurpleNotifyUserInfo *user_info;
-	gchar *utf8_value;
+	gchar *value;
 	guint uid;
 	gchar *who;
 	guint index;
@@ -210,9 +210,9 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	bytes = 3;
 	bytes += qq_get32(&uid, data+bytes);
 	who = uid_to_purple_name(uid);
-	utf8_value = g_strdup_printf("%d", uid);
-	purple_notify_user_info_add_pair(user_info, _(field_infos[0].text), utf8_value);
-	g_free(utf8_value);
+	value = g_strdup_printf("%d", uid);
+	purple_notify_user_info_add_pair(user_info, _(field_infos[0].text), value);
+	g_free(value);
 
 	bytes += 4;
 	bytes += qq_get16(&num, data+bytes);
@@ -241,25 +241,28 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), field_infos[index].choice[choice_num]);
 			break;
 		case QQ_FIELD_NUM:
-			utf8_value = g_strdup_printf("%d", (guint8)*info);
-			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), utf8_value);
-			g_free(utf8_value);
+			value = g_strdup_printf("%d", (guint8)*info);
+			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), value);
+			g_free(value);
 			break;
 		case QQ_FIELD_TIME:
 			g_date_set_time_t (&g_date, g_ntohl((guint)*info));
-			utf8_value = g_new0(gchar, 16);
-			g_date_strftime(utf8_value, 16, "%Y-%m-%d", &g_date);
-			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), utf8_value);
-			g_free(utf8_value);
+			value = g_new0(gchar, 16);
+			g_date_strftime(value, 16, "%Y-%m-%d", &g_date);
+			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), value);
+			g_free(value);
 			break;
 		case QQ_FIELD_LABEL:
 		case QQ_FIELD_STRING:
 		case QQ_FIELD_MULTI:
 		default:
 			if (size) {
-				utf8_value = qq_to_utf8((gchar *)info, QQ_CHARSET_DEFAULT);
-				purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), utf8_value);
-				g_free(utf8_value);
+				value = (gchar *)g_malloc0(size+1);
+				g_memmove(value, info, size);
+				purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), value);
+				g_free(value);
+			} else {
+				purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), "");
 			}
 			break;
 		}
@@ -350,7 +353,6 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 	guint bytes=0;
 	guint index;
 	guint16 size;
-	char *utf8_str;
 	gchar *str;
 	guint32 value;
 	guint8 *newdata;
@@ -407,9 +409,9 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 				}
 				break;
 			case QQ_FIELD_TIME:
-				utf8_str = purple_request_fields_get_string(fields, field_infos[index].id);
-				if (utf8_str != NULL) {
-					g_date_set_parse(&date, utf8_str);
+				str = purple_request_fields_get_string(fields, field_infos[index].id);
+				if (str != NULL) {
+					g_date_set_parse(&date, str);
 					if (g_date_valid (&date))
 					{
 						memset(&tm, 0, sizeof(tm));
@@ -423,11 +425,11 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 							datasize += size+4;
 							newdata = (guint8 *)g_realloc(newdata, datasize);
 							g_memmove(newdata+datasize-size-4, data+bytes-size-4, size+4);
-							g_free(utf8_str);
+							g_free(str);
 							break;
 						}				
 					}
-					g_free(utf8_str);
+					g_free(str);
 				}
 				
 				newdata = (guint8 *)g_realloc(newdata, datasize+4+1);
@@ -442,12 +444,9 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 			case QQ_FIELD_STRING:
 			case QQ_FIELD_MULTI:
 			default:
-				utf8_str = purple_request_fields_get_string(fields, field_infos[index].id);
-				if (utf8_str == NULL) {
+				str = purple_request_fields_get_string(fields, field_infos[index].id);
+				if (str == NULL) {
 					str = g_strdup("-");
-				} else {
-					str = utf8_to_qq(utf8_str, QQ_CHARSET_DEFAULT);
-					if (str == NULL) str = g_strdup("-");
 				}
 
 				newdata = (guint8 *)g_realloc(newdata, datasize+strlen(str));
@@ -457,8 +456,7 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 
 				datasize += strlen(str)+4;
 				bytes += size;
-				g_free(utf8_str);
-				g_free(str);
+				g_free(str);;
 				break;
 		}
 	}
@@ -471,7 +469,7 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 static void field_request_new(PurpleRequestFieldGroup *group, gint index, guint8 *data)
 {
 	PurpleRequestField *field;
-	gchar *utf8_value;
+	gchar *value;
 	guint choice_num;
 	gint i;
 	guint8 * info;
@@ -508,32 +506,33 @@ static void field_request_new(PurpleRequestFieldGroup *group, gint index, guint8
 			purple_request_field_group_add_field(group, field);
 			break;
 		case QQ_FIELD_NUM:
-			utf8_value = g_strdup_printf("%d", (guint8)*info);
-			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), utf8_value, FALSE);
+			value = g_strdup_printf("%d", (guint8)*info);
+			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), value, FALSE);
 			purple_request_field_group_add_field(group, field);
-			g_free(utf8_value);
+			g_free(value);
 			break;
 		case QQ_FIELD_TIME:
 			g_date_set_time_t (&g_date, g_ntohl((guint)*info));
-			utf8_value = g_new0(gchar, 16);
-			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), utf8_value, FALSE);
+			value = g_new0(gchar, 16);
+			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), value, FALSE);
 			purple_request_field_group_add_field(group, field);
-			g_free(utf8_value);
+			g_free(value);
 			break;
 		case QQ_FIELD_STRING:
 		case QQ_FIELD_MULTI:
 		case QQ_FIELD_LABEL:
 		default:
-			utf8_value = qq_to_utf8((gchar *)info, QQ_CHARSET_DEFAULT);
+			value = (gchar *)g_malloc0(size+1);
+			g_memmove(value, info, size);
 			if (field_infos[index].type == QQ_FIELD_STRING) {
 				field = purple_request_field_string_new(
-					field_infos[index].id, _(field_infos[index].text), utf8_value, FALSE);
+					field_infos[index].id, _(field_infos[index].text), value, FALSE);
 			} else {
 				field = purple_request_field_string_new(
-					field_infos[index].id, _(field_infos[index].text), utf8_value, TRUE);
+					field_infos[index].id, _(field_infos[index].text), value, TRUE);
 			}
 			purple_request_field_group_add_field(group, field);
-			g_free(utf8_value);
+			g_free(value);
 			break;
 	}
 }
@@ -796,7 +795,7 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 	guint16 size;
 	guint8 *info;
 	gchar *who;
-	gchar *alias_utf8;
+	gchar *nickname;
 	guint16 face;
 	guint8 age;
 	guint8 gender;
@@ -831,8 +830,9 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 		switch (flag)
 		{
 		case QQ_INFO_NICK:
-			qq_filter_str((gchar *)info);
-			alias_utf8 = qq_to_utf8((gchar *)info, QQ_CHARSET_DEFAULT);
+			nickname = (gchar *)g_malloc0(size+1);
+			g_memmove(nickname, info, size);
+			//qq_filter_str(nickname);
 			break;
 		case QQ_INFO_FACE:
 			face = g_ascii_strtoll((gchar *)info, NULL, 10);
@@ -860,8 +860,8 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 	if (uid == qd->uid) {	/* it is me */
 		purple_debug_info("QQ", "Got my info\n");
 		qd->my_icon = face;
-		if (alias_utf8 != NULL) {
-			purple_account_set_alias(account, alias_utf8);
+		if (nickname != NULL) {
+			purple_account_set_alias(account, nickname);
 		}
 		/* add me to buddy list */
 		buddy = qq_buddy_find_or_new(gc, uid);
@@ -880,9 +880,9 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 		bd->gender = gender;
 		bd->face = face;
 
-		if (alias_utf8 != NULL) {
+		if (nickname != NULL) {
 			if (bd->nickname) g_free(bd->nickname);
-			bd->nickname = g_strdup(alias_utf8);
+			bd->nickname = g_strdup(nickname);
 		}
 		bd->last_update = time(NULL);
 
@@ -893,7 +893,7 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 	}
 
 	g_free(who);
-	g_free(alias_utf8);
+	g_free(nickname);
 	
 	switch (action) {
 		case QQ_BUDDY_INFO_DISPLAY:

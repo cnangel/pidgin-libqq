@@ -38,6 +38,9 @@ typedef struct _qq_buddy_status {
 	guint8 status;
 	guint16 version;
 	guint8 key[QQ_KEY_LENGTH];
+	guint16 unknown3;
+	guint8 ext_flag;
+	guint8 comm_flag;
 } qq_buddy_status;
 
 void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint32 update_class);

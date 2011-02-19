@@ -60,7 +60,7 @@ enum {
 	QQ_CMD_GET_LEVEL = 0x005C,			/* get level for one or more buddies */
 	QQ_CMD_RECV_MSG_SYS = 0x0080,			/* receive a system message */
 	QQ_CMD_BUDDY_CHANGE_STATUS = 0x0081,	/* buddy change status */
-	QQ_CMD_BUDDY_ALIAS = 0x003E,    /* the message about buddy memo */
+	QQ_CMD_BUDDY_MEMO = 0x003E,    /* the message about buddy memo */
 
     /* for QQ2010*/
 	QQ_CMD_TOUCH_SERVER = 0x0091,					/* touch login server */

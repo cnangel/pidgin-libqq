@@ -32,17 +32,15 @@
 #define QQ_BUDDY_MEMO_REQUEST_SUCCESS 0x00
 
 /* clan command for memo */
-enum
-{ 
-	QQ_BUDDY_MEMO_MODIFY = 0x01,	/* upload memo */
-	QQ_BUDDY_MEMO_REMOVE,		/* remove memo */
-	QQ_BUDDY_MEMO_GET		/* get memo */
-};
+#define 	QQ_BUDDY_MEMO_MODIFY 0x01		/* upload memo */
+#define 	QQ_BUDDY_MEMO_REMOVE	0x02	/* remove memo */
+#define 	QQ_BUDDY_MEMO_GET 0x67		/* get memo */
+#define  QQ_BUDDY_MEMO_ALIAS 0x68		/* get buddies alias list */
 
 
 void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len, guint32 update_class, guint32 action);
 
-void qq_request_buddy_memo(PurpleConnection *gc, guint32 bd_uid, guint32 update_class, guint32 action);
+void qq_request_buddy_memo(PurpleConnection *gc, guint32 bd_uid, guint32 update_class, guint8 action);
 
 #endif
 

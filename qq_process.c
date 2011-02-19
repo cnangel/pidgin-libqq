@@ -47,7 +47,7 @@
 #include "qq_network.h"
 #include "qq_trans.h"
 #include "utils.h"
-#include "buddy_alias.h"
+#include "buddy_memo.h"
 
 enum {
 	QQ_ROOM_CMD_REPLY_OK = 0x00,
@@ -650,7 +650,10 @@ void qq_update_all(PurpleConnection *gc, guint16 cmd)
 			qq_request_get_buddies_list(gc, 0, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
-				qq_request_get_buddies_level(gc, QQ_CMD_CLASS_UPDATE_ALL);
+			qq_request_buddy_memo(gc, 0, QQ_CMD_CLASS_UPDATE_ALL, QQ_BUDDY_MEMO_ALIAS);	
+			break;
+		case QQ_CMD_BUDDY_MEMO:
+			qq_request_get_buddies_level(gc, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_LEVEL:
 			qq_request_get_buddies_online(gc, 0, QQ_CMD_CLASS_UPDATE_ALL);
@@ -1114,9 +1117,9 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 		case QQ_CMD_BUDDY_CHECK_CODE:
 			qq_process_buddy_check_code(gc, data, data_len);
 			break;
-		case QQ_CMD_BUDDY_ALIAS:
+		case QQ_CMD_BUDDY_MEMO:
 			purple_debug_info("QQ", "Receive memo from server!\n");
-			qq_process_get_buddy_alias(gc, data, data_len, update_class, ship32);
+			qq_process_get_buddy_memo(gc, data, data_len, update_class, ship32);
 			return;
 			purple_debug_info("QQ", "Should NOT be here...\n");
 			break;
