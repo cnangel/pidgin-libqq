@@ -1148,11 +1148,15 @@ void qq_clean_buddy_list( PurpleConnection *gc )
 {
 	PurpleBuddy * bd;
 	GSList * list;
-	g_return_if_fail(gc == NULL || gc->account == NULL);
+	g_return_if_fail(gc != NULL || gc->account != NULL);
 
 	for ( list=purple_find_buddies(gc->account, NULL); list; list=list->next )
 	{
 		bd = (PurpleBuddy *)list->data;
+		if (bd->account)
+		{
+		}
+		
 		qq_buddy_free(bd);
 	}
 	
