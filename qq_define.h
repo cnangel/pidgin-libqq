@@ -48,8 +48,9 @@ enum {
 	QQ_CMD_ADD_BUDDY_AUTH = 0x000b,			/* buddy authentication */
 	QQ_CMD_CHANGE_STATUS = 0x000d,		/* change my online status */
 	QQ_CMD_ACK_SYS_MSG = 0x0012,			/* ack system message */
-	QQ_CMD_SEND_IM = 0x0016,			/* send message */
+	QQ_CMD_SEND_IM = 0x00CD,			/* send message */
 	QQ_CMD_RECV_IM = 0x0017,			/* receive message */
+	QQ_CMD_RECV_IM_CE = 0x00CE,
 	QQ_CMD_REMOVE_ME = 0x001c,			/* remove self */
 	QQ_CMD_REQUEST_KEY = 0x001d,			/* request key for file transfer */
 	QQ_CMD_CELL_PHONE_1 = 0x0021,			/* cell phone 1 */
@@ -58,7 +59,7 @@ enum {
 	QQ_CMD_CELL_PHONE_2 = 0x0029,			/* cell phone 2 */
 	QQ_CMD_ROOM = 0x0031,			/* room command */
 	QQ_CMD_GET_LEVEL = 0x005C,			/* get level for one or more buddies */
-	QQ_CMD_RECV_MSG_SYS = 0x0080,			/* receive a system message */
+	QQ_CMD_RECV_NOTIFY = 0x0080,			/* receive a system message */
 	QQ_CMD_BUDDY_CHANGE_STATUS = 0x0081,	/* buddy change status */
 	QQ_CMD_BUDDY_MEMO = 0x003E,    /* the message about buddy memo */
 

@@ -350,7 +350,7 @@ void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len
 
 			for (index = 0; index < QQ_MEMO_SIZE; index++) {
 
-				bytes += qq_get_vstr(&segments[index], NULL, data+bytes);
+				bytes += qq_get_vstr(&segments[index], NULL, sizeof(guint8), data+bytes);
 				/*
 			   purple_debug_info("QQ", "bytes:%d, seg:%s\n", bytes, segments[index]);
 				  */
@@ -363,7 +363,7 @@ void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len
 			memo_modify_dialogue(gc, rcv_uid, segments, action);
 			g_free(segments);
 			break;
-		case QQ_MEMO_ALIAS:
+		case QQ_BUDDY_MEMO_ALIAS:
 			bytes += qq_get8(&is_success, data+bytes);
 			purple_debug_info("QQ", "is_success=0x%02X\n", is_success);
 
@@ -371,7 +371,7 @@ void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len
 			{
 				bytes += qq_get32(&rcv_uid, data+bytes);
 				purple_debug_info("QQ", "rcv_uid=%u\n", rcv_uid);
-				bytes += qq_get_vstr(&alias, NULL, data+bytes);
+				bytes += qq_get_vstr(&alias, NULL, sizeof(guint8),data+bytes);
 				update_buddy_alias(gc, rcv_uid, alias);
 			}
 			break;

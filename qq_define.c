@@ -157,6 +157,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_SEND_IM";
 	case QQ_CMD_RECV_IM:
 		return "CMD_RECV_IM";
+	case QQ_CMD_RECV_IM_CE:
+		return "CMD_RECV_IM_CE";
 	case QQ_CMD_REMOVE_ME:
 		return "CMD_REMOVE_ME";
 	case QQ_CMD_LOGIN:
@@ -179,7 +181,7 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_ROOM";
 	case QQ_CMD_GET_LEVEL:
 		return "CMD_GET_LEVEL";
-	case QQ_CMD_RECV_MSG_SYS:
+	case QQ_CMD_RECV_NOTIFY:
 		return "CMD_RECV_MSG_SYS";
 	case QQ_CMD_BUDDY_CHANGE_STATUS:
 		return "CMD_BUDDY_CHANGE_STATUS";

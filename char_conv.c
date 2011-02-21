@@ -37,7 +37,7 @@
 
 /* convert a string from from_charset to to_charset, using g_convert */
 /* Warning: do not return NULL */
-static gchar *do_convert(const gchar *str, gssize len, guint8 *out_len, const gchar *to_charset, const gchar *from_charset)
+static gchar *do_convert(const gchar *str, gssize len, gsize *out_len, const gchar *to_charset, const gchar *from_charset)
 {
 	GError *error = NULL;
 	gchar *ret;
@@ -64,37 +64,45 @@ static gchar *do_convert(const gchar *str, gssize len, guint8 *out_len, const gc
 /*
  * Changed!!!! Check Every Invoke!!!!
  * take the input as a pascal string and return a converted c-string in UTF-8
+ * len_size is the size of length bytes in pascal string
+ * if from_charset == NULL, will not do the conversion
  * returns the number of bytes read, return -1 if fatal error
  * the converted UTF-8 will be saved in ret
  * Return: *ret != NULL
  */
-gint qq_get_vstr(gchar **ret, const gchar *from_charset, guint8 *data)
+gint qq_get_vstr( gchar **ret, const gchar *from_charset, gsize len_size, guint8 *data )
 {
-	guint8 len;
+	guint32 len = 0;
+	guint32 tmp = 0;
+	gint i;
 
 	g_return_val_if_fail(data != NULL, -1);
 
-	len = data[0];
-	if (len == 0) {
+	for (i=len_size-1; i>=0; --i) {
+		tmp = *((guint8 *)(data+i));
+		tmp <<= (len_size-i-1) * 8;
+		len ^= tmp;
+	}
+
+	if (len) {
+		if (from_charset)
+		{
+			*ret = do_convert((gchar *) (data + len_size), len, &len, UTF8, from_charset);
+		} else {
+			*ret = (gchar *)g_malloc0(len+1);
+			g_memmove(*ret, data+len_size, len);
+		}
+	} else {	
 		*ret = g_strdup("");
 		return 1;
 	}
-	if (from_charset == NULL)
-	{
-		*ret = (gchar *)g_malloc0(len+1);
-		g_memmove(*ret, data+1, len);
-		len;
-	} else {
-		*ret = do_convert((gchar *) (data + 1), len, &len, UTF8, from_charset);
-	}
-
-	return len + 1;
+	return len + len_size;
 }
 
 gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, const gchar *to_charset)
 {
 	gchar *str;
-	guint8 len;
+	guint32 len;
 
 	if (str_utf8 == NULL || str_utf8[0] == '\0') {
 		buf[0] = 0;

@@ -412,7 +412,7 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 
 	g_return_if_fail(ext_id > 0 && member_id > 0);
 
-	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	purple_debug_info("QQ", "%u requested to join room, ext id %u\n", member_id, ext_id);
 
@@ -472,7 +472,7 @@ void qq_process_room_buddy_rejected(guint8 *data, gint len, guint32 id, PurpleCo
 
 	g_return_if_fail(ext_id > 0 && admin_uid > 0);
 
-	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	msg = g_strdup_printf
 		(_("Failed to join Qun %u, operated by admin %u"), ext_id, admin_uid);
@@ -509,7 +509,7 @@ void qq_process_room_buddy_approved(guint8 *data, gint len, guint32 id, PurpleCo
 
 	g_return_if_fail(ext_id > 0 && admin_uid > 0);
 	/* it is also a "нч" here, so do not display */
-	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	qq_room_find_or_new(gc, id, ext_id);
 	rmd = qq_room_data_find(gc, id);

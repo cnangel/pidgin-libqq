@@ -466,12 +466,12 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 	g_free(info_request);
 }
 
-static void field_request_new(PurpleRequestFieldGroup *group, gint index, guint8 *data)
+static void field_request_new(PurpleRequestFieldGroup *group, guint index, guint8 *data)
 {
 	PurpleRequestField *field;
 	gchar *value;
 	guint choice_num;
-	gint i;
+	guint i;
 	guint8 * info;
 	guint bytes=0;
 	guint16 size;
@@ -543,7 +543,7 @@ static void info_modify_dialogue(PurpleConnection *gc, guint8 *data, int iclass)
 	PurpleRequestFields *fields;
 	modify_info_request *info_request;
 	gchar *utf8_title, *utf8_prim;
-	int index;
+	guint index;
 	guint8 bytes;
 	guint uid;
 	guint16 num;

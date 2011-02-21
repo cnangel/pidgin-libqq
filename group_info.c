@@ -224,10 +224,10 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	}
 	/* qq_show_packet("Room Info", data + bytes, data_len - bytes); */
 	/* strlen + <str content> */
-	bytes += qq_get_vstr(&(rmd->title_utf8), QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&(rmd->title_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 	bytes += qq_get16(&unknown, data + bytes);	/* 0x0000 */
-	bytes += qq_get_vstr(&notice, QQ_CHARSET_DEFAULT, data + bytes);
-	bytes += qq_get_vstr(&(rmd->desc_utf8), QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&notice, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&(rmd->desc_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	purple_debug_info("QQ", "room [%s] notice [%s] desc [%s] unknow 0x%04X\n",
 			rmd->title_utf8, notice, rmd->desc_utf8, unknown);
@@ -363,7 +363,7 @@ void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *g
 		bytes += qq_get16(&(bd->face), data + bytes);
 		bytes += qq_get8(&(bd->age), data + bytes);
 		bytes += qq_get8(&(bd->gender), data + bytes);
-		bytes += qq_get_vstr(&nick, QQ_CHARSET_DEFAULT, data + bytes);
+		bytes += qq_get_vstr(&nick, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 		bytes += qq_get16(&unknown, data + bytes);
 		bytes += qq_get8(&(bd->ext_flag), data + bytes);
 		bytes += qq_get8(&(bd->comm_flag), data + bytes);

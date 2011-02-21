@@ -51,7 +51,7 @@ enum {
 
 enum
 {
-	QQ_NORMAL_IM_TEXT = 0x000b,
+	QQ_NORMAL_IM_TEXT = 0x000B,
 	QQ_NORMAL_IM_FILE_REQUEST_TCP = 0x0001,
 	QQ_NORMAL_IM_FILE_APPROVE_TCP = 0x0003,
 	QQ_NORMAL_IM_FILE_REJECT_TCP = 0x0005,
@@ -725,7 +725,7 @@ void qq_got_message(PurpleConnection *gc, const gchar *msg)
 }
 
 /* process received normal text IM */
-static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_header *im_header)
+static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_header *im_header, guint16 msg_type)
 {
 	guint16 purple_msg_type;
 	gchar *who;
@@ -734,6 +734,8 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	qq_buddy_data *bd;
 	gint bytes, tail_len;
 	qq_im_format *fmt = NULL;
+	gchar * font_name;
+	guint8 type;
 
 	struct {
 		/* now comes the part for text only */
@@ -744,9 +746,9 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 		guint8 has_font_attr;
 		guint8 fragment_count;
 		guint8 fragment_index;
-		guint8 msg_id;
+		guint16 msg_id;
 		guint8 unknown2;
-		guint8 msg_type;
+		guint8 auto_reply;
 		gchar *msg;		/* no fixed length, ends with 0x00 */
 	} im_text;
 
@@ -764,22 +766,66 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	bytes += qq_get8(&(im_text.has_font_attr), data + bytes);
 	bytes += qq_get8(&(im_text.fragment_count), data + bytes);
 	bytes += qq_get8(&(im_text.fragment_index), data + bytes);
-	bytes += qq_get8(&(im_text.msg_id), data + bytes);
-	bytes += 1; 	/* skip 0x00 */
-	bytes += qq_get8(&(im_text.msg_type), data + bytes);
+	bytes += qq_get16(&(im_text.msg_id), data + bytes);
+	bytes += qq_get8(&(im_text.auto_reply), data + bytes);
 	purple_debug_info("QQ", "IM Seq %u, id %04X, fragment %d-%d, type %d, %s\n",
 			im_text.msg_seq, im_text.msg_id,
 			im_text.fragment_count, im_text.fragment_index,
-			im_text.msg_type,
+			im_text.auto_reply,
 			im_text.has_font_attr ? "exist font atrr" : "");
-
-	if (im_text.has_font_attr) {
-		fmt = qq_im_fmt_new();
-		tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
-		im_text.msg = g_strndup((gchar *)(data + bytes), len - tail_len);
-	} else	{
-		im_text.msg = g_strndup((gchar *)(data + bytes), len - bytes);
+	if (msg_type == QQ_MSG_BUDDY_A6 || msg_type == QQ_MSG_BUDDY_78)
+	{
+		bytes += 8;		//4d 53 47 00 00 00 00 00		MSG.....
+		bytes += qq_get32(&(im_text.send_time), data + bytes);
+		bytes += 12;		//FONT SET , TOFIX!
+		bytes += qq_get_vstr(&font_name, NULL, sizeof(guint16), data+bytes);
+		bytes += 2;
+		while (bytes < len) {
+			bytes += qq_get8(&type, data+bytes);
+			bytes += 3;		//size(16) of type+msg_content and reduplicated type(8)?
+			switch (type) {
+			case 0x01:	//text
+				bytes += qq_get_vstr(&im_text.msg, NULL, sizeof(guint16), data+bytes);
+				break;
+				/*
+			case 02:	//emoticon
+				len_str = get_word( buf );
+				buf->pos += len_str;	//
+				get_byte( buf );	//FF
+				len_str = get_word( buf );
+				if( len_str == 2 ){
+					get_byte( buf );
+					if( outlen-i > 15 )
+						i += sprintf( &tmp[i], "[face:%d]", get_byte( buf ) );
+				}else{ //unknown situation
+					buf->pos += len_str;
+				}
+				break;
+			case 03:	//image
+				len_str = get_word( buf );
+				buf->pos += len_str;	//
+				do{
+					ch = get_byte( buf );	//ff
+				}while( ch!=0xff && buf->pos<buf->len );
+				token tok_pic;
+				get_token( buf, &tok_pic );
+				if( outlen-i > 10 )
+					i += sprintf( &tmp[i], "[image]" );
+					*/
+			}
+		}
+	} else {
+		if (im_text.has_font_attr) {
+			fmt = qq_im_fmt_new();
+			tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
+			im_text.msg = g_strndup((gchar *)(data + bytes), len - tail_len);
+		} else	{
+			im_text.msg = g_strndup((gchar *)(data + bytes), len - bytes);
+		}
 	}
+	
+
+
 	/* qq_show_packet("IM text", (guint8 *)im_text.msg , strlen(im_text.msg) ); */
 
 	who = uid_to_purple_name(im_header->uid_from);
@@ -795,7 +841,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 		qq_update_buddy_icon(gc->account, who, bd->face);
 	}
 
-	purple_msg_type = (im_text.msg_type == QQ_IM_AUTO_REPLY)
+	purple_msg_type = (im_text.auto_reply == QQ_IM_AUTO_REPLY)
 		? PURPLE_MESSAGE_AUTO_RESP : 0;
 
 	msg_smiley = qq_emoticon_to_purple(im_text.msg);
@@ -820,105 +866,8 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	g_free(im_text.msg);
 }
 
-/* process received extended (2007) text IM */
-static void process_extend_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_header *im_header)
-{
-	guint16 purple_msg_type;
-	gchar *who;
-	gchar *msg_smiley, *msg_fmt, *msg_utf8;
-	PurpleBuddy *buddy;
-	qq_buddy_data *bd;
-	gint bytes, tail_len;
-	qq_im_format *fmt = NULL;
-
-	struct {
-		/* now comes the part for text only */
-		guint16 msg_seq;
-		guint32 send_time;
-		guint16 sender_icon;
-		guint32 has_font_attr;
-		guint8 unknown1[8];
-		guint8 fragment_count;
-		guint8 fragment_index;
-		guint8 msg_id;
-		guint8 unknown2;
-		guint8 msg_type;
-		gchar *msg;		/* no fixed length, ends with 0x00 */
-		guint8 fromMobileQQ;
-	} im_text;
-
-	g_return_if_fail(data != NULL && len > 0);
-	g_return_if_fail(im_header != NULL);
-
-	memset(&im_text, 0, sizeof(im_text));
-
-	/* qq_show_packet("Extend IM text", data, len); */
-	bytes = 0;
-	bytes += qq_get16(&(im_text.msg_seq), data + bytes);
-	bytes += qq_get32(&(im_text.send_time), data + bytes);
-	bytes += qq_get16(&(im_text.sender_icon), data + bytes);
-	bytes += qq_get32(&(im_text.has_font_attr), data + bytes);
-	bytes += qq_getdata(im_text.unknown1, sizeof(im_text.unknown1), data + bytes);
-	bytes += qq_get8(&(im_text.fragment_count), data + bytes);
-	bytes += qq_get8(&(im_text.fragment_index), data + bytes);
-	bytes += qq_get8(&(im_text.msg_id), data + bytes);
-	bytes += 1; 	/* skip 0x00 */
-	bytes += qq_get8(&(im_text.msg_type), data + bytes);
-	purple_debug_info("QQ", "IM Seq %u, id %04X, fragment %d-%d, type %d, %s\n",
-			im_text.msg_seq, im_text.msg_id,
-			im_text.fragment_count, im_text.fragment_index,
-			im_text.msg_type,
-			im_text.has_font_attr ? "exist font atrr" : "");
-
-	if (im_text.has_font_attr) {
-		fmt = qq_im_fmt_new();
-		tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
-		im_text.msg = g_strndup((gchar *)(data + bytes), len - tail_len);
-	} else	{
-		im_text.msg = g_strndup((gchar *)(data + bytes), len - bytes);
-	}
-	/* qq_show_packet("IM text", (guint8 *)im_text.msg , strlen(im_text.msg)); */
-
-	if(im_text.fragment_count == 0) 	im_text.fragment_count = 1;
-
-	who = uid_to_purple_name(im_header->uid_from);
-	buddy = purple_find_buddy(gc->account, who);
-	if (buddy == NULL) {
-		/* create no-auth buddy */
-		buddy = qq_buddy_new(gc, im_header->uid_from);
-	}
-	bd = (buddy == NULL) ? NULL : purple_buddy_get_protocol_data(buddy);
-	if (bd != NULL) {
-		bd->client_tag = im_header->version_from;
-		bd->face = im_text.sender_icon;
-		qq_update_buddy_icon(gc->account, who, bd->face);
-	}
-
-	purple_msg_type = 0;
-
-	msg_smiley = qq_emoticon_to_purple(im_text.msg);
-	if (fmt != NULL) {
-		msg_fmt = qq_im_fmt_to_purple(fmt, msg_smiley);
-		msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
-		g_free(msg_fmt);
-		qq_im_fmt_free(fmt);
-	} else {
-		msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
-	}
-	g_free(msg_smiley);
-
-	/* send encoded to purple, note that we use im_text.send_time,
-	 * not the time we receive the message
-	 * as it may have been delayed when I am not online. */
-	serv_got_im(gc, who, msg_utf8, purple_msg_type, (time_t) im_text.send_time);
-
-	g_free(msg_utf8);
-	g_free(who);
-	g_free(im_text.msg);
-}
-
 /* it is a normal IM, maybe text or video request */
-void qq_process_im(PurpleConnection *gc, guint8 *data, gint len)
+void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_type )
 {
 	gint bytes = 0;
 	qq_im_header im_header;
@@ -942,7 +891,7 @@ void qq_process_im(PurpleConnection *gc, guint8 *data, gint len)
 				purple_debug_warning("QQ", "Received normal IM text is empty\n");
 				return;
 			}
-			process_im_text(gc, data + bytes, len - bytes, &im_header);
+			process_im_text(gc, data + bytes, len - bytes, &im_header, msg_type);
 			break;
 		case QQ_NORMAL_IM_FILE_REJECT_UDP:
 			qq_process_recv_file_reject(data + bytes, len - bytes, im_header.uid_from, gc);
@@ -978,72 +927,19 @@ void qq_process_im(PurpleConnection *gc, guint8 *data, gint len)
 	}
 }
 
-/* it is a extended IM, maybe text or video request */
-void qq_process_extend_im(PurpleConnection *gc, guint8 *data, gint len)
-{
-	gint bytes;
-	qq_im_header im_header;
-
-	g_return_if_fail (data != NULL && len > 0);
-
-	bytes = get_im_header(&im_header, data, len);
-	if (bytes < 0) {
-		purple_debug_error("QQ", "Fail read im header, len %d\n", len);
-		qq_show_packet ("IM Header", data, len);
-		return;
-	}
-	purple_debug_info("QQ",
-			"Got Extend IM to %u, type: %02X from: %u ver: %s (%04X)\n",
-			im_header.uid_to, im_header.im_type, im_header.uid_from,
-			qq_get_ver_desc(im_header.version_from), im_header.version_from);
-
-	switch (im_header.im_type) {
-		case QQ_NORMAL_IM_TEXT:
-			process_extend_im_text(gc, data + bytes, len - bytes, &im_header);
-			break;
-		case QQ_NORMAL_IM_FILE_REJECT_UDP:
-			qq_process_recv_file_reject (data + bytes, len - bytes, im_header.uid_from, gc);
-			break;
-		case QQ_NORMAL_IM_FILE_APPROVE_UDP:
-			qq_process_recv_file_accept (data + bytes, len - bytes, im_header.uid_from, gc);
-			break;
-		case QQ_NORMAL_IM_FILE_REQUEST_UDP:
-			qq_process_recv_file_request (data + bytes, len - bytes, im_header.uid_from, gc);
-			break;
-		case QQ_NORMAL_IM_FILE_CANCEL:
-			qq_process_recv_file_cancel (data + bytes, len - bytes, im_header.uid_from, gc);
-			break;
-		case QQ_NORMAL_IM_FILE_NOTIFY:
-			qq_process_recv_file_notify (data + bytes, len - bytes, im_header.uid_from, gc);
-			break;
-		case QQ_NORMAL_IM_FILE_REQUEST_TCP:
-			/* Check ReceivedFileIM::parseContents in eva*/
-			/* some client use this function for detect invisable buddy*/
-		case QQ_NORMAL_IM_FILE_APPROVE_TCP:
-		case QQ_NORMAL_IM_FILE_REJECT_TCP:
-		case QQ_NORMAL_IM_FILE_PASV:
-		case QQ_NORMAL_IM_FILE_EX_REQUEST_UDP:
-		case QQ_NORMAL_IM_FILE_EX_REQUEST_ACCEPT:
-		case QQ_NORMAL_IM_FILE_EX_REQUEST_CANCEL:
-		case QQ_NORMAL_IM_FILE_EX_NOTIFY_IP:
-			qq_show_packet ("Not support", data, len);
-			break;
-		default:
-			/* a simple process here, maybe more later */
-			qq_show_packet ("Unknow", data + bytes, len - bytes);
-			break;
-	}
-}
-
 /* send an IM to uid_to */
-static void request_send_im(PurpleConnection *gc, guint32 uid_to, gint type,
-	qq_im_format *fmt, gchar *msg, guint8 id, guint8 frag_count, guint8 frag_index)
+static void request_send_im(PurpleConnection *gc, guint32 uid_to, gint type, qq_im_format *fmt, gchar *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
 {
 	qq_data *qd;
-	guint8 raw_data[MAX_PACKET_SIZE - 16];
+	guint8 raw_data[1024];
 	gint bytes;
 	time_t now;
-
+	static guint8 fill[] = {
+		0x00, 0x00, 0x00, 0x0D, 
+		0x00, 0x01, 0x00, 0x04,
+		0x00, 0x00, 0x00, 0x00, 
+		0x00, 0x03, 0x00, 0x01, 0x01
+	};
 	qd = (qq_data *) gc->proto_data;
 
 	/* purple_debug_info("QQ", "Send IM %d-%d\n", frag_count, frag_index); */
@@ -1052,42 +948,60 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, gint type,
 	bytes += qq_put32(raw_data + bytes, qd->uid);
 	/* 004-007: sender uid */
 	bytes += qq_put32(raw_data + bytes, uid_to);
-	/* 008-009: sender client version */
+	/* 008-024: Unknown */
+	bytes += qq_putdata(raw_data + bytes, fill, sizeof(fill));
+	/* 025-026: sender client version */
 	bytes += qq_put16(raw_data + bytes, qd->client_tag);
-	/* 010-013: receiver uid */
+	/* 027-030: receiver uid */
 	bytes += qq_put32(raw_data + bytes, qd->uid);
-	/* 014-017: sender uid */
+	/* 031-034: sender uid */
 	bytes += qq_put32(raw_data + bytes, uid_to);
-	/* 018-033: md5 of (uid+session_key) */
+	/* 035-040: md5 of (uid+session_key) */
 	bytes += qq_putdata(raw_data + bytes, qd->session_md5, 16);
-	/* 034-035: message type */
+	/* 041-042: message type */
 	bytes += qq_put16(raw_data + bytes, QQ_NORMAL_IM_TEXT);
-	/* 036-037: sequence number */
+	/* 042-043: sequence number */
 	bytes += qq_put16(raw_data + bytes, qd->send_seq);
-	/* 038-041: send time */
+	/* 044-047: send time */
 	now = time(NULL);
 	bytes += qq_put32(raw_data + bytes, (guint32) now);
-	/* 042-043: sender icon */
+	/* 048-049: sender icon */
 	bytes += qq_put16(raw_data + bytes, qd->my_icon);
-	/* 044-046: always 0x00 */
-	bytes += qq_put16(raw_data + bytes, 0x0000);
-	bytes += qq_put8(raw_data + bytes, 0x00);
-	/* 047-047: always use font attr */
+	/* 050-052: 00 00 00 Unknown */
+	bytes += qq_put32(raw_data + bytes ,0);
+	bytes --;
+	/* 050-050: have_font_attribute 0x01 */
 	bytes += qq_put8(raw_data + bytes, 0x01);
-	/* 048-051: always 0x00 */
-	/* Fixme: frag_count, frag_index not working now */
+	/* 051-051: slice count */
 	bytes += qq_put8(raw_data + bytes, frag_count);
+	/* 052-052: slice index */
 	bytes += qq_put8(raw_data + bytes, frag_index);
-	bytes += qq_put8(raw_data + bytes, id);
-	bytes += qq_put8(raw_data + bytes, 0);
+	/* 053-053: msg_id */
+	bytes += qq_put16(raw_data + bytes, msg_id);
 	/* 052-052: text message type (normal/auto-reply) */
 	bytes += qq_put8(raw_data + bytes, type);
-	/* 053-   : msg ends with 0x00 */
+	/* "MSG" */
+	bytes += qq_put32(raw_data + bytes, 0x4D534700);
+	bytes += qq_put32(raw_data + bytes, 0x00000000);
+	bytes += qq_put32(raw_data + bytes, (guint32) now);
+	/* Likely a random int */
+	srand((unsigned)now);
+	bytes += qq_put32(raw_data + bytes, rand());
+	/* TOFIX! FONT SET */
+	bytes += qq_put32(raw_data + bytes, 0x00000000);
+	bytes += qq_put32(raw_data + bytes, 0x08008600);
+	bytes += qq_put16(raw_data + bytes, 0x0006);
+	/* "Tahoma" */
+	bytes += qq_put32(raw_data + bytes, 0x5461686F);
+	bytes += qq_put32(raw_data + bytes, 0x6D610000);
+
+	bytes += qq_put8(raw_data + bytes, 0x01);
+	bytes += qq_put16(raw_data + bytes, strlen(msg)+3);
+	bytes += qq_put8(raw_data + bytes, 0x01);
+	/* msg_len TOFIX! convert MSG to pascal str */
+	bytes += qq_put16(raw_data + bytes, strlen(msg));
+	/* 053-   : msg does not end with 0x00 */
 	bytes += qq_putdata(raw_data + bytes, (guint8 *)msg, strlen(msg));
-	if (frag_count == frag_index + 1) {
-		bytes += qq_put8(raw_data + bytes, 0x20);	/* add extra SPACE */
-	}
-	bytes += qq_put_im_tail(raw_data + bytes, fmt);
 
 	/* qq_show_packet("QQ_CMD_SEND_IM", raw_data, bytes); */
 	qq_send_cmd(gc, QQ_CMD_SEND_IM, raw_data, bytes);
@@ -1250,7 +1164,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	const gchar *start_invalid;
 	gboolean is_smiley_none;
 	guint8 frag_count, frag_index;
-	guint8 msg_id;
+	guint16 msg_id;
 
 	g_return_val_if_fail(NULL != gc && NULL != gc->proto_data, -1);
 	g_return_val_if_fail(who != NULL && what != NULL, -1);
@@ -1296,7 +1210,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	}
 
 	qd->send_im_id++;
-	msg_id = (guint8)(qd->send_im_id && 0xFF);
+	msg_id = qd->send_im_id && 0xFFFF;
 	fmt = qq_im_fmt_new_by_purple(what);
 	frag_count = g_slist_length(segments);
 	frag_index = 0;
@@ -1305,7 +1219,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 		request_send_im(gc, uid_to, type, fmt, (gchar *)it->data,
 			msg_id, frag_count, frag_index);
 		*/
-		request_send_im(gc, uid_to, type, fmt, (gchar *)it->data, 0, 0, 0);
+		request_send_im(gc, uid_to, type, fmt, (gchar *)it->data, msg_id, frag_count, frag_index);
 		g_free(it->data);
 		frag_index++;
 	}

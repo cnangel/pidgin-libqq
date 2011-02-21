@@ -401,10 +401,10 @@ void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guint3
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get32(&(rmd.category), data + bytes);
-	bytes += qq_get_vstr(&(rmd.title_utf8), QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&(rmd.title_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get8(&(rmd.auth_type), data + bytes);
-	bytes += qq_get_vstr(&(rmd.desc_utf8), QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&(rmd.desc_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 	/* end of one qq_group */
 	if(bytes != len) {
 		purple_debug_error("QQ",

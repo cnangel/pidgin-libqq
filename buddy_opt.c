@@ -401,8 +401,8 @@ void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guin
 	bytes = 0;
 	bytes += qq_get8(&cmd, data + bytes);
 	if (cmd == QQ_QUESTION_GET) {
-		bytes += qq_get_vstr(&question, QQ_CHARSET_DEFAULT, data + bytes);
-		bytes += qq_get_vstr(&answer, QQ_CHARSET_DEFAULT, data + bytes);
+		bytes += qq_get_vstr(&question, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+		bytes += qq_get_vstr(&answer, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 		purple_debug_info("QQ", "Get buddy adding Q&A:\n%s\n%s\n", question, answer);
 		g_free(question);
 		g_free(answer);
@@ -426,7 +426,7 @@ void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guin
 			purple_debug_warning("QQ", "Failed getting question, reply %d\n", reply);
 			return;
 		}
-		bytes += qq_get_vstr(&question, QQ_CHARSET_DEFAULT, data + bytes);
+		bytes += qq_get_vstr(&question, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 		purple_debug_info("QQ", "Get buddy question:\n%s\n", question);
 		add_buddy_question_input(gc, uid, question);
 		g_free(question);
@@ -1036,7 +1036,7 @@ static void server_buddy_add_request_ex(PurpleConnection *gc, gchar *from, gchar
 	/* qq_show_packet("server_buddy_add_request_ex", data, data_len); */
 
 	bytes = 0;
-	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, data+bytes);
+	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, sizeof(guint8), data+bytes);
 	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
 	server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 
@@ -1098,7 +1098,7 @@ static void server_buddy_added_ex(PurpleConnection *gc, gchar *from, gchar *to,
 	qq_show_packet("server_buddy_added_ex", data, data_len);
 
 	bytes = 0;
-	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, data+bytes);	/* always empty msg */
+	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, sizeof(guint8), data+bytes);	/* always empty msg */
 	purple_debug_info("QQ", "Buddy added msg: %s\n", msg);
 	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
 	server_buddy_check_code(gc, from, data + bytes, data_len - bytes);

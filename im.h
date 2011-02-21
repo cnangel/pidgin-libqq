@@ -29,7 +29,7 @@
 #include "connection.h"
 
 enum {
-	QQ_MSG_TO_BUDDY = 0x0009,
+	QQ_MSG_BUDDY_09 = 0x0009,
 	QQ_MSG_TO_UNKNOWN = 0x000a,
 	QQ_MSG_SMS = 0x0014,	/* not sure */
 	QQ_MSG_NEWS = 0x0018,
@@ -42,10 +42,20 @@ enum {
 	QQ_MSG_CREATE_ROOM = 0x0026,
 	QQ_MSG_TEMP_ROOM_IM = 0x002A,
 	QQ_MSG_ROOM_IM = 0x002B,
-	QQ_MSG_SYS_30 = 0x0030,
-	QQ_MSG_SYS_4C = 0x004C,
-	QQ_MSG_EXTEND = 0x0084,
-	QQ_MSG_EXTEND_85 = 0x0085
+	QQ_MSG_SYS = 0x0030,
+	QQ_MSG_BUDDY_78 = 0x0078,
+	QQ_MSG_BUDDY_84 = 0x0084,
+	QQ_MSG_BUDDY_A6 = 0x00A6,
+	QQ_MSG_BUDDY_85 = 0x0085,
+	/*
+	QQ_MSG_QUN_IM_09 = 0x0052,
+	QQ_MSG_QUN_MEMBER_IM = 0x008C,
+	QQ_MSG_SOMEBODY = 0x008D,
+	QQ_MSG_WRITING = 0x0079,
+	QQ_MSG_BUDDY_09 = 0x0078,	//09 Preview4 Message
+	//09 SP1 Message，TX协议一变再变，说明什么问题？
+	QQ_MSG_UNKNOWN_BUDDY_09 = 0x0031	//09 陌生人
+	*/
 };
 
 typedef struct {
@@ -69,7 +79,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none);
 void qq_got_message(PurpleConnection *gc, const gchar *msg);
 gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *message, PurpleMessageFlags flags);
 
-void qq_process_im(PurpleConnection *gc, guint8 *data, gint len);
+void qq_process_im(PurpleConnection *gc, guint8 *data, gint len, guint16 msg_type);
 void qq_process_extend_im(PurpleConnection *gc, guint8 *data, gint len);
 
 gchar *qq_emoticon_to_purple(gchar *text);

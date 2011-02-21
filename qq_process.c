@@ -101,9 +101,9 @@ static void do_server_news(PurpleConnection *gc, guint8 *data, gint data_len)
 
 	bytes = 4;	/* skip unknown 4 bytes */
 
-	bytes += qq_get_vstr(&title, QQ_CHARSET_DEFAULT, data + bytes);
-	bytes += qq_get_vstr(&brief, QQ_CHARSET_DEFAULT, data + bytes);
-	bytes += qq_get_vstr(&url, QQ_CHARSET_DEFAULT, data + bytes);
+	bytes += qq_get_vstr(&title, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&brief, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&url, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	content = g_strdup_printf(_("Server News:\n%s\n%s\n%s"), title, brief, url);
 
@@ -152,63 +152,27 @@ static void do_got_sms(PurpleConnection *gc, guint8 *data, gint data_len)
 	g_free(mobile);
 }
 
-static void do_msg_sys_30(PurpleConnection *gc, guint8 *data, gint data_len)
+static void do_msg_sys(PurpleConnection *gc, guint8 *data, gint data_len)
 {
-	gint len;
 	guint8 reply;
-	gchar **segments, *msg_utf8;
+	gchar *msg;
 
 	g_return_if_fail(data != NULL && data_len != 0);
 
-	len = data_len;
+	qq_get8(&reply, data+4);
+	qq_get_vstr(&msg, NULL, sizeof(guint8), data+5);
 
-	if (NULL == (segments = split_data(data, len, "\x2f", 2)))
-		return;
-
-	reply = strtol(segments[0], NULL, 10);
-	if (reply == 1)
+	if (reply == 0x01)
 		purple_debug_warning("QQ", "We are kicked out by QQ server\n");
 
-	msg_utf8 = qq_to_utf8(segments[1], QQ_CHARSET_DEFAULT);
-	qq_got_message(gc, msg_utf8);
-}
-
-static void do_msg_sys_4c(PurpleConnection *gc, guint8 *data, gint data_len)
-{
-	gint bytes;
-	gint msg_len;
-	GString *content;
-	gchar *msg = NULL;
-
-	g_return_if_fail(data != NULL && data_len > 0);
-
-	bytes = 6; /* skip 0x(06 00 01 1e 01 1c)*/
-
-	content = g_string_new("");
-	while (bytes < data_len) {
-		msg_len = qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, data + bytes);
-		g_string_append(content, msg);
-		g_string_append(content, "\n");
-		g_free(msg);
-
-		if (msg_len <= 1) {
-			break;
-		}
-		bytes += msg_len;
-	}
-	if (bytes != data_len) {
-		purple_debug_warning("QQ", "Failed to read QQ_MSG_SYS_4C\n");
-		qq_show_packet("do_msg_sys_4c", data, data_len);
-	}
-	qq_got_message(gc, content->str);
-	g_string_free(content, FALSE);
+	qq_got_message(gc, msg);
 }
 
 static const gchar *get_im_type_desc(gint type)
 {
 	switch (type) {
-		case QQ_MSG_TO_BUDDY:
-			return "QQ_MSG_TO_BUDDY";
+		case QQ_MSG_BUDDY_09:
+			return "QQ_MSG_BUDDY_09";
 		case QQ_MSG_TO_UNKNOWN:
 			return "QQ_MSG_TO_UNKNOWN";
 		case QQ_MSG_ROOM_IM_UNKNOWN:
@@ -221,10 +185,8 @@ static const gchar *get_im_type_desc(gint type)
 			return "QQ_MSG_APPLY_ADD_TO_ROOM";
 		case QQ_MSG_CREATE_ROOM:
 			return "QQ_MSG_CREATE_ROOM";
-		case QQ_MSG_SYS_30:
-			return "QQ_MSG_SYS_30";
-		case QQ_MSG_SYS_4C:
-			return "QQ_MSG_SYS_4C";
+		case QQ_MSG_SYS:
+			return "QQ_MSG_SYS";
 		case QQ_MSG_APPROVE_APPLY_ADD_TO_ROOM:
 			return "QQ_MSG_APPROVE_APPLY_ADD_TO_ROOM";
 		case QQ_MSG_REJCT_APPLY_ADD_TO_ROOM:
@@ -237,22 +199,23 @@ static const gchar *get_im_type_desc(gint type)
 			return "QQ_MSG_NEWS";
 		case QQ_MSG_SMS:
 			return "QQ_MSG_SMS";
-		case QQ_MSG_EXTEND:
-			return "QQ_MSG_EXTEND";
-		case QQ_MSG_EXTEND_85:
-			return "QQ_MSG_EXTEND_85";
+		case QQ_MSG_BUDDY_84:
+			return "QQ_MSG_BUDDY_84";
+		case QQ_MSG_BUDDY_85:
+			return "QQ_MSG_BUDDY_85";
 		default:
 			return "QQ_MSG_UNKNOWN";
 	}
 }
 
 /* I receive a message, mainly it is text msg,
- * but we need to proess other types (group etc) */
+ * but we need to process other types (group etc) */
 static void process_private_msg(guint8 *data, gint data_len, guint16 seq, PurpleConnection *gc)
 {
 	qq_data *qd;
 	gint bytes;
-
+	guint16 len;
+	guint8 tmp8;
 	struct {
 		guint32 uid_from;
 		guint32 uid_to;
@@ -303,70 +266,78 @@ static void process_private_msg(guint8 *data, gint data_len, guint16 seq, Purple
 	}
 
 	switch (header.msg_type) {
-		case QQ_MSG_NEWS:
-			do_server_news(gc, data + bytes, data_len - bytes);
-			break;
-		case QQ_MSG_SMS:
-			do_got_sms(gc, data + bytes, data_len - bytes);
-			break;
-		case QQ_MSG_EXTEND:
-		case QQ_MSG_EXTEND_85:
-			purple_debug_info("QQ", "MSG from buddy [%d]\n", header.uid_from);
-			qq_process_extend_im(gc, data + bytes, data_len - bytes);
-			break;
-		case QQ_MSG_TO_UNKNOWN:
-		case QQ_MSG_TO_BUDDY:
-			purple_debug_info("QQ", "MSG from buddy [%d]\n", header.uid_from);
-			qq_process_im(gc, data + bytes, data_len - bytes);
-			break;
-		case QQ_MSG_ROOM_IM_UNKNOWN:
-		case QQ_MSG_TEMP_ROOM_IM:
-		case QQ_MSG_ROOM_IM:
-			purple_debug_info("QQ", "MSG from room [%d]\n", header.uid_from);
-			qq_process_room_im(data + bytes, data_len - bytes, header.uid_from, gc, header.msg_type);
-			break;
-		case QQ_MSG_ADD_TO_ROOM:
-			purple_debug_info("QQ", "Notice from [%d], Added\n", header.uid_from);
-			/* uid_from is group id
-			 * we need this to create a dummy group and add to blist */
-			qq_process_room_buddy_joined(data + bytes, data_len - bytes, header.uid_from, gc);
-			break;
-		case QQ_MSG_DEL_FROM_ROOM:
-			purple_debug_info("QQ", "Notice from room [%d], Removed\n", header.uid_from);
-			/* uid_from is group id */
-			qq_process_room_buddy_removed(data + bytes, data_len - bytes, header.uid_from, gc);
-			break;
-		case QQ_MSG_APPLY_ADD_TO_ROOM:
-			purple_debug_info("QQ", "Notice from room [%d], Joined\n", header.uid_from);
-			/* uid_from is group id */
-			qq_process_room_buddy_request_join(data + bytes, data_len - bytes, header.uid_from, gc);
-			break;
-		case QQ_MSG_APPROVE_APPLY_ADD_TO_ROOM:
-			purple_debug_info("QQ", "Notice from room [%d], Confirm add in\n",
-					header.uid_from);
-			/* uid_from is group id */
-			qq_process_room_buddy_approved(data + bytes, data_len - bytes, header.uid_from, gc);
-			break;
-		case QQ_MSG_REJCT_APPLY_ADD_TO_ROOM:
-			purple_debug_info("QQ", "Notice from room [%d], Refuse add in\n",
-					header.uid_from);
-			/* uid_from is group id */
-			qq_process_room_buddy_rejected(data + bytes, data_len - bytes, header.uid_from, gc);
-			break;
-		case QQ_MSG_SYS_30:
-			do_msg_sys_30(gc, data + bytes, data_len - bytes);
-			break;
-		case QQ_MSG_SYS_4C:
-			do_msg_sys_4c(gc, data + bytes, data_len - bytes);
-			break;
-		default:
-			purple_debug_warning("QQ", "MSG from %u, unknown type %s [0x%04X]\n",
-					header.uid_from, get_im_type_desc(header.msg_type), header.msg_type);
-			qq_show_packet("MSG header", data, bytes);
-			if (data_len - bytes > 0) {
-				qq_show_packet("MSG data", data + bytes, data_len - bytes);
-			}
-			break;
+	case QQ_MSG_BUDDY_84:
+	case QQ_MSG_BUDDY_85:
+		purple_debug_info("QQ", "MSG from buddy [%d]\n", header.uid_from);
+		qq_process_im(gc, data + bytes, data_len - bytes, header.msg_type);
+		break;
+	case QQ_MSG_TO_UNKNOWN:
+	case QQ_MSG_BUDDY_09:		
+	case QQ_MSG_BUDDY_A6:
+	case QQ_MSG_BUDDY_78:
+		purple_debug_info("QQ	", "MSG from buddy [%d]\n", header.uid_from);
+		bytes += 1;
+		qq_get8(&tmp8, data+bytes);
+		while (tmp8 == 0)
+		{
+			bytes += 1;
+			bytes += qq_get16(&len, data+bytes);
+			bytes += len;
+			qq_get8(&tmp8, data+bytes);
+		}
+		qq_process_im(gc, data + bytes, data_len - bytes, header.msg_type);
+		break;
+	case QQ_MSG_NEWS:
+		do_server_news(gc, data + bytes, data_len - bytes);
+		break;
+	case QQ_MSG_SMS:
+		do_got_sms(gc, data + bytes, data_len - bytes);
+		break;
+	case QQ_MSG_ROOM_IM_UNKNOWN:
+	case QQ_MSG_TEMP_ROOM_IM:
+	case QQ_MSG_ROOM_IM:
+		purple_debug_info("QQ", "MSG from room [%d]\n", header.uid_from);
+		qq_process_room_im(data + bytes, data_len - bytes, header.uid_from, gc, header.msg_type);
+		break;
+	case QQ_MSG_ADD_TO_ROOM:
+		purple_debug_info("QQ", "Notice from [%d], Added\n", header.uid_from);
+		/* uid_from is group id
+		* we need this to create a dummy group and add to blist */
+		qq_process_room_buddy_joined(data + bytes, data_len - bytes, header.uid_from, gc);
+		break;
+	case QQ_MSG_DEL_FROM_ROOM:
+		purple_debug_info("QQ", "Notice from room [%d], Removed\n", header.uid_from);
+		/* uid_from is group id */
+		qq_process_room_buddy_removed(data + bytes, data_len - bytes, header.uid_from, gc);
+		break;
+	case QQ_MSG_APPLY_ADD_TO_ROOM:
+		purple_debug_info("QQ", "Notice from room [%d], Joined\n", header.uid_from);
+		/* uid_from is group id */
+		qq_process_room_buddy_request_join(data + bytes, data_len - bytes, header.uid_from, gc);
+		break;
+	case QQ_MSG_APPROVE_APPLY_ADD_TO_ROOM:
+		purple_debug_info("QQ", "Notice from room [%d], Confirm add in\n",
+			header.uid_from);
+		/* uid_from is group id */
+		qq_process_room_buddy_approved(data + bytes, data_len - bytes, header.uid_from, gc);
+		break;
+	case QQ_MSG_REJCT_APPLY_ADD_TO_ROOM:
+		purple_debug_info("QQ", "Notice from room [%d], Refuse add in\n",
+			header.uid_from);
+		/* uid_from is group id */
+		qq_process_room_buddy_rejected(data + bytes, data_len - bytes, header.uid_from, gc);
+		break;
+	case QQ_MSG_SYS:
+		do_msg_sys(gc, data + bytes, data_len - bytes);
+		break;
+	default:
+		purple_debug_warning("QQ", "MSG from %u, unknown type %s [0x%04X]\n",
+			header.uid_from, get_im_type_desc(header.msg_type), header.msg_type);
+		qq_show_packet("MSG header", data, bytes);
+		if (data_len - bytes > 0) {
+			qq_show_packet("MSG data", data + bytes, data_len - bytes);
+		}
+		break;
 	}
 }
 
@@ -521,10 +492,11 @@ void qq_proc_server_cmd(PurpleConnection *gc, guint16 cmd, guint16 seq, guint8 *
 
 	/* now process the packet */
 	switch (cmd) {
+		case QQ_CMD_RECV_IM_CE:
 		case QQ_CMD_RECV_IM:
 			process_private_msg(data, data_len, seq, gc);
 			break;
-		case QQ_CMD_RECV_MSG_SYS:
+		case QQ_CMD_RECV_NOTIFY:
 			process_server_msg(gc, data, data_len, seq);
 			break;
 		case QQ_CMD_BUDDY_CHANGE_STATUS:
@@ -651,8 +623,7 @@ void qq_update_all(PurpleConnection *gc, guint16 cmd)
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
 			qq_request_buddy_memo(gc, 0, QQ_CMD_CLASS_UPDATE_ALL, QQ_BUDDY_MEMO_ALIAS);	
-			break;
-		case QQ_CMD_BUDDY_MEMO:
+		case QQ_BUDDY_MEMO_ALIAS:
 			qq_request_get_buddies_level(gc, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_LEVEL:

@@ -669,7 +669,7 @@ static void action_about_openq(PurplePluginAction *action)
 	g_string_append(info, "Pidgin Team : http://www.pidgin.im<br>\n");
 	g_string_append(info, "Huang Guan : http://home.xxsyzx.com<br>\n");
 	g_string_append(info, "OpenQ Google Group : http://groups.google.com/group/openq<br>\n");
-	g_string_append(info, "LibQQ Google code : http://code.google.com/p/libqq-pidgin<br>\n");
+	g_string_append(info, "LibQQ Google code : http://libqq-pidgin.googlecode.com<br>\n");
 	g_string_append(info, "<br>\n");
 
 	g_string_append(info, _("<p><b>Scrupulous Testers</b>:<br>\n"));

@@ -273,7 +273,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 		/* 007-007: gender */
 		bytes += qq_get8(&bd.gender, data + bytes);
 
-		bytes += nickname_len = qq_get_vstr(&bd.nickname, NULL, data+bytes);
+		bytes += nickname_len = qq_get_vstr(&bd.nickname, NULL, sizeof(guint8), data+bytes);
 
 		qq_filter_str(bd.nickname);
 
