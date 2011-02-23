@@ -269,7 +269,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 
 	/* qq_show_packet("Message", data + bytes, data_len - bytes); */
 	if (frag_count <= 1 || frag_count == frag_index + 1) {
-		fmt = qq_im_fmt_new();
+		fmt = qq_im_fmt_new_default();
 		tail_len = qq_get_im_tail(fmt, data + bytes, data_len - bytes);
 		im_text.msg = g_strndup((gchar *)(data + bytes), data_len - tail_len);
 	} else {
@@ -307,7 +307,7 @@ static void request_room_send_im(PurpleConnection *gc, guint32 room_id, qq_im_fo
 	bytes = 0;
 	bytes += qq_put16(raw_data + bytes, 0);
 	bytes += qq_putdata(raw_data + bytes, (guint8 *)msg, strlen(msg));
-	bytes += qq_put_im_tail(raw_data + bytes, fmt);
+	//bytes += qq_put_im_tail(raw_data + bytes, fmt);
 	/* reset first two bytes */
 	qq_put16(raw_data, bytes - 2);
 

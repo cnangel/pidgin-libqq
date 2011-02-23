@@ -42,7 +42,7 @@
 #include "send_file.h"
 #include "utils.h"
 
-#define QQ_MSG_IM_MAX               700	/* max length of IM */
+#define QQ_MSG_IM_MAX               513	/* max length of IM */
 
 enum {
 	QQ_IM_TEXT = 0x01,
@@ -525,18 +525,19 @@ void qq_im_fmt_free(qq_im_format *fmt)
 	g_free(fmt);
 }
 
-qq_im_format *qq_im_fmt_new(void)
+qq_im_format *qq_im_fmt_new_default(void)
 {
 	qq_im_format *fmt;
-	const gchar simsun[] = { 0xcb, 0xce, 0xcc, 0xe5, 0};	/* simsun in Chinese */
-
+	const gchar msyh[] = {
+		0xE5, 0xBE, 0xAE, 0xE8, 0xBD, 0xAF, 0xE9, 0x9B, 0x85, 0xE9, 0xBB, 0x91, 0x00
+	};		/*Microsoft YaHei*/
 	fmt = g_new0(qq_im_format, 1);
 	memset(fmt, 0, sizeof(qq_im_format));
-	fmt->font_len = strlen(simsun);
-	fmt->font = g_strdup(simsun);
-	fmt->attr = 10;
-	/* encoding, 0x8602=GB, 0x0000=EN, define BIG5 support here */
-	fmt->charset = 0x8602;
+	fmt->font_len = strlen(msyh);
+	fmt->font = g_strdup(msyh);
+	fmt->font_size = 14;
+	/* encoding, 0x8622=GB, 0x0000=EN */
+	fmt->charset = 0x8622;
 
 	return fmt;
 }
@@ -550,7 +551,7 @@ qq_im_format *qq_im_fmt_new_by_purple(const gchar *msg)
 
 	g_return_val_if_fail(msg != NULL, NULL);
 
-	fmt = qq_im_fmt_new();
+	fmt = qq_im_fmt_new_default();
 
 	last = msg;
 	while (purple_markup_find_tag("font", last, &start, &end, &attribs)) {
@@ -582,97 +583,67 @@ qq_im_format *qq_im_fmt_new_by_purple(const gchar *msg)
 	}
 
 	if (purple_markup_find_tag("b", msg, &start, &end, &attribs)) {
-		fmt->attr |= 0x20;
+		fmt->attr ^= 0x01;
 		g_datalist_clear(&attribs);
 	}
 
 	if (purple_markup_find_tag("i", msg, &start, &end, &attribs)) {
-		fmt->attr |= 0x40;
+		fmt->attr ^= 0x02;
 		g_datalist_clear(&attribs);
 	}
 
 	if (purple_markup_find_tag("u", msg, &start, &end, &attribs)) {
-		fmt->attr |= 0x80;
+		fmt->attr ^= 0x04;
 		g_datalist_clear(&attribs);
 	}
 
 	return fmt;
 }
 
-/* convert qq format to purple
-   Notice: text is in qq charset, GB18030 or utf8 */
-gchar *qq_im_fmt_to_purple(qq_im_format *fmt, gchar *text)
+/* convert qq format to purple */
+gchar * qq_im_fmt_to_purple( qq_im_format *fmt, GString *text )
 {
-	GString *converted, *tmp;
+	GString *tmp;
 	gchar *ret;
-	gint size;
 
-	converted = g_string_new(text);
 	tmp = g_string_new("");
 	g_string_append_printf(tmp, "<font color=\"#%02x%02x%02x\">",
 		fmt->rgb[0], fmt->rgb[1], fmt->rgb[2]);
-	g_string_prepend(converted, tmp->str);
+	g_string_prepend(text, tmp->str);
 	g_string_set_size(tmp, 0);
-	g_string_append(converted, "</font>");
+	g_string_append(text, "</font>");
 
-	/* Fixme:
-	 * check font face can be convert to utf8 or not?
-	 * If failed, prepending font face cause msg display as "(NULL)" */
 	if (fmt->font != NULL) {
 		g_string_append_printf(tmp, "<font face=\"%s\">", fmt->font);
-		g_string_prepend(converted, tmp->str);
+		g_string_prepend(text, tmp->str);
 		g_string_set_size(tmp, 0);
-		g_string_append(converted, "</font>");
+		g_string_append(text, "</font>");
 	}
-	size = (fmt->attr & 0x1f) / 3;
-	if (size >= 0) {
-		g_string_append_printf(tmp, "<font size=\"%d\">", size);
-		g_string_prepend(converted, tmp->str);
+	if (fmt->font_size >= 0) {
+		g_string_append_printf(tmp, "<font size=\"%d\">", fmt->font_size);
+		g_string_prepend(text, tmp->str);
 		g_string_set_size(tmp, 0);
-		g_string_append(converted, "</font>");
+		g_string_append(text, "</font>");
 	}
-	if (fmt->attr & 0x20) {
+	if (fmt->attr & 0x01) {
 		/* bold */
-		g_string_prepend(converted, "<b>");
-		g_string_append(converted, "</b>");
+		g_string_prepend(text, "<b>");
+		g_string_append(text, "</b>");
 	}
-	if (fmt->attr & 0x40) {
+	if (fmt->attr & 0x02) {
 		/* italic */
-		g_string_prepend(converted, "<i>");
-		g_string_append(converted, "</i>");
+		g_string_prepend(text, "<i>");
+		g_string_append(text, "</i>");
 	}
-	if (fmt->attr & 0x80) {
+	if (fmt->attr & 0x04) {
 		/* underline */
-		g_string_prepend(converted, "<u>");
-		g_string_append(converted, "</u>");
+		g_string_prepend(text, "<u>");
+		g_string_append(text, "</u>");
 	}
 
 	g_string_free(tmp, TRUE);
-	ret = converted->str;
-	g_string_free(converted, FALSE);
+	ret = text->str;
 	return ret;
-}
-
-gint qq_put_im_tail(guint8 *buf, qq_im_format *fmt)
-{
-	gint bytes;
-
-	g_return_val_if_fail(buf != NULL && fmt != NULL, 0);
-
-	bytes = 0;
-	bytes += qq_put8(buf + bytes, 0);
-	bytes += qq_put8(buf + bytes, fmt->attr);
-	bytes += qq_putdata(buf + bytes, fmt->rgb, sizeof(fmt->rgb));
-	bytes += qq_put8(buf + bytes, 0);
-	bytes += qq_put16(buf + bytes, fmt->charset);
-	if (fmt->font != NULL && fmt->font_len > 0) {
-		bytes += qq_putdata(buf + bytes, (guint8 *)fmt->font, fmt->font_len);
-	} else {
-		purple_debug_warning("QQ", "Font name is empty\n");
-	}
-	bytes += qq_put8(buf + bytes, bytes + 1);
-	/* qq_show_packet("IM tail", buf, bytes); */
-	return bytes;
 }
 
 /* data includes text msg and font attr*/
@@ -727,18 +698,23 @@ void qq_got_message(PurpleConnection *gc, const gchar *msg)
 /* process received normal text IM */
 static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_header *im_header, guint16 msg_type)
 {
-	guint16 purple_msg_type;
+	guint16 purple_msg_flag;
 	gchar *who;
 	gchar *msg_smiley, *msg_fmt, *msg_utf8;
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
 	gint bytes, tail_len;
 	qq_im_format *fmt = NULL;
-	gchar * font_name;
 	guint8 type;
+	guint8 *msg_data;
+	//guint msg_dataseg_len;
+	//guint8 msg_dataseg_flag;
+	//guint msg_dataseg_pos;
+	gchar *text;
+	gchar *emoticon;
+	gchar *purple_smiley;
 
 	struct {
-		/* now comes the part for text only */
 		guint16 msg_seq;
 		guint32 send_time;
 		guint16 sender_icon;
@@ -749,7 +725,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 		guint16 msg_id;
 		guint8 unknown2;
 		guint8 auto_reply;
-		gchar *msg;		/* no fixed length, ends with 0x00 */
+		GString *msg;		/* no fixed length, ends with 0x00 */
 	} im_text;
 
 	g_return_if_fail(data != NULL && len > 0);
@@ -772,61 +748,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 			im_text.msg_seq, im_text.msg_id,
 			im_text.fragment_count, im_text.fragment_index,
 			im_text.auto_reply,
-			im_text.has_font_attr ? "exist font atrr" : "");
-	if (msg_type == QQ_MSG_BUDDY_A6 || msg_type == QQ_MSG_BUDDY_78)
-	{
-		bytes += 8;		//4d 53 47 00 00 00 00 00		MSG.....
-		bytes += qq_get32(&(im_text.send_time), data + bytes);
-		bytes += 12;		//FONT SET , TOFIX!
-		bytes += qq_get_vstr(&font_name, NULL, sizeof(guint16), data+bytes);
-		bytes += 2;
-		while (bytes < len) {
-			bytes += qq_get8(&type, data+bytes);
-			bytes += 3;		//size(16) of type+msg_content and reduplicated type(8)?
-			switch (type) {
-			case 0x01:	//text
-				bytes += qq_get_vstr(&im_text.msg, NULL, sizeof(guint16), data+bytes);
-				break;
-				/*
-			case 02:	//emoticon
-				len_str = get_word( buf );
-				buf->pos += len_str;	//
-				get_byte( buf );	//FF
-				len_str = get_word( buf );
-				if( len_str == 2 ){
-					get_byte( buf );
-					if( outlen-i > 15 )
-						i += sprintf( &tmp[i], "[face:%d]", get_byte( buf ) );
-				}else{ //unknown situation
-					buf->pos += len_str;
-				}
-				break;
-			case 03:	//image
-				len_str = get_word( buf );
-				buf->pos += len_str;	//
-				do{
-					ch = get_byte( buf );	//ff
-				}while( ch!=0xff && buf->pos<buf->len );
-				token tok_pic;
-				get_token( buf, &tok_pic );
-				if( outlen-i > 10 )
-					i += sprintf( &tmp[i], "[image]" );
-					*/
-			}
-		}
-	} else {
-		if (im_text.has_font_attr) {
-			fmt = qq_im_fmt_new();
-			tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
-			im_text.msg = g_strndup((gchar *)(data + bytes), len - tail_len);
-		} else	{
-			im_text.msg = g_strndup((gchar *)(data + bytes), len - bytes);
-		}
-	}
-	
-
-
-	/* qq_show_packet("IM text", (guint8 *)im_text.msg , strlen(im_text.msg) ); */
+			im_text.has_font_attr ? "exist font attr" : "");
 
 	who = uid_to_purple_name(im_header->uid_from);
 	buddy = purple_find_buddy(gc->account, who);
@@ -840,30 +762,120 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 		bd->face = im_text.sender_icon;
 		qq_update_buddy_icon(gc->account, who, bd->face);
 	}
-
-	purple_msg_type = (im_text.auto_reply == QQ_IM_AUTO_REPLY)
+	purple_msg_flag = (im_text.auto_reply == QQ_IM_AUTO_REPLY)
 		? PURPLE_MESSAGE_AUTO_RESP : 0;
 
-	msg_smiley = qq_emoticon_to_purple(im_text.msg);
-	if (fmt != NULL) {
-		msg_fmt = qq_im_fmt_to_purple(fmt, msg_smiley);
-		msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
-		g_free(msg_fmt);
-		qq_im_fmt_free(fmt);
+	if (msg_type == QQ_MSG_BUDDY_A6 || msg_type == QQ_MSG_BUDDY_78)
+	{
+		bytes += 8;		//4d 53 47 00 00 00 00 00		MSG.....
+		bytes += qq_get32(&(im_text.send_time), data + bytes);
+		bytes += 4;		//random guint32;
+
+		if (im_text.has_font_attr)
+		{
+			fmt = g_new0(qq_im_format, 1);
+			
+			bytes += 1;		//Unknown 0x00
+
+			bytes += qq_get8(&fmt->rgb[0], data+bytes);
+			bytes += qq_get8(&fmt->rgb[1], data+bytes);
+			bytes += qq_get8(&fmt->rgb[2], data+bytes);
+
+			bytes += qq_get8(&fmt->font_size, data+bytes);
+			/* font attr guint8 : bold:00000001 XOR italic 00000010 XOR underline 00000100*/
+			bytes += qq_get8(&fmt->attr, data+bytes);
+			/* encoding, 0x8622=GB, 0x0000=EN */
+			bytes += qq_get16(&fmt->charset, data+bytes);
+
+			bytes += qq_get_vstr(&fmt->font, NULL, sizeof(guint16), data+bytes);
+		} 
+
+		bytes += 2;
+		im_text.msg = g_string_new("");
+		while (bytes < len) {
+			bytes += qq_get8(&type, data+bytes);
+			bytes += qq_get_vstr(&msg_data, NULL, sizeof(guint16), data+bytes);
+			//bytes += msg_dataseg_len = qq_get_vstr(&msg_data, NULL, sizeof(guint16), data+bytes);
+			//msg_dataseg_len -= sizeof(guint16);
+
+			switch (type) {
+			case 0x01:	//text
+				qq_get_vstr(&text, NULL, sizeof(guint16), msg_data+1);		//+1 bypass msg_dataseg_flag 0x01
+				g_free(msg_data);
+				g_string_append(im_text.msg, text);
+				g_free(text);
+				break;
+			case 0x02:	//emoticon
+				qq_get_vstr(&emoticon, NULL, sizeof(guint16), msg_data+1);		//+1 bypass msg_dataseg_flag 0x01
+				/* remained Unknown data is FF 00 02 14 XX ; FF Unknown msg_dataseg_flag */
+				g_free(msg_data);
+				purple_smiley = emoticon_get(*emoticon);
+				if (purple_smiley == NULL) {
+					purple_debug_info("QQ", "Not found smiley of 0x%02X\n", *emoticon);
+					g_string_append(im_text.msg, "<IMG ID=\"0\">");
+				} else {
+					purple_debug_info("QQ", "Found 0x%02X smiley is %s\n", *emoticon, purple_smiley);
+					g_string_append(im_text.msg, purple_smiley);
+				}
+				g_free(emoticon);
+				break;
+			case 03:	//image
+				break;
+				/*		it's kinda complicated, TOFIX later
+				msg_dataseg_pos = 0;
+				while (msg_dataseg_pos < msg_dataseg_len)
+				{
+					msg_dataseg_pos = qq_get8(&msg_dataseg_flag, msg_data);
+					switch (msg_dataseg_flag)
+					{
+					case 0x0:
+						break;
+					}
+				}
+				*/
+			}
+		}
+
+		if (fmt != NULL) {
+			msg_utf8 = qq_im_fmt_to_purple(fmt, im_text.msg);
+			qq_im_fmt_free(fmt);
+		} else {
+			msg_utf8 =  im_text.msg->str;
+		}
+
 	} else {
-		msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
+
+		if (im_text.has_font_attr) {
+			fmt = qq_im_fmt_new_default();
+			tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
+			im_text.msg = g_string_new_len((gchar *)(data + bytes), len-tail_len);
+		} else	{
+			im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes);
+		}
+		msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
+		if (fmt != NULL) {
+			msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
+			msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
+			g_free(msg_fmt);
+			qq_im_fmt_free(fmt);
+		} else {
+			msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
+		}
+		g_free(msg_smiley);
+
 	}
-	g_free(msg_smiley);
+
+	/* qq_show_packet("IM text", (guint8 *)im_text.msg , strlen(im_text.msg) ); */
 
 	/* send encoded to purple, note that we use im_text.send_time,
 	 * not the time we receive the message
 	 * as it may have been delayed when I am not online. */
 	purple_debug_info("QQ", "IM from %u: %s\n", im_header->uid_from,msg_utf8);
-	serv_got_im(gc, who, msg_utf8, purple_msg_type, (time_t) im_text.send_time);
+	serv_got_im(gc, who, msg_utf8, purple_msg_flag, (time_t) im_text.send_time);
 
 	g_free(msg_utf8);
 	g_free(who);
-	g_free(im_text.msg);
+	g_string_free (im_text.msg, TRUE);
 }
 
 /* it is a normal IM, maybe text or video request */
@@ -928,7 +940,7 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 }
 
 /* send an IM to uid_to */
-static void request_send_im(PurpleConnection *gc, guint32 uid_to, gint type, qq_im_format *fmt, gchar *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
+static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, qq_im_format *fmt, GString *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
 {
 	qq_data *qd;
 	guint8 raw_data[1024];
@@ -987,103 +999,99 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, gint type, qq_
 	/* Likely a random int */
 	srand((unsigned)now);
 	bytes += qq_put32(raw_data + bytes, rand());
-	/* TOFIX! FONT SET */
-	bytes += qq_put32(raw_data + bytes, 0x00000000);
-	bytes += qq_put32(raw_data + bytes, 0x08008600);
-	bytes += qq_put16(raw_data + bytes, 0x0006);
-	/* "Tahoma" */
-	bytes += qq_put32(raw_data + bytes, 0x5461686F);
-	bytes += qq_put32(raw_data + bytes, 0x6D610000);
+	/* font attr set */
+	bytes += qq_put8(raw_data + bytes, 0x00);
+	bytes += qq_put8(raw_data + bytes, fmt->rgb[0]);
+	bytes += qq_put8(raw_data + bytes, fmt->rgb[1]);
+	bytes += qq_put8(raw_data + bytes, fmt->rgb[2]);
+	bytes += qq_put8(raw_data + bytes, fmt->font_size);
+	bytes += qq_put8(raw_data + bytes, fmt->attr);
+	bytes += qq_put16(raw_data + bytes, fmt->charset);
+	bytes += qq_put16(raw_data + bytes, fmt->font_len);
+	bytes += qq_putdata(raw_data + bytes, fmt->font, fmt->font_len);
 
-	bytes += qq_put8(raw_data + bytes, 0x01);
-	bytes += qq_put16(raw_data + bytes, strlen(msg)+3);
-	bytes += qq_put8(raw_data + bytes, 0x01);
-	/* msg_len TOFIX! convert MSG to pascal str */
-	bytes += qq_put16(raw_data + bytes, strlen(msg));
+	bytes += qq_put16(raw_data + bytes, 0x0000);
 	/* 053-   : msg does not end with 0x00 */
-	bytes += qq_putdata(raw_data + bytes, (guint8 *)msg, strlen(msg));
+	bytes += qq_putdata(raw_data + bytes, (guint8 *)msg->str, msg->len);
 
 	/* qq_show_packet("QQ_CMD_SEND_IM", raw_data, bytes); */
 	qq_send_cmd(gc, QQ_CMD_SEND_IM, raw_data, bytes);
 }
 
-static void im_convert_and_merge(GString *dest, GString *append)
-{
-	gchar *converted;
-	g_return_if_fail(dest != NULL && append != NULL);
-
-	if (append->str == NULL || append->len <= 0) {
-		return;
-	}
-	/* purple_debug_info("QQ", "Append:\n%s\n", append->str); */
-	converted = utf8_to_qq(append->str, QQ_CHARSET_DEFAULT);
-	g_string_append(dest, converted);
-	g_string_set_size(append, 0);
-	g_free(converted);
-}
-
 GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 {
 	GSList *string_list = NULL;
-	GString *new_string;
-	GString *append_utf8;
+	GString *string_seg;
 	gchar *start, *p;
-	gint len;
+	guint msg_len;
+	guint16 string_len;
+	guint16 string_ad_len;
 	qq_emoticon *emoticon;
+	static gchar em_v[] = {
+		0x02, 0x00, 0x09, 0x01, 0x00, 0x01, 0x4F, 0xFF, 0x00, 0x02, 0x14, 0xA0
+	};
 
 	g_return_val_if_fail(msg_stripped != NULL, NULL);
 
-	start = msg_stripped;
-	new_string = g_string_new("");
-	append_utf8 = g_string_new("");
-	while (*start) {
-		p = start;
+	//start = msg_stripped;
+	msg_len = strlen(msg_stripped);
+	string_seg = g_string_new("");
 
-		/* Convert emoticon */
-		if (!is_smiley_none && *p == '/') {
-			if (new_string->len + append_utf8->len + 2 > QQ_MSG_IM_MAX) {
+	p = msg_stripped;
+	while (p)
+	{
+		start = p;
+
+		p = g_utf8_strchr(p, -1, '/');
+		if (!p)	string_len = msg_stripped + msg_len - start;		//if not find emoticon, append all remained data
+		else 	string_len = p - start;
+
+		if (string_len >0)
+		{
+			if (string_seg->len + string_len + 6 > QQ_MSG_IM_MAX) {
 				/* enough chars to send */
-				im_convert_and_merge(new_string, append_utf8);
-				string_list = g_slist_append(string_list, g_strdup(new_string->str));
-				g_string_set_size(new_string, 0);
-				continue;
+				string_list = g_slist_append(string_list, string_seg);
+				string_seg = g_string_new("");
+			}
+			g_string_append_c(string_seg, 0x01);		//TEXT FLAG
+			string_ad_len = string_len + 3;		//len of text with prepended data
+			string_ad_len = htons(string_ad_len);
+			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+			g_string_append_c(string_seg, 0x01);		//Unknown FLAG
+			string_ad_len = htons(string_len);
+			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+			g_string_append_len(string_seg, start, string_len);
+		}
+
+		/* Append emoticon */
+		if ( !is_smiley_none && p )
+		{
+			if (string_seg->len  + 12 > QQ_MSG_IM_MAX) {
+				/* enough chars to send */
+				string_list = g_slist_append(string_list, string_seg);
+				string_seg = g_string_new("");
 			}
 			emoticon = emoticon_find(p);
 			if (emoticon != NULL) {
 				purple_debug_info("QQ", "found emoticon %s as 0x%02X\n",
 						emoticon->name, emoticon->symbol);
-				/* QQ emoticon code prevent converting from utf8 to QQ charset
-				 * convert append_utf8 to QQ charset
-				 * merge the result to dest
-				 * append qq QQ emoticon code to dest */
-				im_convert_and_merge(new_string, append_utf8);
-				g_string_append_c(new_string, 0x14);
-				g_string_append_c(new_string, emoticon->symbol);
-				start += strlen(emoticon->name);
+				/* Until Now, We haven't the new emoticon key database */
+				/* So Just Send a Settled V Gesture */
+				g_string_append_len(string_seg, em_v, sizeof(em_v));
+
+				//g_string_append_c(string_seg, 0x14);
+				//g_string_append_c(string_seg, emoticon->symbol);
+				p += strlen(emoticon->name);
 				continue;
 			} else {
 				purple_debug_info("QQ", "Not found emoticon %.20s\n", p);
 			}
 		}
-
-		/* Get next char */
-		start = g_utf8_next_char(p);
-		len = start - p;
-		if (new_string->len + append_utf8->len + len > QQ_MSG_IM_MAX) {
-			/* enough chars to send */
-			im_convert_and_merge(new_string, append_utf8);
-			string_list = g_slist_append(string_list, g_strdup(new_string->str));
-			g_string_set_size(new_string, 0);
-		}
-		g_string_append_len(append_utf8, p, len);
 	}
 
-	if (new_string->len + append_utf8->len > 0) {
-		im_convert_and_merge(new_string, append_utf8);
-		string_list = g_slist_append(string_list, g_strdup(new_string->str));
+	if (string_seg->len > 0) {
+		string_list = g_slist_append(string_list, string_seg);
 	}
-	g_string_free(new_string, TRUE);
-	g_string_free(append_utf8, TRUE);
 	return string_list;
 }
 
@@ -1156,7 +1164,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 {
 	qq_data *qd;
 	guint32 uid_to;
-	gint type;
+	guint8 type;
 	qq_im_format *fmt;
 	gchar *msg_stripped, *tmp;
 	GSList *segments, *it;
@@ -1170,7 +1178,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	g_return_val_if_fail(who != NULL && what != NULL, -1);
 
 	qd = (qq_data *) gc->proto_data;
-	purple_debug_info("QQ", "Send IM to %s, len %" G_GSIZE_FORMAT ":\n%s\n", who, strlen(what), what);
+	purple_debug_info("QQ", "Send IM to %s, msg_len %" G_GSIZE_FORMAT ":\n%s\n", who, strlen(what), what);
 
 	uid_to = purple_name_to_uid(who);
 	if (uid_to == qd->uid) {
@@ -1210,17 +1218,13 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	}
 
 	qd->send_im_id++;
-	msg_id = qd->send_im_id && 0xFFFF;
+	msg_id = qd->send_im_id;
 	fmt = qq_im_fmt_new_by_purple(what);
 	frag_count = g_slist_length(segments);
 	frag_index = 0;
 	for (it = segments; it; it = it->next) {
-		/*
-		request_send_im(gc, uid_to, type, fmt, (gchar *)it->data,
-			msg_id, frag_count, frag_index);
-		*/
-		request_send_im(gc, uid_to, type, fmt, (gchar *)it->data, msg_id, frag_count, frag_index);
-		g_free(it->data);
+		request_send_im(gc, uid_to, type, fmt, (GString *)it->data, msg_id, frag_count, frag_index);
+		g_string_free(it->data, TRUE);
 		frag_index++;
 	}
 	g_slist_free(segments);

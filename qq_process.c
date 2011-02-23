@@ -622,8 +622,9 @@ void qq_update_all(PurpleConnection *gc, guint16 cmd)
 			qq_request_get_buddies_list(gc, 0, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
-			qq_request_buddy_memo(gc, 0, QQ_CMD_CLASS_UPDATE_ALL, QQ_BUDDY_MEMO_ALIAS);	
-		case QQ_BUDDY_MEMO_ALIAS:
+			qq_request_buddy_memo(gc, 0, QQ_CMD_CLASS_UPDATE_ALL, QQ_BUDDY_MEMO_ALIAS);
+			break;
+		case QQ_CMD_BUDDY_MEMO:
 			qq_request_get_buddies_level(gc, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_LEVEL:
@@ -806,7 +807,7 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 		qq_process_room_cmd_get_buddies(data + bytes, data_len - bytes, gc);
 		break;
 	default:
-		purple_debug_warning("QQ", "Unknow room cmd 0x%02X %s\n",
+		purple_debug_warning("QQ", "Unknown room cmd 0x%02X %s\n",
 			   reply_cmd, qq_get_room_cmd_desc(reply_cmd));
 	}
 
@@ -963,10 +964,11 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			qq_process_login_getlist(gc, data, data_len);
 			qq_request_login_ED(gc);
 			break;
+		case QQ_CMD_LOGIN_EC:
+			break;
 		case QQ_CMD_LOGIN_ED:
 			qq_request_login_EC(gc);
-			break;
-		case QQ_CMD_LOGIN_EC:
+
 			purple_connection_update_progress(gc, _("Logging in"), QQ_CONNECT_STEPS - 1, QQ_CONNECT_STEPS);
 			purple_debug_info("QQ", "Login replies OK; everything is fine\n");
 			purple_connection_set_state(gc, PURPLE_CONNECTED);
@@ -1092,8 +1094,6 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 		case QQ_CMD_BUDDY_MEMO:
 			purple_debug_info("QQ", "Receive memo from server!\n");
 			qq_process_get_buddy_memo(gc, data, data_len, update_class, ship32);
-			return;
-			purple_debug_info("QQ", "Should NOT be here...\n");
 			break;
 		default:
 			process_unknown_cmd(gc, _("Unknown CLIENT CMD"), data, data_len, cmd, seq);

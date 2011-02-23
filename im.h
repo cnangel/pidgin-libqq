@@ -47,32 +47,30 @@ enum {
 	QQ_MSG_BUDDY_84 = 0x0084,
 	QQ_MSG_BUDDY_A6 = 0x00A6,
 	QQ_MSG_BUDDY_85 = 0x0085,
-	/*
-	QQ_MSG_QUN_IM_09 = 0x0052,
-	QQ_MSG_QUN_MEMBER_IM = 0x008C,
+	QQ_MSG_ROOM_IM_52 = 0x0052,
+
+	QQ_MSG_ROOM_MEMBER_IM = 0x008C,
 	QQ_MSG_SOMEBODY = 0x008D,
 	QQ_MSG_WRITING = 0x0079,
-	QQ_MSG_BUDDY_09 = 0x0078,	//09 Preview4 Message
-	//09 SP1 Message，TX协议一变再变，说明什么问题？
-	QQ_MSG_UNKNOWN_BUDDY_09 = 0x0031	//09 陌生人
-	*/
+	QQ_MSG_STRANGER = 0x0031
+
 };
 
 typedef struct {
+	guint8 font_size;
 	guint8 attr;
 	guint8 rgb[3];
 	guint16 charset;
-	gchar *font;		/* Attension: font may NULL. font name is in QQ charset */
+	gchar *font;		/* Attension: font may NULL. old font name is in QQ charset */
 	guint8 font_len;
 } qq_im_format;
 
-gint qq_put_im_tail(guint8 *buf, qq_im_format *fmt);
 gint qq_get_im_tail(qq_im_format *fmt, guint8 *data, gint data_len);
 
-qq_im_format *qq_im_fmt_new(void);
+qq_im_format *qq_im_fmt_new_default(void);
 void qq_im_fmt_free(qq_im_format *fmt);
 qq_im_format *qq_im_fmt_new_by_purple(const gchar *msg);
-gchar *qq_im_fmt_to_purple(qq_im_format *fmt, gchar *text);
+gchar *qq_im_fmt_to_purple(qq_im_format *fmt, GString *text);
 gboolean qq_im_smiley_none(const gchar *msg);
 GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none);
 
