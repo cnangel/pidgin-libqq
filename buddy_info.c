@@ -75,12 +75,6 @@ static const gchar * privacy_sets[] = {
 	N_("Private"),
 };
 
-static const gchar *genders_zh[] = {
-	"-",
-	"\xc4\xd0",
-	"\xc5\xae",
-};
-
 #define QQ_FACES	    134
 #define QQ_ICON_PREFIX "qq_"
 #define QQ_ICON_SUFFIX ".png"
@@ -851,6 +845,7 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 			break;
 		case QQ_INFO_GENDER:
 			gender = *info;
+			if (gender>2) gender = 0;
 			break;
 		default:
 			break;

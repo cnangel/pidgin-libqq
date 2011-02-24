@@ -279,7 +279,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	/* group im_group has no flag to indicate whether it has font_attr or not */
 	msg_smiley = qq_emoticon_to_purple(im_text.msg);
 	if (fmt != NULL) {
-		msg_fmt = qq_im_fmt_to_purple(fmt, msg_smiley);
+		//msg_fmt = qq_im_fmt_to_purple(fmt, msg_smiley);
 		msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
 		g_free(msg_fmt);
 		qq_im_fmt_free(fmt);
