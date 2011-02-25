@@ -1108,6 +1108,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	guint16 type;
 	PurpleBuddy *buddy;
 	qq_room_data *rmd;
+	GArray * buddy_list = g_array_new(FALSE, FALSE, sizeof(guint32));
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
 
@@ -1119,7 +1120,6 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 		purple_debug_info("QQ", "No Need to Refresh List");
 		return QQ_LOGIN_REPLY_OK;
 	}
-	qq_clean_buddy_list(gc);
 
 	bytes = 18;
 	bytes += qq_get16(&num, data+bytes);
@@ -1131,6 +1131,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 		if (type == 0x0100)		//buddy
 		{
 			buddy = qq_buddy_find_or_new(gc, uid);
+			g_array_append_val(buddy_list, uid);
 		} else if (type == 0x0400) {
 			rmd = qq_room_data_find(gc, uid);
 			if(rmd == NULL) {
@@ -1141,26 +1142,35 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 			}
 		}
 	}
+
+	/* clean deleted buddies */
+	qq_clean_buddy_list(gc, buddy_list);
 	return QQ_LOGIN_REPLY_OK;
 }
 
-void qq_clean_buddy_list( PurpleConnection *gc )
+void qq_clean_buddy_list( PurpleConnection *gc, GArray * buddy_list )
 {
 	PurpleBuddy * bd;
 	GSList * list;
+	guint i;
+	guint32 uid;
 	g_return_if_fail(gc != NULL || gc->account != NULL);
 
 	for ( list=purple_find_buddies(gc->account, NULL); list; list=list->next )
 	{
 		bd = (PurpleBuddy *)list->data;
-		if (bd->account)
+		uid = purple_name_to_uid(bd->name);
+		for (i=0; i<buddy_list->len; ++i)
 		{
+			if (uid == g_array_index(buddy_list, guint32, i))	break;
 		}
-		
-		qq_buddy_free(bd);
+
+		if (i = buddy_list->len) 
+		{
+			qq_buddy_free(bd);
+		}
 	}
-	
-	qq_buddy_free(NULL);
+
 	g_free(list);
 }
 

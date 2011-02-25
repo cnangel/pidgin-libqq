@@ -51,6 +51,7 @@ enum {
 
 enum
 {
+	QQ_NORMAL_IM_VIBRATE = 0x00AF,
 	QQ_NORMAL_IM_TEXT = 0x000B,
 	QQ_NORMAL_IM_FILE_REQUEST_TCP = 0x0001,
 	QQ_NORMAL_IM_FILE_APPROVE_TCP = 0x0003,
@@ -535,7 +536,7 @@ qq_im_format *qq_im_fmt_new_default(void)
 	memset(fmt, 0, sizeof(qq_im_format));
 	fmt->font_len = strlen(msyh);
 	fmt->font = g_strdup(msyh);
-	fmt->font_size = 14;
+	fmt->font_size = 10;
 	/* encoding, 0x8622=GB, 0x0000=EN */
 	fmt->charset = 0x8622;
 
@@ -693,6 +694,66 @@ void qq_got_message(PurpleConnection *gc, const gchar *msg)
 	from = uid_to_purple_name(qd->uid);
 	serv_got_im(gc, from, msg, PURPLE_MESSAGE_SYSTEM, now);
 	g_free(from);
+}
+
+static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len)
+{
+	gchar *who;
+	PurpleBuddy *buddy;
+	qq_buddy_data *bd;
+	guint bytes;
+	qq_im_format *fmt = NULL;
+	GString *msg;
+	gchar *msg_utf8;
+
+	struct {
+		guint16 msg_seq;
+		guint32 send_time;
+		guint16 sender_icon;
+		guint8 unknown1[3];
+		guint8 fragment_count;
+		guint8 fragment_index;
+		guint32 uid_from;
+	} im_text;
+
+	g_return_if_fail(data != NULL && len > 0);
+
+	memset(&im_text, 0, sizeof(im_text));
+
+	bytes = 0;
+	bytes += qq_get16(&(im_text.msg_seq), data + bytes);
+	bytes += qq_get32(&(im_text.send_time), data + bytes);
+	bytes += qq_get16(&(im_text.sender_icon), data + bytes);
+	bytes += qq_getdata(im_text.unknown1, sizeof(im_text.unknown1), data + bytes);
+	bytes += qq_get8(&(im_text.fragment_count), data + bytes);
+	bytes += qq_get8(&(im_text.fragment_index), data + bytes);
+	bytes += qq_get32(&im_text.uid_from, data + bytes);
+
+	purple_debug_info("QQ", "Vibrate from uid: %d\n", im_text.uid_from );
+
+	who = uid_to_purple_name(im_text.uid_from);
+	buddy = purple_find_buddy(gc->account, who);
+	if (buddy == NULL) {
+		buddy = qq_buddy_new(gc, im_text.uid_from);
+	}
+	bd = (buddy == NULL) ? NULL : purple_buddy_get_protocol_data(buddy);
+	if (bd != NULL) {
+		bd->face = im_text.sender_icon;
+		qq_update_buddy_icon(gc->account, who, bd->face);
+	}
+
+	fmt = qq_im_fmt_new_default();
+	msg = g_string_new("a Vibrate!");
+	if (fmt != NULL) {
+		msg_utf8 = qq_im_fmt_to_purple(fmt, msg);
+		qq_im_fmt_free(fmt);
+	} 
+	serv_got_im(gc, who, msg_utf8, 0, (time_t) im_text.send_time);
+
+	g_free(msg_utf8);
+	g_free(who);
+	g_string_free (msg, TRUE);
+
 }
 
 /* process received normal text IM */
@@ -898,6 +959,9 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 			qq_get_ver_desc(im_header.version_from), im_header.version_from);
 
 	switch (im_header.im_type) {
+		case QQ_NORMAL_IM_VIBRATE:
+			process_im_vibrate(gc, data+bytes, len-bytes);
+		break;
 		case QQ_NORMAL_IM_TEXT:
 			if (bytes >= len - 1) {
 				purple_debug_warning("QQ", "Received normal IM text is empty\n");

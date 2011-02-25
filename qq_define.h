@@ -43,6 +43,7 @@ enum {
 	QQ_CMD_UPDATE_INFO = 0x0004,			/* update information */
 	QQ_CMD_SEARCH_USER = 0x0005,			/* search for user */
 	QQ_CMD_GET_BUDDY_INFO = 0x003C,			/* get user information */
+	QQ_CMD_GET_BUDDY_SIGN = 	0x0067,			/* get buddy signature */
 	QQ_CMD_ADD_BUDDY_NO_AUTH = 0x0009,		/* add buddy without auth */
 	QQ_CMD_REMOVE_BUDDY = 0x000a,			/* delete a buddy  */
 	QQ_CMD_ADD_BUDDY_AUTH = 0x000b,			/* buddy authentication */

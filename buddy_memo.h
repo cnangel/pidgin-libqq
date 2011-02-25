@@ -38,9 +38,9 @@
 #define  QQ_BUDDY_MEMO_ALIAS 0x68		/* get buddies alias list */
 
 
-void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len, guint32 update_class, guint32 action);
+void qq_process_get_buddy_memo(PurpleConnection *gc, guint8* data, gint data_len, guint32 update_class, guint32 index);
 
-void qq_request_buddy_memo(PurpleConnection *gc, guint32 bd_uid, guint32 update_class, guint8 action);
+void qq_request_buddy_memo(PurpleConnection *gc, guint32 index, guint32 update_class, guint8 action);
 
 #endif
 

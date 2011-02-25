@@ -92,7 +92,7 @@ void qq_request_login_EC(PurpleConnection *gc);
 void qq_request_login_ED(PurpleConnection *gc);
 
 guint8 qq_process_login_getlist(PurpleConnection *gc, guint8 *data, gint data_len);
-void qq_clean_buddy_list(PurpleConnection *gc);
+void qq_clean_buddy_list(PurpleConnection *gc, GArray * buddy_list);
 extern void qq_buddy_free(PurpleBuddy *buddy);
 extern void qq_room_remove(PurpleConnection *gc, guint32 id);
 #endif
