@@ -961,7 +961,7 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 	switch (im_header.im_type) {
 		case QQ_NORMAL_IM_VIBRATE:
 			process_im_vibrate(gc, data+bytes, len-bytes);
-		break;
+			break;
 		case QQ_NORMAL_IM_TEXT:
 			if (bytes >= len - 1) {
 				purple_debug_warning("QQ", "Received normal IM text is empty\n");
@@ -998,7 +998,7 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 			break;
 		default:
 			/* a simple process here, maybe more later */
-			qq_show_packet ("Unknow", data + bytes, len - bytes);
+			qq_show_packet ("Unknown", data + bytes, len - bytes);
 			return;
 	}
 }
@@ -1148,6 +1148,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 				p += strlen(emoticon->name);
 				continue;
 			} else {
+				p++;
 				purple_debug_info("QQ", "Not found emoticon %.20s\n", p);
 			}
 		}
