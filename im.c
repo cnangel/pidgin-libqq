@@ -1107,6 +1107,7 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 		start = p;
 
 		p = g_utf8_strchr(p, -1, '/');
+		if (p=start) p=NULL;	//if stuck in loop
 		if (!p)	string_len = msg_stripped + msg_len - start;		//if not find emoticon, append all remained data
 		else 	string_len = p - start;
 
@@ -1148,7 +1149,6 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 				p += strlen(emoticon->name);
 				continue;
 			} else {
-				p++;
 				purple_debug_info("QQ", "Not found emoticon %.20s\n", p);
 			}
 		}
