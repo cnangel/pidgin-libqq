@@ -197,9 +197,11 @@ struct _qq_data {
 	guint16 level;
 	guint16 activeDays;
 
-	PurpleRoomlist *roomlist;
+	GSList * buddy_list;
+	GSList * group_list;
 
-	GList *groups;
+	PurpleRoomlist *roomlist;
+	GSList *rooms;
 
 	gboolean is_show_notice;
 	gboolean is_show_news;

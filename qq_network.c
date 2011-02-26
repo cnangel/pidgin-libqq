@@ -996,6 +996,7 @@ gboolean connect_to_server(PurpleConnection *gc, gchar *server, gint port)
 void qq_disconnect(PurpleConnection *gc)
 {
 	qq_data *qd;
+	GSList *l;
 
 	g_return_if_fail(gc != NULL && gc->proto_data != NULL);
 	qd = (qq_data *) gc->proto_data;
@@ -1040,6 +1041,14 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->ld.pwd_twice_md5, 0, sizeof(qd->ld.pwd_twice_md5));
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
+
+	for (l=qd->group_list; l; l=l->next)
+	{
+		g_free(qd->group_list->data);
+	}
+	g_slist_free(qd->group_list);
+	qd->group_list = NULL;
+	
 
 	qd->my_local_ip.s_addr = 0;
 	qd->my_ip.s_addr = 0;

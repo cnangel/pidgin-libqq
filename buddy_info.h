@@ -78,7 +78,7 @@ gchar *qq_get_icon_name(gint face);
 gchar *qq_get_icon_path(gchar *icon_name);
 void qq_change_icon_cb(PurpleConnection *gc, const char *filepath);
 
-void qq_request_buddy_info(PurpleConnection *gc, guint32 uid,
+void qq_request_get_buddy_info(PurpleConnection *gc, guint32 uid,
 		guint32 update_class, int action);
 void qq_set_custom_icon(PurpleConnection *gc, PurpleStoredImage *img);
 void qq_process_change_info(PurpleConnection *gc, guint8 *data, gint data_len);

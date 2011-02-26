@@ -267,7 +267,7 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 }
 
 
-void qq_request_buddy_info(PurpleConnection *gc, guint32 uid,
+void qq_request_get_buddy_info(PurpleConnection *gc, guint32 uid,
 		guint32 update_class, int action)
 {
 	guint8 raw_data[1024];
@@ -637,7 +637,7 @@ static void request_set_buddy_icon(PurpleConnection *gc, gint face_num)
 	}
 
 	qd->my_icon = 3 * (face_num - 1) + offset;
-	qq_request_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_SET_ICON);
+	qq_request_get_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_SET_ICON);
 }
 
 void qq_change_icon_cb(PurpleConnection *gc, const char *filepath)
@@ -858,8 +858,8 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 		if (nickname != NULL) {
 			purple_account_set_alias(account, nickname);
 		}
-		/* add me to buddy list */
-		buddy = qq_buddy_find_or_new(gc, uid);
+		/* find me in buddy list */
+		buddy = qq_buddy_find_or_new(gc, uid, 0);
 	} else {
 		buddy = purple_find_buddy(gc->account, who);
 		/* purple_debug_info("QQ", "buddy=%p\n", (void*)buddy); */

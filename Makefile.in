@@ -34,16 +34,26 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = libpurple/protocols/qq
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in AUTHORS \
-	ChangeLog
+@BUILD_SEPERATE_TRUE@am__append_1 = @PURPLE_CFLAGS@ -Ilibpurple -DPURPLE_PLUGINS
+@BUILD_SEPERATE_FALSE@am__append_2 = \
+@BUILD_SEPERATE_FALSE@	-I$(top_srcdir)/libpurple \
+@BUILD_SEPERATE_FALSE@	-I$(top_builddir)/libpurple 
+
+subdir = .
+DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS \
+	ChangeLog config.guess config.sub depcomp install-sh ltmain.sh \
+	missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = $(top_builddir)/config.h
+am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
+ configure.lineno config.status.lineno
+mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -94,12 +104,9 @@ am__objects_1 = libqq_la-buddy_info.lo libqq_la-buddy_memo.lo \
 @STATIC_QQ_FALSE@am_libqq_la_OBJECTS = $(am__objects_1)
 @STATIC_QQ_TRUE@am_libqq_la_OBJECTS = $(am__objects_1)
 libqq_la_OBJECTS = $(am_libqq_la_OBJECTS)
-AM_V_lt = $(am__v_lt_$(V))
-am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
-am__v_lt_0 = --silent
-libqq_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libqq_la_CFLAGS) \
-	$(CFLAGS) $(libqq_la_LDFLAGS) $(LDFLAGS) -o $@
+libqq_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(libqq_la_CFLAGS) $(CFLAGS) \
+	$(libqq_la_LDFLAGS) $(LDFLAGS) -o $@
 @STATIC_QQ_FALSE@am_libqq_la_rpath = -rpath $(pkgdir)
 @STATIC_QQ_TRUE@am_libqq_la_rpath =
 @STATIC_QQ_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
@@ -126,156 +133,78 @@ am_libqq_tmp_la_OBJECTS = $(am__objects_3)
 libqq_tmp_la_OBJECTS = $(am_libqq_tmp_la_OBJECTS)
 @STATIC_QQ_FALSE@am_libqq_tmp_la_rpath =
 @STATIC_QQ_TRUE@am_libqq_tmp_la_rpath =
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
+DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_$(V))
-am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
-am__v_CC_0 = @echo "  CC    " $@;
-AM_V_at = $(am__v_at_$(V))
-am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
-am__v_at_0 = @
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_$(V))
-am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
-am__v_CCLD_0 = @echo "  CCLD  " $@;
-AM_V_GEN = $(am__v_GEN_$(V))
-am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
-am__v_GEN_0 = @echo "  GEN   " $@;
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 SOURCES = $(libqq_la_SOURCES) $(libqq_tmp_la_SOURCES)
 DIST_SOURCES = $(am__libqq_la_SOURCES_DIST) \
 	$(am__libqq_tmp_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+distdir = $(PACKAGE)-$(VERSION)
+top_distdir = $(distdir)
+am__remove_distdir = \
+  { test ! -d "$(distdir)" \
+    || { find "$(distdir)" -type d ! -perm -200 -exec chmod u+w {} ';' \
+         && rm -fr "$(distdir)"; }; }
+DIST_ARCHIVES = $(distdir).tar.gz
+GZIP_ENV = --best
+distuninstallcheck_listfiles = find . -type f -print
+distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
-ALLOCA = @ALLOCA@
-ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
-AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
-AVAHI_CFLAGS = @AVAHI_CFLAGS@
-AVAHI_LIBS = @AVAHI_LIBS@
 AWK = @AWK@
-CATALOGS = @CATALOGS@
-CATOBJEXT = @CATOBJEXT@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
-CHECK_CFLAGS = @CHECK_CFLAGS@
-CHECK_LIBS = @CHECK_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
-DATADIRNAME = @DATADIRNAME@
-DBUS_CFLAGS = @DBUS_CFLAGS@
-DBUS_LIBS = @DBUS_LIBS@
-DBUS_SERVICES_DIR = @DBUS_SERVICES_DIR@
-DEBUG_CFLAGS = @DEBUG_CFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DOT = @DOT@
-DOXYGEN = @DOXYGEN@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
-DYNALOADER_A = @DYNALOADER_A@
-DYNAMIC_PRPLS = @DYNAMIC_PRPLS@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-EVOLUTION_ADDRESSBOOK_CFLAGS = @EVOLUTION_ADDRESSBOOK_CFLAGS@
-EVOLUTION_ADDRESSBOOK_LIBS = @EVOLUTION_ADDRESSBOOK_LIBS@
 EXEEXT = @EXEEXT@
-FARSIGHT_CFLAGS = @FARSIGHT_CFLAGS@
-FARSIGHT_LIBS = @FARSIGHT_LIBS@
 FGREP = @FGREP@
-GADU_CFLAGS = @GADU_CFLAGS@
-GADU_LIBS = @GADU_LIBS@
-GCONFTOOL = @GCONFTOOL@
-GCONF_SCHEMA_CONFIG_SOURCE = @GCONF_SCHEMA_CONFIG_SOURCE@
-GCONF_SCHEMA_FILE_DIR = @GCONF_SCHEMA_FILE_DIR@
-GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_CFLAGS = @GLIB_CFLAGS@
-GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
 GLIB_LIBS = @GLIB_LIBS@
-GMOFILES = @GMOFILES@
-GMSGFMT = @GMSGFMT@
-GNT_CFLAGS = @GNT_CFLAGS@
-GNT_LIBS = @GNT_LIBS@
-GNT_LT_VERSION_INFO = @GNT_LT_VERSION_INFO@
-GNT_MAJOR_VERSION = @GNT_MAJOR_VERSION@
-GNT_MICRO_VERSION = @GNT_MICRO_VERSION@
-GNT_MINOR_VERSION = @GNT_MINOR_VERSION@
-GNT_VERSION = @GNT_VERSION@
-GNUTLS_CFLAGS = @GNUTLS_CFLAGS@
-GNUTLS_LIBS = @GNUTLS_LIBS@
 GREP = @GREP@
-GSTINTERFACES_CFLAGS = @GSTINTERFACES_CFLAGS@
-GSTINTERFACES_LIBS = @GSTINTERFACES_LIBS@
-GSTREAMER_CFLAGS = @GSTREAMER_CFLAGS@
-GSTREAMER_LIBS = @GSTREAMER_LIBS@
-GTKSPELL_CFLAGS = @GTKSPELL_CFLAGS@
-GTKSPELL_LIBS = @GTKSPELL_LIBS@
-GTK_CFLAGS = @GTK_CFLAGS@
-GTK_LIBS = @GTK_LIBS@
-IDN_CFLAGS = @IDN_CFLAGS@
-IDN_LIBS = @IDN_LIBS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-INSTOBJEXT = @INSTOBJEXT@
-INTLLIBS = @INTLLIBS@
-INTLTOOL_EXTRACT = @INTLTOOL_EXTRACT@
-INTLTOOL_MERGE = @INTLTOOL_MERGE@
-INTLTOOL_PERL = @INTLTOOL_PERL@
-INTLTOOL_UPDATE = @INTLTOOL_UPDATE@
-KRB4_CFLAGS = @KRB4_CFLAGS@
-KRB4_LDFLAGS = @KRB4_LDFLAGS@
-KRB4_LIBS = @KRB4_LIBS@
 LD = @LD@
-LDADD = @LDADD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBPERL_A = @LIBPERL_A@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIBXML_CFLAGS = @LIBXML_CFLAGS@
-LIBXML_LIBS = @LIBXML_LIBS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-MEANWHILE_CFLAGS = @MEANWHILE_CFLAGS@
-MEANWHILE_LIBS = @MEANWHILE_LIBS@
 MKDIR_P = @MKDIR_P@
-MKINSTALLDIRS = @MKINSTALLDIRS@
-MONO_CFLAGS = @MONO_CFLAGS@
-MONO_LIBS = @MONO_LIBS@
-MSGFMT = @MSGFMT@
-MSGFMT_OPTS = @MSGFMT_OPTS@
-MSGMERGE = @MSGMERGE@
-NETWORKMANAGER_CFLAGS = @NETWORKMANAGER_CFLAGS@
-NETWORKMANAGER_LIBS = @NETWORKMANAGER_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
-NSS_CFLAGS = @NSS_CFLAGS@
-NSS_LIBS = @NSS_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -287,62 +216,21 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
-PANGO_CFLAGS = @PANGO_CFLAGS@
-PANGO_LIBS = @PANGO_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PERL = @PERL@
-PERL_CFLAGS = @PERL_CFLAGS@
-PERL_LIBS = @PERL_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
-PLUGINS_DEFINE = @PLUGINS_DEFINE@
-POFILES = @POFILES@
-POSUB = @POSUB@
-PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
-PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
-PURPLE_LT_VERSION_INFO = @PURPLE_LT_VERSION_INFO@
-PURPLE_MAJOR_VERSION = @PURPLE_MAJOR_VERSION@
-PURPLE_MICRO_VERSION = @PURPLE_MICRO_VERSION@
-PURPLE_MINOR_VERSION = @PURPLE_MINOR_VERSION@
-PURPLE_VERSION = @PURPLE_VERSION@
-PYTHON = @PYTHON@
-PY_CFLAGS = @PY_CFLAGS@
-PY_LIBS = @PY_LIBS@
+PURPLE_CFLAGS = @PURPLE_CFLAGS@
+PURPLE_DATADIR = @PURPLE_DATADIR@
+PURPLE_LIBDIR = @PURPLE_LIBDIR@
+PURPLE_LIBS = @PURPLE_LIBS@
+PURPLE_PLUGINDIR = @PURPLE_PLUGINDIR@
 RANLIB = @RANLIB@
-SASL_LIBS = @SASL_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SILC_CFLAGS = @SILC_CFLAGS@
-SILC_LIBS = @SILC_LIBS@
-SM_LIBS = @SM_LIBS@
-SQLITE3_CFLAGS = @SQLITE3_CFLAGS@
-SQLITE3_LIBS = @SQLITE3_LIBS@
-SSL_CERTIFICATES_DIR = @SSL_CERTIFICATES_DIR@
-STARTUP_NOTIFICATION_CFLAGS = @STARTUP_NOTIFICATION_CFLAGS@
-STARTUP_NOTIFICATION_LIBS = @STARTUP_NOTIFICATION_LIBS@
-STATIC_LINK_LIBS = @STATIC_LINK_LIBS@
-STATIC_PRPLS = @STATIC_PRPLS@
 STRIP = @STRIP@
-TCL_CFLAGS = @TCL_CFLAGS@
-TCL_LIBS = @TCL_LIBS@
-TK_LIBS = @TK_LIBS@
-USE_NLS = @USE_NLS@
 VERSION = @VERSION@
-X11_CFLAGS = @X11_CFLAGS@
-X11_LIBS = @X11_LIBS@
-XGETTEXT = @XGETTEXT@
-XMKMF = @XMKMF@
-XSLTPROC = @XSLTPROC@
-XSS_LIBS = @XSS_LIBS@
-X_CFLAGS = @X_CFLAGS@
-X_EXTRA_LIBS = @X_EXTRA_LIBS@
-X_LIBS = @X_LIBS@
-X_PRE_LIBS = @X_PRE_LIBS@
-ZEPHYR_CFLAGS = @ZEPHYR_CFLAGS@
-ZEPHYR_LDFLAGS = @ZEPHYR_LDFLAGS@
-ZEPHYR_LIBS = @ZEPHYR_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -365,10 +253,6 @@ datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
-enable_dbus = @enable_dbus@
-enable_devhelp = @enable_devhelp@
-enable_dot = @enable_dot@
-enable_doxygen = @enable_doxygen@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
@@ -388,13 +272,10 @@ mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
-perlpath = @perlpath@
-pidginpath = @pidginpath@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
-sedpath = @sedpath@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
@@ -402,10 +283,13 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = \
+AUTOMAKE_OPTIONS = foreign 1.6
+ACLOCAL_AMFLAGS = -I m4
+EXTRA_DIST = libpurple \
 	Makefile.mingw
 
-pkgdir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
+@BUILD_SEPERATE_FALSE@pkgdir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
+@BUILD_SEPERATE_TRUE@pkgdir = @PURPLE_PLUGINDIR@
 QQSOURCES = \
 	buddy_info.c \
 	buddy_info.h \
@@ -476,46 +360,45 @@ libqq_tmp_la_LIBADD = $(libqq_la_LIBADD)
 # places for users to choose from when setting their buddy icon.  We
 # don't distribute those icons ourselves because of possibly copyright
 # concerns, but distributions might want to put icons here.
-AM_CPPFLAGS = \
-	-I$(top_srcdir)/libpurple \
-	-I$(top_builddir)/libpurple \
-	-DQQ_BUDDY_ICON_DIR=\"$(datadir)/pixmaps/purple/buddy_icons/qq\" \
-	$(DEBUG_CFLAGS) \
-	$(GLIB_CFLAGS)
-
+AM_CPPFLAGS = -DQQ_BUDDY_ICON_DIR=\"$(datadir)/pixmaps/purple/buddy_icons/qq\" \
+	$(DEBUG_CFLAGS) $(GLIB_CFLAGS) $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
+am--refresh:
+	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      ( cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh ) \
-	        && { if test -f $@; then exit 0; else break; fi; }; \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign'; \
+	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign \
+		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu libpurple/protocols/qq/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu libpurple/protocols/qq/Makefile
+	  $(AUTOMAKE) --foreign Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
-	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
+	    echo ' $(SHELL) ./config.status'; \
+	    $(SHELL) ./config.status;; \
 	  *) \
-	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
-	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
+	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
+	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
 	esac;
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
-	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+	$(SHELL) ./config.status --recheck
 
 $(top_srcdir)/configure:  $(am__configure_deps)
-	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+	$(am__cd) $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
-	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
 
 clean-noinstLTLIBRARIES:
@@ -558,9 +441,9 @@ clean-pkgLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libqq.la: $(libqq_la_OBJECTS) $(libqq_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libqq_la_LINK) $(am_libqq_la_rpath) $(libqq_la_OBJECTS) $(libqq_la_LIBADD) $(LIBS)
+	$(libqq_la_LINK) $(am_libqq_la_rpath) $(libqq_la_OBJECTS) $(libqq_la_LIBADD) $(LIBS)
 libqq_tmp.la: $(libqq_tmp_la_OBJECTS) $(libqq_tmp_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) $(am_libqq_tmp_la_rpath) $(libqq_tmp_la_OBJECTS) $(libqq_tmp_la_LIBADD) $(LIBS)
+	$(LINK) $(am_libqq_tmp_la_rpath) $(libqq_tmp_la_OBJECTS) $(libqq_tmp_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -616,218 +499,195 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
 libqq_la-buddy_info.lo: buddy_info.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_info.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_info.Tpo -c -o libqq_la-buddy_info.lo `test -f 'buddy_info.c' || echo '$(srcdir)/'`buddy_info.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-buddy_info.Tpo $(DEPDIR)/libqq_la-buddy_info.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_info.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_info.Tpo -c -o libqq_la-buddy_info.lo `test -f 'buddy_info.c' || echo '$(srcdir)/'`buddy_info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-buddy_info.Tpo $(DEPDIR)/libqq_la-buddy_info.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='buddy_info.c' object='libqq_la-buddy_info.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_info.lo `test -f 'buddy_info.c' || echo '$(srcdir)/'`buddy_info.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_info.lo `test -f 'buddy_info.c' || echo '$(srcdir)/'`buddy_info.c
 
 libqq_la-buddy_memo.lo: buddy_memo.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_memo.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_memo.Tpo -c -o libqq_la-buddy_memo.lo `test -f 'buddy_memo.c' || echo '$(srcdir)/'`buddy_memo.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-buddy_memo.Tpo $(DEPDIR)/libqq_la-buddy_memo.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_memo.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_memo.Tpo -c -o libqq_la-buddy_memo.lo `test -f 'buddy_memo.c' || echo '$(srcdir)/'`buddy_memo.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-buddy_memo.Tpo $(DEPDIR)/libqq_la-buddy_memo.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='buddy_memo.c' object='libqq_la-buddy_memo.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_memo.lo `test -f 'buddy_memo.c' || echo '$(srcdir)/'`buddy_memo.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_memo.lo `test -f 'buddy_memo.c' || echo '$(srcdir)/'`buddy_memo.c
 
 libqq_la-buddy_list.lo: buddy_list.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_list.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_list.Tpo -c -o libqq_la-buddy_list.lo `test -f 'buddy_list.c' || echo '$(srcdir)/'`buddy_list.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-buddy_list.Tpo $(DEPDIR)/libqq_la-buddy_list.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_list.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_list.Tpo -c -o libqq_la-buddy_list.lo `test -f 'buddy_list.c' || echo '$(srcdir)/'`buddy_list.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-buddy_list.Tpo $(DEPDIR)/libqq_la-buddy_list.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='buddy_list.c' object='libqq_la-buddy_list.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_list.lo `test -f 'buddy_list.c' || echo '$(srcdir)/'`buddy_list.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_list.lo `test -f 'buddy_list.c' || echo '$(srcdir)/'`buddy_list.c
 
 libqq_la-buddy_opt.lo: buddy_opt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_opt.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_opt.Tpo -c -o libqq_la-buddy_opt.lo `test -f 'buddy_opt.c' || echo '$(srcdir)/'`buddy_opt.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-buddy_opt.Tpo $(DEPDIR)/libqq_la-buddy_opt.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-buddy_opt.lo -MD -MP -MF $(DEPDIR)/libqq_la-buddy_opt.Tpo -c -o libqq_la-buddy_opt.lo `test -f 'buddy_opt.c' || echo '$(srcdir)/'`buddy_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-buddy_opt.Tpo $(DEPDIR)/libqq_la-buddy_opt.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='buddy_opt.c' object='libqq_la-buddy_opt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_opt.lo `test -f 'buddy_opt.c' || echo '$(srcdir)/'`buddy_opt.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-buddy_opt.lo `test -f 'buddy_opt.c' || echo '$(srcdir)/'`buddy_opt.c
 
 libqq_la-char_conv.lo: char_conv.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-char_conv.lo -MD -MP -MF $(DEPDIR)/libqq_la-char_conv.Tpo -c -o libqq_la-char_conv.lo `test -f 'char_conv.c' || echo '$(srcdir)/'`char_conv.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-char_conv.Tpo $(DEPDIR)/libqq_la-char_conv.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-char_conv.lo -MD -MP -MF $(DEPDIR)/libqq_la-char_conv.Tpo -c -o libqq_la-char_conv.lo `test -f 'char_conv.c' || echo '$(srcdir)/'`char_conv.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-char_conv.Tpo $(DEPDIR)/libqq_la-char_conv.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='char_conv.c' object='libqq_la-char_conv.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-char_conv.lo `test -f 'char_conv.c' || echo '$(srcdir)/'`char_conv.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-char_conv.lo `test -f 'char_conv.c' || echo '$(srcdir)/'`char_conv.c
 
 libqq_la-qq_crypt.lo: qq_crypt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_crypt.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_crypt.Tpo -c -o libqq_la-qq_crypt.lo `test -f 'qq_crypt.c' || echo '$(srcdir)/'`qq_crypt.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_crypt.Tpo $(DEPDIR)/libqq_la-qq_crypt.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_crypt.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_crypt.Tpo -c -o libqq_la-qq_crypt.lo `test -f 'qq_crypt.c' || echo '$(srcdir)/'`qq_crypt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_crypt.Tpo $(DEPDIR)/libqq_la-qq_crypt.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_crypt.c' object='libqq_la-qq_crypt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_crypt.lo `test -f 'qq_crypt.c' || echo '$(srcdir)/'`qq_crypt.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_crypt.lo `test -f 'qq_crypt.c' || echo '$(srcdir)/'`qq_crypt.c
 
 libqq_la-file_trans.lo: file_trans.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-file_trans.lo -MD -MP -MF $(DEPDIR)/libqq_la-file_trans.Tpo -c -o libqq_la-file_trans.lo `test -f 'file_trans.c' || echo '$(srcdir)/'`file_trans.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-file_trans.Tpo $(DEPDIR)/libqq_la-file_trans.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-file_trans.lo -MD -MP -MF $(DEPDIR)/libqq_la-file_trans.Tpo -c -o libqq_la-file_trans.lo `test -f 'file_trans.c' || echo '$(srcdir)/'`file_trans.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-file_trans.Tpo $(DEPDIR)/libqq_la-file_trans.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='file_trans.c' object='libqq_la-file_trans.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-file_trans.lo `test -f 'file_trans.c' || echo '$(srcdir)/'`file_trans.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-file_trans.lo `test -f 'file_trans.c' || echo '$(srcdir)/'`file_trans.c
 
 libqq_la-group.lo: group.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group.lo -MD -MP -MF $(DEPDIR)/libqq_la-group.Tpo -c -o libqq_la-group.lo `test -f 'group.c' || echo '$(srcdir)/'`group.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group.Tpo $(DEPDIR)/libqq_la-group.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group.lo -MD -MP -MF $(DEPDIR)/libqq_la-group.Tpo -c -o libqq_la-group.lo `test -f 'group.c' || echo '$(srcdir)/'`group.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group.Tpo $(DEPDIR)/libqq_la-group.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group.c' object='libqq_la-group.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group.lo `test -f 'group.c' || echo '$(srcdir)/'`group.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group.lo `test -f 'group.c' || echo '$(srcdir)/'`group.c
 
 libqq_la-group_internal.lo: group_internal.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_internal.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_internal.Tpo -c -o libqq_la-group_internal.lo `test -f 'group_internal.c' || echo '$(srcdir)/'`group_internal.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group_internal.Tpo $(DEPDIR)/libqq_la-group_internal.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_internal.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_internal.Tpo -c -o libqq_la-group_internal.lo `test -f 'group_internal.c' || echo '$(srcdir)/'`group_internal.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group_internal.Tpo $(DEPDIR)/libqq_la-group_internal.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group_internal.c' object='libqq_la-group_internal.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_internal.lo `test -f 'group_internal.c' || echo '$(srcdir)/'`group_internal.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_internal.lo `test -f 'group_internal.c' || echo '$(srcdir)/'`group_internal.c
 
 libqq_la-group_im.lo: group_im.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_im.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_im.Tpo -c -o libqq_la-group_im.lo `test -f 'group_im.c' || echo '$(srcdir)/'`group_im.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group_im.Tpo $(DEPDIR)/libqq_la-group_im.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_im.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_im.Tpo -c -o libqq_la-group_im.lo `test -f 'group_im.c' || echo '$(srcdir)/'`group_im.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group_im.Tpo $(DEPDIR)/libqq_la-group_im.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group_im.c' object='libqq_la-group_im.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_im.lo `test -f 'group_im.c' || echo '$(srcdir)/'`group_im.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_im.lo `test -f 'group_im.c' || echo '$(srcdir)/'`group_im.c
 
 libqq_la-group_info.lo: group_info.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_info.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_info.Tpo -c -o libqq_la-group_info.lo `test -f 'group_info.c' || echo '$(srcdir)/'`group_info.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group_info.Tpo $(DEPDIR)/libqq_la-group_info.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_info.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_info.Tpo -c -o libqq_la-group_info.lo `test -f 'group_info.c' || echo '$(srcdir)/'`group_info.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group_info.Tpo $(DEPDIR)/libqq_la-group_info.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group_info.c' object='libqq_la-group_info.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_info.lo `test -f 'group_info.c' || echo '$(srcdir)/'`group_info.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_info.lo `test -f 'group_info.c' || echo '$(srcdir)/'`group_info.c
 
 libqq_la-group_join.lo: group_join.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_join.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_join.Tpo -c -o libqq_la-group_join.lo `test -f 'group_join.c' || echo '$(srcdir)/'`group_join.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group_join.Tpo $(DEPDIR)/libqq_la-group_join.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_join.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_join.Tpo -c -o libqq_la-group_join.lo `test -f 'group_join.c' || echo '$(srcdir)/'`group_join.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group_join.Tpo $(DEPDIR)/libqq_la-group_join.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group_join.c' object='libqq_la-group_join.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_join.lo `test -f 'group_join.c' || echo '$(srcdir)/'`group_join.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_join.lo `test -f 'group_join.c' || echo '$(srcdir)/'`group_join.c
 
 libqq_la-group_opt.lo: group_opt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_opt.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_opt.Tpo -c -o libqq_la-group_opt.lo `test -f 'group_opt.c' || echo '$(srcdir)/'`group_opt.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-group_opt.Tpo $(DEPDIR)/libqq_la-group_opt.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-group_opt.lo -MD -MP -MF $(DEPDIR)/libqq_la-group_opt.Tpo -c -o libqq_la-group_opt.lo `test -f 'group_opt.c' || echo '$(srcdir)/'`group_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-group_opt.Tpo $(DEPDIR)/libqq_la-group_opt.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='group_opt.c' object='libqq_la-group_opt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_opt.lo `test -f 'group_opt.c' || echo '$(srcdir)/'`group_opt.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-group_opt.lo `test -f 'group_opt.c' || echo '$(srcdir)/'`group_opt.c
 
 libqq_la-qq_define.lo: qq_define.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_define.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_define.Tpo -c -o libqq_la-qq_define.lo `test -f 'qq_define.c' || echo '$(srcdir)/'`qq_define.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_define.Tpo $(DEPDIR)/libqq_la-qq_define.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_define.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_define.Tpo -c -o libqq_la-qq_define.lo `test -f 'qq_define.c' || echo '$(srcdir)/'`qq_define.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_define.Tpo $(DEPDIR)/libqq_la-qq_define.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_define.c' object='libqq_la-qq_define.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_define.lo `test -f 'qq_define.c' || echo '$(srcdir)/'`qq_define.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_define.lo `test -f 'qq_define.c' || echo '$(srcdir)/'`qq_define.c
 
 libqq_la-im.lo: im.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-im.lo -MD -MP -MF $(DEPDIR)/libqq_la-im.Tpo -c -o libqq_la-im.lo `test -f 'im.c' || echo '$(srcdir)/'`im.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-im.Tpo $(DEPDIR)/libqq_la-im.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-im.lo -MD -MP -MF $(DEPDIR)/libqq_la-im.Tpo -c -o libqq_la-im.lo `test -f 'im.c' || echo '$(srcdir)/'`im.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-im.Tpo $(DEPDIR)/libqq_la-im.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='im.c' object='libqq_la-im.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-im.lo `test -f 'im.c' || echo '$(srcdir)/'`im.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-im.lo `test -f 'im.c' || echo '$(srcdir)/'`im.c
 
 libqq_la-qq_process.lo: qq_process.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_process.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_process.Tpo -c -o libqq_la-qq_process.lo `test -f 'qq_process.c' || echo '$(srcdir)/'`qq_process.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_process.Tpo $(DEPDIR)/libqq_la-qq_process.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_process.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_process.Tpo -c -o libqq_la-qq_process.lo `test -f 'qq_process.c' || echo '$(srcdir)/'`qq_process.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_process.Tpo $(DEPDIR)/libqq_la-qq_process.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_process.c' object='libqq_la-qq_process.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_process.lo `test -f 'qq_process.c' || echo '$(srcdir)/'`qq_process.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_process.lo `test -f 'qq_process.c' || echo '$(srcdir)/'`qq_process.c
 
 libqq_la-qq_base.lo: qq_base.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_base.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_base.Tpo -c -o libqq_la-qq_base.lo `test -f 'qq_base.c' || echo '$(srcdir)/'`qq_base.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_base.Tpo $(DEPDIR)/libqq_la-qq_base.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_base.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_base.Tpo -c -o libqq_la-qq_base.lo `test -f 'qq_base.c' || echo '$(srcdir)/'`qq_base.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_base.Tpo $(DEPDIR)/libqq_la-qq_base.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_base.c' object='libqq_la-qq_base.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_base.lo `test -f 'qq_base.c' || echo '$(srcdir)/'`qq_base.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_base.lo `test -f 'qq_base.c' || echo '$(srcdir)/'`qq_base.c
 
 libqq_la-packet_parse.lo: packet_parse.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-packet_parse.lo -MD -MP -MF $(DEPDIR)/libqq_la-packet_parse.Tpo -c -o libqq_la-packet_parse.lo `test -f 'packet_parse.c' || echo '$(srcdir)/'`packet_parse.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-packet_parse.Tpo $(DEPDIR)/libqq_la-packet_parse.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-packet_parse.lo -MD -MP -MF $(DEPDIR)/libqq_la-packet_parse.Tpo -c -o libqq_la-packet_parse.lo `test -f 'packet_parse.c' || echo '$(srcdir)/'`packet_parse.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-packet_parse.Tpo $(DEPDIR)/libqq_la-packet_parse.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='packet_parse.c' object='libqq_la-packet_parse.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-packet_parse.lo `test -f 'packet_parse.c' || echo '$(srcdir)/'`packet_parse.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-packet_parse.lo `test -f 'packet_parse.c' || echo '$(srcdir)/'`packet_parse.c
 
 libqq_la-qq.lo: qq.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq.Tpo -c -o libqq_la-qq.lo `test -f 'qq.c' || echo '$(srcdir)/'`qq.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq.Tpo $(DEPDIR)/libqq_la-qq.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq.Tpo -c -o libqq_la-qq.lo `test -f 'qq.c' || echo '$(srcdir)/'`qq.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq.Tpo $(DEPDIR)/libqq_la-qq.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq.c' object='libqq_la-qq.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq.lo `test -f 'qq.c' || echo '$(srcdir)/'`qq.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq.lo `test -f 'qq.c' || echo '$(srcdir)/'`qq.c
 
 libqq_la-qq_network.lo: qq_network.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_network.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_network.Tpo -c -o libqq_la-qq_network.lo `test -f 'qq_network.c' || echo '$(srcdir)/'`qq_network.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_network.Tpo $(DEPDIR)/libqq_la-qq_network.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_network.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_network.Tpo -c -o libqq_la-qq_network.lo `test -f 'qq_network.c' || echo '$(srcdir)/'`qq_network.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_network.Tpo $(DEPDIR)/libqq_la-qq_network.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_network.c' object='libqq_la-qq_network.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_network.lo `test -f 'qq_network.c' || echo '$(srcdir)/'`qq_network.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_network.lo `test -f 'qq_network.c' || echo '$(srcdir)/'`qq_network.c
 
 libqq_la-send_file.lo: send_file.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-send_file.lo -MD -MP -MF $(DEPDIR)/libqq_la-send_file.Tpo -c -o libqq_la-send_file.lo `test -f 'send_file.c' || echo '$(srcdir)/'`send_file.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-send_file.Tpo $(DEPDIR)/libqq_la-send_file.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-send_file.lo -MD -MP -MF $(DEPDIR)/libqq_la-send_file.Tpo -c -o libqq_la-send_file.lo `test -f 'send_file.c' || echo '$(srcdir)/'`send_file.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-send_file.Tpo $(DEPDIR)/libqq_la-send_file.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='send_file.c' object='libqq_la-send_file.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-send_file.lo `test -f 'send_file.c' || echo '$(srcdir)/'`send_file.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-send_file.lo `test -f 'send_file.c' || echo '$(srcdir)/'`send_file.c
 
 libqq_la-qq_trans.lo: qq_trans.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_trans.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_trans.Tpo -c -o libqq_la-qq_trans.lo `test -f 'qq_trans.c' || echo '$(srcdir)/'`qq_trans.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-qq_trans.Tpo $(DEPDIR)/libqq_la-qq_trans.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-qq_trans.lo -MD -MP -MF $(DEPDIR)/libqq_la-qq_trans.Tpo -c -o libqq_la-qq_trans.lo `test -f 'qq_trans.c' || echo '$(srcdir)/'`qq_trans.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-qq_trans.Tpo $(DEPDIR)/libqq_la-qq_trans.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='qq_trans.c' object='libqq_la-qq_trans.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_trans.lo `test -f 'qq_trans.c' || echo '$(srcdir)/'`qq_trans.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-qq_trans.lo `test -f 'qq_trans.c' || echo '$(srcdir)/'`qq_trans.c
 
 libqq_la-utils.lo: utils.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-utils.lo -MD -MP -MF $(DEPDIR)/libqq_la-utils.Tpo -c -o libqq_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libqq_la-utils.Tpo $(DEPDIR)/libqq_la-utils.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -MT libqq_la-utils.lo -MD -MP -MF $(DEPDIR)/libqq_la-utils.Tpo -c -o libqq_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libqq_la-utils.Tpo $(DEPDIR)/libqq_la-utils.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils.c' object='libqq_la-utils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libqq_la_CFLAGS) $(CFLAGS) -c -o libqq_la-utils.lo `test -f 'utils.c' || echo '$(srcdir)/'`utils.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+
+distclean-libtool:
+	-rm -f libtool config.lt
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -882,6 +742,8 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(DISTFILES)
+	$(am__remove_distdir)
+	test -d "$(distdir)" || mkdir "$(distdir)"
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
 	list='$(DISTFILES)'; \
@@ -911,6 +773,121 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	-test -n "$(am__skip_mode_fix)" \
+	|| find "$(distdir)" -type d ! -perm -755 \
+		-exec chmod u+rwx,go+rx {} \; -o \
+	  ! -type d ! -perm -444 -links 1 -exec chmod a+r {} \; -o \
+	  ! -type d ! -perm -400 -exec chmod a+r {} \; -o \
+	  ! -type d ! -perm -444 -exec $(install_sh) -c -m a+r {} {} \; \
+	|| chmod -R a+r "$(distdir)"
+dist-gzip: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	$(am__remove_distdir)
+
+dist-bzip2: distdir
+	tardir=$(distdir) && $(am__tar) | bzip2 -9 -c >$(distdir).tar.bz2
+	$(am__remove_distdir)
+
+dist-lzma: distdir
+	tardir=$(distdir) && $(am__tar) | lzma -9 -c >$(distdir).tar.lzma
+	$(am__remove_distdir)
+
+dist-xz: distdir
+	tardir=$(distdir) && $(am__tar) | xz -c >$(distdir).tar.xz
+	$(am__remove_distdir)
+
+dist-tarZ: distdir
+	tardir=$(distdir) && $(am__tar) | compress -c >$(distdir).tar.Z
+	$(am__remove_distdir)
+
+dist-shar: distdir
+	shar $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).shar.gz
+	$(am__remove_distdir)
+
+dist-zip: distdir
+	-rm -f $(distdir).zip
+	zip -rq $(distdir).zip $(distdir)
+	$(am__remove_distdir)
+
+dist dist-all: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	$(am__remove_distdir)
+
+# This target untars the dist file and tries a VPATH configuration.  Then
+# it guarantees that the distribution is self-contained by making another
+# tarfile.
+distcheck: dist
+	case '$(DIST_ARCHIVES)' in \
+	*.tar.gz*) \
+	  GZIP=$(GZIP_ENV) gzip -dc $(distdir).tar.gz | $(am__untar) ;;\
+	*.tar.bz2*) \
+	  bzip2 -dc $(distdir).tar.bz2 | $(am__untar) ;;\
+	*.tar.lzma*) \
+	  lzma -dc $(distdir).tar.lzma | $(am__untar) ;;\
+	*.tar.xz*) \
+	  xz -dc $(distdir).tar.xz | $(am__untar) ;;\
+	*.tar.Z*) \
+	  uncompress -c $(distdir).tar.Z | $(am__untar) ;;\
+	*.shar.gz*) \
+	  GZIP=$(GZIP_ENV) gzip -dc $(distdir).shar.gz | unshar ;;\
+	*.zip*) \
+	  unzip $(distdir).zip ;;\
+	esac
+	chmod -R a-w $(distdir); chmod a+w $(distdir)
+	mkdir $(distdir)/_build
+	mkdir $(distdir)/_inst
+	chmod a-w $(distdir)
+	test -d $(distdir)/_build || exit 0; \
+	dc_install_base=`$(am__cd) $(distdir)/_inst && pwd | sed -e 's,^[^:\\/]:[\\/],/,'` \
+	  && dc_destdir="$${TMPDIR-/tmp}/am-dc-$$$$/" \
+	  && am__cwd=`pwd` \
+	  && $(am__cd) $(distdir)/_build \
+	  && ../configure --srcdir=.. --prefix="$$dc_install_base" \
+	    $(DISTCHECK_CONFIGURE_FLAGS) \
+	  && $(MAKE) $(AM_MAKEFLAGS) \
+	  && $(MAKE) $(AM_MAKEFLAGS) dvi \
+	  && $(MAKE) $(AM_MAKEFLAGS) check \
+	  && $(MAKE) $(AM_MAKEFLAGS) install \
+	  && $(MAKE) $(AM_MAKEFLAGS) installcheck \
+	  && $(MAKE) $(AM_MAKEFLAGS) uninstall \
+	  && $(MAKE) $(AM_MAKEFLAGS) distuninstallcheck_dir="$$dc_install_base" \
+	        distuninstallcheck \
+	  && chmod -R a-w "$$dc_install_base" \
+	  && ({ \
+	       (cd ../.. && umask 077 && mkdir "$$dc_destdir") \
+	       && $(MAKE) $(AM_MAKEFLAGS) DESTDIR="$$dc_destdir" install \
+	       && $(MAKE) $(AM_MAKEFLAGS) DESTDIR="$$dc_destdir" uninstall \
+	       && $(MAKE) $(AM_MAKEFLAGS) DESTDIR="$$dc_destdir" \
+	            distuninstallcheck_dir="$$dc_destdir" distuninstallcheck; \
+	      } || { rm -rf "$$dc_destdir"; exit 1; }) \
+	  && rm -rf "$$dc_destdir" \
+	  && $(MAKE) $(AM_MAKEFLAGS) dist \
+	  && rm -rf $(DIST_ARCHIVES) \
+	  && $(MAKE) $(AM_MAKEFLAGS) distcleancheck \
+	  && cd "$$am__cwd" \
+	  || exit 1
+	$(am__remove_distdir)
+	@(echo "$(distdir) archives ready for distribution: "; \
+	  list='$(DIST_ARCHIVES)'; for i in $$list; do echo $$i; done) | \
+	  sed -e 1h -e 1s/./=/g -e 1p -e 1x -e '$$p' -e '$$x'
+distuninstallcheck:
+	@$(am__cd) '$(distuninstallcheck_dir)' \
+	&& test `$(distuninstallcheck_listfiles) | wc -l` -le 1 \
+	   || { echo "ERROR: files left after uninstall:" ; \
+	        if test -n "$(DESTDIR)"; then \
+	          echo "  (check DESTDIR support)"; \
+	        fi ; \
+	        $(distuninstallcheck_listfiles) ; \
+	        exit 1; } >&2
+distcleancheck: distclean
+	@if test '$(srcdir)' = . ; then \
+	  echo "ERROR: distcleancheck can only run from a VPATH build" ; \
+	  exit 1 ; \
+	fi
+	@test `$(distcleancheck_listfiles) | wc -l` -eq 0 \
+	  || { echo "ERROR: files left in build directory after distclean:" ; \
+	       $(distcleancheck_listfiles) ; \
+	       exit 1; } >&2
 check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES)
@@ -949,10 +926,11 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	clean-pkgLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
+	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+	distclean-libtool distclean-tags
 
 dvi: dvi-am
 
@@ -995,6 +973,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	-rm -rf $(top_srcdir)/autom4te.cache
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -1016,19 +996,22 @@ uninstall-am: uninstall-pkgLTLIBRARIES
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES clean-pkgLTLIBRARIES \
-	ctags distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkgLTLIBRARIES install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-pkgLTLIBRARIES
+.PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
+	clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	clean-pkgLTLIBRARIES ctags dist dist-all dist-bzip2 dist-gzip \
+	dist-lzma dist-shar dist-tarZ dist-xz dist-zip distcheck \
+	distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-pkgLTLIBRARIES install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-pkgLTLIBRARIES
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

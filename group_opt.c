@@ -430,7 +430,7 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 	}
 
 	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
-		qq_request_buddy_info(gc, member_id, 0, QQ_BUDDY_INFO_DISPLAY);
+		qq_request_get_buddy_info(gc, member_id, 0, QQ_BUDDY_INFO_DISPLAY);
 	}
 	who = uid_to_purple_name(member_id);
 	msg = g_strdup_printf(_("%u request to join Qun %u"), member_id, ext_id);

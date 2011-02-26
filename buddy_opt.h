@@ -77,8 +77,8 @@ void qq_process_add_buddy_auth_ex(PurpleConnection *gc, guint8 *data, gint data_
 qq_buddy_data *qq_buddy_data_find(PurpleConnection *gc, guint32 uid);
 void qq_buddy_data_free(qq_buddy_data *bd);
 
-PurpleBuddy *qq_buddy_new(PurpleConnection *gc, guint32 uid);
-PurpleBuddy *qq_buddy_find_or_new(PurpleConnection *gc, guint32 uid);
+PurpleBuddy *qq_buddy_new(PurpleConnection *gc, guint32 uid, PurpleGroup * group);
+PurpleBuddy *qq_buddy_find_or_new(PurpleConnection *gc, guint32 uid, guint8 group_id);
 PurpleBuddy *qq_buddy_find(PurpleConnection *gc, guint32 uid);
 PurpleGroup *qq_group_find_or_new(const gchar *group_name);
 #endif

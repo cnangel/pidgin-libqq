@@ -613,12 +613,15 @@ void qq_update_all(PurpleConnection *gc, guint16 cmd)
 
 	switch (cmd) {
 		case 0:
-			qq_request_buddy_info(gc, qd->uid, QQ_CMD_CLASS_UPDATE_ALL, 0);
+			qq_request_get_buddy_info(gc, qd->uid, QQ_CMD_CLASS_UPDATE_ALL, 0);
 			break;
 		case QQ_CMD_GET_BUDDY_INFO:
 			qq_request_change_status(gc, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_CHANGE_STATUS:
+			qq_request_get_group_list(gc, 0, QQ_CMD_CLASS_UPDATE_ALL);
+			break;
+		case QQ_CMD_GET_GROUP_LIST:
 			qq_request_get_buddies_list(gc, 0, QQ_CMD_CLASS_UPDATE_ALL);
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
@@ -1066,6 +1069,15 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 			break;
 		case QQ_CMD_GET_LEVEL:
 			qq_process_get_level_reply(data, data_len, gc);
+			break;
+		case QQ_CMD_GET_GROUP_LIST:
+			ret_32 = qq_process_get_group_list(data, data_len, gc);
+			/* if still have remained group name */
+			if (ret_32)
+			{
+				purple_debug_info("QQ", "Requesting for Group pos: %d\n", ret_32);
+				qq_request_get_group_list(gc, ret_32, 0);
+			}
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
 			ret_16 = qq_process_get_buddies_list(data, data_len, gc);

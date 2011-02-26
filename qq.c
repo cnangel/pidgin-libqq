@@ -204,6 +204,7 @@ static void qq_close(PurpleConnection *gc)
 	qq_data *qd;
 	guint8 i;
 
+
 	g_return_if_fail(gc != NULL  && gc->proto_data);
 	qd = gc->proto_data;
 
@@ -237,8 +238,6 @@ static void qq_close(PurpleConnection *gc)
 	}
 	if (qd->ld.token_login) g_free(qd->ld.token_login);
 	
-	
-
 	server_list_remove_all(qd);
 
 	g_free(qd);
@@ -362,10 +361,10 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	if (bd->comm_flag & QQ_COMM_FLAG_VIDEO) {
 		g_string_append( str, _(" Video") );
 	}
-
 	if (bd->ext_flag & QQ_EXT_FLAG_ZONE) {
 		g_string_append( str, _(" Zone") );
 	}
+
 	purple_notify_user_info_add_pair(user_info, _("Flag"), str->str);
 
 	g_string_free(str, TRUE);
@@ -468,7 +467,7 @@ static void qq_show_buddy_info(PurpleConnection *gc, const gchar *who)
 	if (qd->client_version >= 2010) {
 		qq_request_get_level(gc, uid);
 	}
-	qq_request_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
+	qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
 }
 
 static void action_update_all_rooms(PurplePluginAction *action)
@@ -520,7 +519,7 @@ static void action_modify_info_base(PurplePluginAction *action)
 
 	g_return_if_fail(NULL != gc && NULL != gc->proto_data);
 	qd = (qq_data *) gc->proto_data;
-	qq_request_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_BASE);
+	qq_request_get_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_BASE);
 }
 
 static void action_modify_info_ext(PurplePluginAction *action)
@@ -530,7 +529,7 @@ static void action_modify_info_ext(PurplePluginAction *action)
 
 	g_return_if_fail(NULL != gc && NULL != gc->proto_data);
 	qd = (qq_data *) gc->proto_data;
-	qq_request_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_EXT);
+	qq_request_get_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_EXT);
 }
 
 static void action_modify_info_addr(PurplePluginAction *action)
@@ -540,7 +539,7 @@ static void action_modify_info_addr(PurplePluginAction *action)
 
 	g_return_if_fail(NULL != gc && NULL != gc->proto_data);
 	qd = (qq_data *) gc->proto_data;
-	qq_request_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_ADDR);
+	qq_request_get_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_ADDR);
 }
 
 static void action_modify_info_contact(PurplePluginAction *action)
@@ -550,7 +549,7 @@ static void action_modify_info_contact(PurplePluginAction *action)
 
 	g_return_if_fail(NULL != gc && NULL != gc->proto_data);
 	qd = (qq_data *) gc->proto_data;
-	qq_request_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_CONTACT);
+	qq_request_get_buddy_info(gc, qd->uid, 0, QQ_BUDDY_INFO_MODIFY_CONTACT);
 }
 
 static void action_change_password(PurplePluginAction *action)
@@ -957,7 +956,7 @@ static void qq_get_chat_buddy_info(PurpleConnection *gc, gint channel, const gch
 		return;
 	}
 
-	qq_request_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
+	qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
 }
 
 /* convert chat nickname to uid to invite individual IM to buddy */

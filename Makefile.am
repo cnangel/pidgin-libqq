@@ -1,7 +1,13 @@
-EXTRA_DIST = \
+AUTOMAKE_OPTIONS = foreign 1.6
+ACLOCAL_AMFLAGS = -I m4
+EXTRA_DIST = libpurple \
 	Makefile.mingw
 
+if BUILD_SEPERATE
+pkgdir=@PURPLE_PLUGINDIR@
+else
 pkgdir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
+endif
 
 QQSOURCES = \
 	buddy_info.c \
@@ -82,9 +88,16 @@ libqq_tmp_la_LIBADD = $(libqq_la_LIBADD)
 # places for users to choose from when setting their buddy icon.  We
 # don't distribute those icons ourselves because of possibly copyright
 # concerns, but distributions might want to put icons here.
-AM_CPPFLAGS = \
-	-I$(top_srcdir)/libpurple \
-	-I$(top_builddir)/libpurple \
+
+AM_CPPFLAGS= \
 	-DQQ_BUDDY_ICON_DIR=\"$(datadir)/pixmaps/purple/buddy_icons/qq\" \
 	$(DEBUG_CFLAGS) \
 	$(GLIB_CFLAGS)
+
+if BUILD_SEPERATE
+AM_CPPFLAGS += @PURPLE_CFLAGS@ -Ilibpurple -DPURPLE_PLUGINS
+else
+AM_CPPFLAGS +=  \
+	-I$(top_srcdir)/libpurple \
+	-I$(top_builddir)/libpurple 
+endif

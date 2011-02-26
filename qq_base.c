@@ -1105,14 +1105,16 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	guint16 num;
 	guint i;
 	guint32 uid;
-	guint16 type;
-	PurpleBuddy *buddy;
+	guint8 type;
+	guint8 group_id;
 	qq_room_data *rmd;
-	GArray * buddy_list = g_array_new(FALSE, FALSE, sizeof(guint32));
+	PurpleBuddy * buddy;
+	qq_buddy_group * bg;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
 
 	qd = (qq_data *) gc->proto_data;
+	qd->buddy_list = NULL;
 
 	bytes = 1;
 	qq_get8(&ret, data + bytes);
@@ -1126,13 +1128,18 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	
 	for (i=0; i<num; i++) {
 		bytes += qq_get32(&uid, data+bytes);
-		bytes += qq_get16(&type, data+bytes);
+		bytes += qq_get8(&type, data+bytes);
+		bytes += qq_get8(&group_id, data+bytes);
 
-		if (type == 0x0100)		//buddy
+		if (type == 0x01)		//buddy
 		{
-			buddy = qq_buddy_find_or_new(gc, uid);
-			g_array_append_val(buddy_list, uid);
-		} else if (type == 0x0400) {
+			bg = g_new0(qq_buddy_group, 1);
+			bg->uid = uid;
+			bg->group_id = group_id/4;		//divide by 4!
+			/* add buddies after get group_list */
+			//buddy = qq_buddy_find_or_new(gc, uid, group_id);
+			 qd->buddy_list = g_slist_append(qd->buddy_list, bg);
+		} else if (type == 0x04) {
 			rmd = qq_room_data_find(gc, uid);
 			if(rmd == NULL) {
 				purple_debug_info("QQ", "Unknown room uid %u\n", uid);
@@ -1144,34 +1151,49 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	}
 
 	/* clean deleted buddies */
-	qq_clean_buddy_list(gc, buddy_list);
+	qq_clean_group_buddy_list(gc, qd->buddy_list);
 	return QQ_LOGIN_REPLY_OK;
 }
 
-void qq_clean_buddy_list( PurpleConnection *gc, GArray * buddy_list )
+void qq_clean_group_buddy_list( PurpleConnection *gc, GSList * buddy_list )
 {
 	PurpleBuddy * bd;
 	GSList * list;
-	guint i;
 	guint32 uid;
+	PurpleBlistNode *node;
+	PurpleBlistNode *node_next;
 	g_return_if_fail(gc != NULL || gc->account != NULL);
+
+	node = purple_blist_get_root();
+	while (node)
+	{
+		node_next = node->next;
+
+		if (PURPLE_BLIST_NODE_IS_GROUP(node))
+		{
+			if (!purple_blist_get_group_size((PurpleGroup *)node, TRUE)) {
+				purple_blist_remove_group((PurpleGroup *)node);
+			}
+		}
+		node = node_next;
+	}
 
 	for ( list=purple_find_buddies(gc->account, NULL); list; list=list->next )
 	{
 		bd = (PurpleBuddy *)list->data;
 		uid = purple_name_to_uid(bd->name);
-		for (i=0; i<buddy_list->len; ++i)
+		for ( ; buddy_list; buddy_list=buddy_list->next)
 		{
-			if (uid == g_array_index(buddy_list, guint32, i))	break;
+			if (uid == ((qq_buddy_group *)(buddy_list->data))->uid)	break;
 		}
-
-		if (i = buddy_list->len) 
+		/* Buddy Not Found */
+		if (!buddy_list)	
 		{
 			qq_buddy_free(bd);
 		}
 	}
-
 	g_free(list);
+
 }
 
 

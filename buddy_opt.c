@@ -131,21 +131,23 @@ void qq_buddy_data_free(qq_buddy_data *bd)
 }
 
 /* create purple buddy without data and display with no-auth icon */
-PurpleBuddy *qq_buddy_new(PurpleConnection *gc, guint32 uid)
+PurpleBuddy * qq_buddy_new( PurpleConnection *gc, guint32 uid, PurpleGroup * group )
 {
 	PurpleBuddy *buddy;
-	PurpleGroup *group;
 	gchar *who;
-	gchar *group_name;
+	gchar * group_name;
 
 	g_return_val_if_fail(gc->account != NULL && uid != 0, NULL);
 
-	group_name = g_strdup_printf(PURPLE_GROUP_QQ_FORMAT,
+	if (!group)
+	{
+		group_name = g_strdup_printf(PURPLE_GROUP_QQ_FORMAT,
 			purple_account_get_username(gc->account));
-	group = qq_group_find_or_new(group_name);
-	if (group == NULL) {
-		purple_debug_error("QQ", "Failed creating group %s\n", group_name);
-		return NULL;
+		group = qq_group_find_or_new(group_name);
+		if (group == NULL) {
+			purple_debug_error("QQ", "Failed creating group %s\n", group);
+			return NULL;
+		}
 	}
 
 	purple_debug_info("QQ", "Add new purple buddy: [%u]\n", uid);
@@ -156,8 +158,6 @@ PurpleBuddy *qq_buddy_new(PurpleConnection *gc, guint32 uid)
 	g_free(who);
 
 	purple_blist_add_buddy(buddy, NULL, group, NULL);
-
-	g_free(group_name);
 
 	return buddy;
 }
@@ -188,21 +188,46 @@ PurpleBuddy *qq_buddy_find(PurpleConnection *gc, guint32 uid)
 	return buddy;
 }
 
-PurpleBuddy *qq_buddy_find_or_new(PurpleConnection *gc, guint32 uid)
+PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 group_id )
 {
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
-
+	qq_data *qd;
+	GSList *l;
+	PurpleGroup * old_group;
 	g_return_val_if_fail(gc->account != NULL && uid != 0, NULL);
 
-	buddy = qq_buddy_find(gc, uid);
-	if (buddy == NULL) {
-		buddy = qq_buddy_new(gc, uid);
+	qd = (qq_data *)gc->proto_data;
+
+	if (group_id)
+	{
+		for (l=qd->group_list; l; l=l->next)
+		{
+			if (((qq_group *)(l->data))->group_id == group_id) break;
+		}
+	
+		buddy = qq_buddy_find(gc, uid);
+		if (buddy)		//if buddy already exist, we need check if he is in new group
+		{	
+			old_group = purple_buddy_get_group(buddy);
+			if (old_group != purple_find_group(((qq_group *)(l->data))->group_name))
+			{
+				qq_buddy_free(buddy);
+			} else	return buddy; 
+		}
+
+		old_group = purple_find_group(((qq_group *)(l->data))->group_name);
+		buddy = qq_buddy_new(gc, uid, old_group);
+	} else {
+		buddy = qq_buddy_find(gc, uid);
 		if (buddy == NULL) {
-			return NULL;
+			buddy = qq_buddy_new(gc, uid, NULL);
 		}
 	}
-
+	
+	if (buddy == NULL) {
+		return NULL;
+	}
 	if (purple_buddy_get_protocol_data(buddy) != NULL) {
 		return buddy;
 	}
@@ -760,15 +785,15 @@ void qq_process_add_buddy_no_auth(PurpleConnection *gc,
 
 	if (strtol(reply, NULL, 10) == 0) {
 		/* add OK */
-		qq_buddy_find_or_new(gc, uid);
+		qq_buddy_find_or_new(gc, uid, 0);
 
-		qq_request_buddy_info(gc, uid, 0, 0);
+		qq_request_get_buddy_info(gc, uid, 0, 0);
 		if (qd->client_version >= 2010) {
 			qq_request_get_level(gc, uid);
 		}
 		qq_request_get_buddies_online(gc, 0, 0);
 
-		purple_debug_info("QQ", "Successed adding into %u's buddy list\n", uid);
+		purple_debug_info("QQ", "Succeed adding into %u's buddy list\n", uid);
 		g_strfreev(segments);
 		return;
 	}
@@ -778,7 +803,7 @@ void qq_process_add_buddy_no_auth(PurpleConnection *gc,
 
 	buddy = qq_buddy_find(gc, uid);
 	if (buddy == NULL) {
-		buddy = qq_buddy_new(gc, uid);
+		buddy = qq_buddy_new(gc, uid, NULL);
 	}
 	if (buddy != NULL && (bd = purple_buddy_get_protocol_data(buddy)) != NULL) {
 		/* Not authorized now, free buddy data */
@@ -815,9 +840,9 @@ void qq_process_add_buddy_no_auth_ex(PurpleConnection *gc,
 
 	if (reply == 0x99) {
 		purple_debug_info("QQ", "Successfully added buddy %u\n", uid);
-		qq_buddy_find_or_new(gc, uid);
+		qq_buddy_find_or_new(gc, uid, 0);
 
-		qq_request_buddy_info(gc, uid, 0, 0);
+		qq_request_get_buddy_info(gc, uid, 0, 0);
 		if (qd->client_version >= 2010) {
 			qq_request_get_level(gc, uid);
 		}
@@ -899,7 +924,7 @@ static void buddy_add_input(PurpleConnection *gc, guint32 uid, gchar *reason)
 	add_req->uid = uid;
 
 	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
-		qq_request_buddy_info(gc, add_req->uid, 0, QQ_BUDDY_INFO_DISPLAY);
+		qq_request_get_buddy_info(gc, add_req->uid, 0, QQ_BUDDY_INFO_DISPLAY);
 	}
 	who = uid_to_purple_name(add_req->uid);
 
@@ -926,7 +951,7 @@ static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *t
 	g_return_if_fail(uid != 0);
 
 	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
-		qq_request_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
+		qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
 	}
 
 	if (data_len <= 0) {
@@ -1139,8 +1164,8 @@ static void server_buddy_added_me(PurpleConnection *gc, gchar *from, gchar *to,
 
 	server_buddy_check_code(gc, from, data, data_len);
 
-	qq_buddy_find_or_new(gc, uid);
-	qq_request_buddy_info(gc, uid, 0, 0);
+	qq_buddy_find_or_new(gc, uid, 0);
+	qq_request_get_buddy_info(gc, uid, 0, 0);
 	qq_request_get_buddies_online(gc, 0, 0);
 	if (qd->client_version >= 2010) {
 		qq_request_get_level(gc, uid);

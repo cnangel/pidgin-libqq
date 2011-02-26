@@ -164,7 +164,7 @@ PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 ext_id
 		rmd = room_data_new(id, ext_id, NULL);
 		g_return_val_if_fail(rmd != NULL, NULL);
 		rmd->my_role = QQ_ROOM_ROLE_YES;
-		qd->groups = g_list_append(qd->groups, rmd);
+		qd->rooms = g_slist_append(qd->rooms, rmd);
 	}
 
 	num_str = g_strdup_printf("%u", ext_id);
@@ -193,7 +193,7 @@ void qq_room_remove(PurpleConnection *gc, guint32 id)
 	g_return_if_fail (rmd != NULL);
 
 	ext_id = rmd->ext_id;
-	qd->groups = g_list_remove(qd->groups, rmd);
+	qd->rooms = g_slist_remove(qd->rooms, rmd);
 	room_data_free(rmd);
 
 	purple_debug_info("QQ", "Find and remove chat, ext_id %u\n", ext_id);
@@ -272,16 +272,16 @@ qq_buddy_data *qq_room_buddy_find_or_new(PurpleConnection *gc, qq_room_data *rmd
 
 qq_room_data *qq_room_data_find(PurpleConnection *gc, guint32 room_id)
 {
-	GList *list;
+	GSList *list;
 	qq_room_data *rmd;
 	qq_data *qd;
 
 	qd = (qq_data *) gc->proto_data;
 
-	if (qd->groups == NULL || room_id <= 0)
+	if (qd->rooms == NULL || room_id <= 0)
 		return 0;
 
-	list = qd->groups;
+	list = qd->rooms;
 	while (list != NULL) {
 		rmd = (qq_room_data *) list->data;
 		if (rmd->id == room_id) {
@@ -295,23 +295,23 @@ qq_room_data *qq_room_data_find(PurpleConnection *gc, guint32 room_id)
 
 guint32 qq_room_get_next(PurpleConnection *gc, guint32 room_id)
 {
-	GList *list;
+	GSList *list;
 	qq_room_data *rmd;
 	qq_data *qd;
 	gboolean is_find = FALSE;
 
 	qd = (qq_data *) gc->proto_data;
 
-	if (qd->groups == NULL) {
+	if (qd->rooms == NULL) {
 		return 0;
 	}
 
 	 if (room_id <= 0) {
-	 	rmd = (qq_room_data *) qd->groups->data;
+	 	rmd = (qq_room_data *) qd->rooms->data;
 		return rmd->id;
 	}
 
-	list = qd->groups;
+	list = qd->rooms;
 	while (list != NULL) {
 		rmd = (qq_room_data *) list->data;
 		list = list->next;
@@ -330,14 +330,14 @@ guint32 qq_room_get_next(PurpleConnection *gc, guint32 room_id)
 
 guint32 qq_room_get_next_conv(PurpleConnection *gc, guint32 room_id)
 {
-	GList *list;
+	GSList *list;
 	qq_room_data *rmd;
 	qq_data *qd;
 	gboolean is_find;
 
 	qd = (qq_data *) gc->proto_data;
 
- 	list = qd->groups;
+ 	list = qd->rooms;
 	if (room_id > 0) {
 		/* search next room */
 		is_find = FALSE;
@@ -404,7 +404,7 @@ void qq_room_data_initial(PurpleConnection *gc)
 			continue;
 
 		rmd = room_data_new_by_hashtable(gc, purple_chat_get_components(chat));
-		qd->groups = g_list_append(qd->groups, rmd);
+		qd->rooms = g_slist_append(qd->rooms, rmd);
 		count++;
 	}
 
@@ -421,9 +421,9 @@ void qq_room_data_free_all(PurpleConnection *gc)
 	qd = (qq_data *) gc->proto_data;
 
 	count = 0;
-	while (qd->groups != NULL) {
-		rmd = (qq_room_data *) qd->groups->data;
-		qd->groups = g_list_remove(qd->groups, rmd);
+	while (qd->rooms != NULL) {
+		rmd = (qq_room_data *) qd->rooms->data;
+		qd->rooms = g_slist_remove(qd->rooms, rmd);
 		room_data_free(rmd);
 		count++;
 	}

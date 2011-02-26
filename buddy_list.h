@@ -43,6 +43,16 @@ typedef struct _qq_buddy_status {
 	guint8 comm_flag;
 } qq_buddy_status;
 
+typedef struct _qq_buddy_group {
+	guint32 uid;
+	guint8 group_id;
+} qq_buddy_group;
+
+typedef struct _qq_group {
+	guint8 group_id;
+	gchar * group_name;
+} qq_group;
+
 void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint32 update_class);
 guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnection *gc);
 
@@ -59,4 +69,6 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 void qq_update_buddyies_status(PurpleConnection *gc);
 void qq_update_buddy_status(PurpleConnection *gc, guint32 uid, guint8 status, guint8 flag);
 void qq_buddy_data_free_all(PurpleConnection *gc);
+guint32 qq_process_get_group_list(guint8 *data, gint data_len, PurpleConnection *gc);
+void qq_request_get_group_list(PurpleConnection *gc, guint16 position, guint32 update_class);
 #endif
