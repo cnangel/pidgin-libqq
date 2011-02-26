@@ -77,7 +77,7 @@ static int _qq_xfer_init_udp_channel(ft_info *info)
 }
 
 /* these 2 functions send and recv buffer from/to UDP channel */
-static ssize_t _qq_xfer_udp_recv(guint8 *buf, size_t len, PurpleXfer *xfer)
+static size_t _qq_xfer_udp_recv(guint8 *buf, size_t len, PurpleXfer *xfer)
 {
 	struct sockaddr_in sin;
 	socklen_t sinlen;
@@ -103,7 +103,7 @@ static ssize_t _qq_xfer_udp_send(const char *buf, size_t len, PurpleXfer *xfer)
 }
 */
 
-static ssize_t _qq_xfer_udp_send(const guint8 *buf, size_t len, PurpleXfer *xfer)
+static gssize _qq_xfer_udp_send(const guint8 *buf, size_t len, PurpleXfer *xfer)
 {
 	struct sockaddr_in sin;
 	ft_info *info;
