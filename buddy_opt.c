@@ -145,7 +145,7 @@ PurpleBuddy * qq_buddy_new( PurpleConnection *gc, guint32 uid, PurpleGroup * gro
 			purple_account_get_username(gc->account));
 		group = qq_group_find_or_new(group_name);
 		if (group == NULL) {
-			purple_debug_error("QQ", "Failed creating group %s\n", group);
+			purple_debug_error("QQ", "Failed creating group\n");
 			return NULL;
 		}
 	}
@@ -194,6 +194,7 @@ PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 gr
 	qq_buddy_data *bd;
 	qq_data *qd;
 	GSList *l;
+	qq_group * g;
 	PurpleGroup * old_group;
 	g_return_val_if_fail(gc->account != NULL && uid != 0, NULL);
 
@@ -210,7 +211,8 @@ PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 gr
 		if (buddy)		//if buddy already exist, we need check if he is in new group
 		{	
 			old_group = purple_buddy_get_group(buddy);
-			if (old_group != purple_find_group(((qq_group *)(l->data))->group_name))
+			g = (qq_group *)l->data;
+			if (old_group != purple_find_group(g->group_name))
 			{
 				qq_buddy_free(buddy);
 			} else	return buddy; 

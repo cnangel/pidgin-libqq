@@ -729,7 +729,7 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 	bytes += qq_get8(&(im_text.fragment_index), data + bytes);
 	bytes += qq_get32(&im_text.uid_from, data + bytes);
 
-	if (im_text.uid_from != im_header->uid_from)
+	if (im_text.uid_from != im_header->uid_from || im_text.uid_from == 256)
 	{
 		/* TOFIX: "NOW INPUTING" MSG */
 		return;

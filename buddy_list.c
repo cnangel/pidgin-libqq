@@ -208,7 +208,7 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 		}
 
 		/* update buddy information */
-		buddy = qq_buddy_find_or_new(gc, bs.uid, bs.ext_flag);
+		buddy = qq_buddy_find_or_new(gc, bs.uid, 0);
 		bd = (buddy == NULL) ? NULL : (qq_buddy_data *)purple_buddy_get_protocol_data(buddy);
 		if (bd == NULL) {
 			purple_debug_error("QQ",
@@ -505,7 +505,7 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 	bytes += qq_get32(&my_uid, data + bytes);
 
 	/* update buddy information */
-	buddy = qq_buddy_find_or_new(gc, bs.uid, bs.ext_flag);
+	buddy = qq_buddy_find_or_new(gc, bs.uid, 0);
 	bd = (buddy == NULL) ? NULL : (qq_buddy_data *)purple_buddy_get_protocol_data(buddy);
 	if (bd == NULL) {
 		purple_debug_warning("QQ", "Got status of no-auth buddy %u\n", bs.uid);
