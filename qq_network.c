@@ -1042,7 +1042,8 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
 
-	g_slist_free_full(qd->group_list,g_free);
+	g_slist_foreach(qd->group_list,g_free,NULL);
+	g_slist_free(qd->group_list);
 	qd->group_list = NULL;
 	
 
