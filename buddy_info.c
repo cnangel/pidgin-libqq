@@ -197,7 +197,6 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	guint bytes;
 	guint16 size;
 	guint8 * info;
-	GDate g_date;
 
 	user_info = purple_notify_user_info_new();
 
@@ -225,24 +224,22 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 		switch (field_infos[index].type) {
 		case QQ_FIELD_BOOL:
 			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text),
-				(guint8)*info? _("True") : _("False"));
+				*(guint8 *)info? _("True") : _("False"));
 			break;
 		case QQ_FIELD_CHOICE:
-			choice_num = (guint8)*info;
+			choice_num = *(guint8 *)info;
 			if (choice_num < 0 || choice_num >= field_infos[index].choice_size) {
 				choice_num = 0;
 			}
 			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), field_infos[index].choice[choice_num]);
 			break;
 		case QQ_FIELD_NUM:
-			value = g_strdup_printf("%d", (guint8)*info);
+			value = g_strdup_printf("%d", *(guint8 *)info);
 			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), value);
 			g_free(value);
 			break;
 		case QQ_FIELD_TIME:
-			g_date_set_time_t (&g_date, g_ntohl((guint)*info));
-			value = g_new0(gchar, 16);
-			g_date_strftime(value, 16, "%Y-%m-%d", &g_date);
+			value = g_strdup_printf("%04d-%02d-%02d", g_ntohs(*(guint16 *)info), *(guint8 *)info+2, *(guint8 *)info+3);
 			purple_notify_user_info_add_pair(user_info, _(field_infos[index].text), value);
 			g_free(value);
 			break;
@@ -319,7 +316,7 @@ void request_change_info(PurpleConnection *gc, guint8 *data, guint8 *token, guin
 	bytes += 22;
 	bytes += qq_put16(raw_data + bytes, 0x0001);
 
-	while ( (guint8) *(data+i) == 0x4E )
+	while ( *(guint8 *)(data+i) == 0x4E )
 	{
 		i += 2;		//4E xx
 		i += qq_get16(&size, data+i);
@@ -427,7 +424,7 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 				}
 				
 				newdata = (guint8 *)g_realloc(newdata, datasize+4+1);
-				qq_put16(newdata+datasize, (guint16)*(data+bytes-4));
+				qq_put16(newdata+datasize, *(guint16 *)(data+bytes-4));
 				qq_put16(newdata+datasize+2, 0x0001);
 				qq_put8(newdata+datasize+4,0x00);
 
@@ -444,7 +441,7 @@ static void info_modify_ok_cb(modify_info_request *info_request, PurpleRequestFi
 				}
 
 				newdata = (guint8 *)g_realloc(newdata, datasize+strlen(str));
-				qq_put16(newdata+datasize, (guint16) *(data+bytes-4));
+				qq_put16(newdata+datasize, *(guint16 *)(data+bytes-4));
 				qq_put16(newdata+datasize+2, strlen(str));
 				g_memmove(newdata+datasize+4, str, strlen(str));
 
@@ -483,7 +480,7 @@ static void field_request_new(PurpleRequestFieldGroup *group, guint index, guint
 		case QQ_FIELD_BOOL:
 			field = purple_request_field_bool_new(
 				field_infos[index].id, _(field_infos[index].text),
-				(guint8)*info);
+				*(guint8 *)info);
 			purple_request_field_group_add_field(group, field);
 			break;
 		case QQ_FIELD_CHOICE:
@@ -500,14 +497,13 @@ static void field_request_new(PurpleRequestFieldGroup *group, guint index, guint
 			purple_request_field_group_add_field(group, field);
 			break;
 		case QQ_FIELD_NUM:
-			value = g_strdup_printf("%d", (guint8)*info);
+			value = g_strdup_printf("%d", *(guint8 *)info);
 			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), value, FALSE);
 			purple_request_field_group_add_field(group, field);
 			g_free(value);
 			break;
 		case QQ_FIELD_TIME:
-			g_date_set_time_t (&g_date, g_ntohl((guint)*info));
-			value = g_new0(gchar, 16);
+			value = g_strdup_printf("%04d-%02d-%02d", g_ntohs(*(guint16 *)info), *(guint8 *)info+2, *(guint8 *)info+3);
 			field = purple_request_field_string_new(field_infos[index].id, _(field_infos[index].text), value, FALSE);
 			purple_request_field_group_add_field(group, field);
 			g_free(value);
@@ -614,7 +610,7 @@ void qq_process_change_info(PurpleConnection *gc, guint8 *data, gint data_len)
 
 	qd = (qq_data *) gc->proto_data;
 
-	if ((guint8) *(data+1) != 0x01) {
+	if (*(guint8 *)(data+1) != 0x01) {
 		purple_debug_info("QQ", "Failed Updating info\n");
 		qq_got_message(gc, _("Could not change buddy information."));
 	}

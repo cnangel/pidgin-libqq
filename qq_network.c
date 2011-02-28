@@ -1042,7 +1042,10 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
 
-	g_slist_foreach(qd->group_list,g_free,NULL);
+	for (l=qd->group_list; l; l=l->next)
+	{
+		g_free(qd->group_list->data);
+	}
 	g_slist_free(qd->group_list);
 	qd->group_list = NULL;
 	
@@ -1260,16 +1263,25 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 	buf = g_newa(guint8, 16+data_len);
 	memset(buf, 0, 16+data_len);
 
-	/* encap room_cmd and room id to buf*/
-	buf_len = qq_put8(buf, 0x1F);
-	buf_len += qq_put8(buf + buf_len, room_cmd);
-	if (room_id != 0) {
-		/* id 0 is for QQ Demo Group, now they are closed*/
-		buf_len += qq_put32(buf + buf_len, room_id);
+	switch (room_cmd)
+	{
+	case QQ_ROOM_CMD_GET_INFO:
+		buf_len = qq_put8(buf, QQ_ROOM_CMD_GET_INFO);
+		buf_len += qq_put32(buf+buf_len, qd->uid);
+		buf_len += qq_put32(buf+buf_len, room_id);
+		break;
 	}
-	if (data != NULL && data_len > 0) {
-		buf_len += qq_putdata(buf + buf_len, data, data_len);
-	}
+	
+	///* encap room_cmd and room id to buf*/
+	//buf_len = qq_put8(buf, 0x1F);
+	//buf_len += qq_put8(buf + buf_len, room_cmd);
+	//if (room_id != 0) {
+	//	/* id 0 is for QQ Demo Group, now they are closed*/
+	//	buf_len += qq_put32(buf + buf_len, room_id);
+	//}
+	//if (data != NULL && data_len > 0) {
+	//	buf_len += qq_putdata(buf + buf_len, data, data_len);
+	//}
 
 	qd->send_seq++;
 	seq = qd->send_seq;

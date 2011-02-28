@@ -59,7 +59,7 @@ enum {
 	QQ_CMD_GET_BUDDIES_LIST = 0x0126,		/* get buddies list */
 	QQ_CMD_GET_BUDDIES_ONLINE = 0x0027,		/* get online buddies list */
 	QQ_CMD_CELL_PHONE_2 = 0x0029,			/* cell phone 2 */
-	QQ_CMD_ROOM = 0x0031,			/* room command */
+	QQ_CMD_ROOM = 0x0002,			/* room command */
 	QQ_CMD_GET_LEVEL = 0x005C,			/* get level for one or more buddies */
 	QQ_CMD_RECV_NOTIFY = 0x0080,			/* receive a system message */
 	QQ_CMD_BUDDY_CHANGE_STATUS = 0x0081,	/* buddy change status */
@@ -89,7 +89,7 @@ enum {
 const gchar *qq_get_cmd_desc(gint type);
 
 enum {
-	QQ_ROOM_CMD_GET_INFO = 0x01,
+	QQ_ROOM_CMD_GET_INFO = 0x72,
 	QQ_ROOM_CMD_CREATE = 0x04,	//Deprecated
 	QQ_ROOM_CMD_MEMBER_OPT = 0x02,
 	QQ_ROOM_CMD_CHANGE_INFO = 0x03,
