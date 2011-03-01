@@ -1042,10 +1042,11 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
 
-	for (l=qd->group_list; l; l=l->next)
-	{
-		g_free(qd->group_list->data);
-	}
+	//Don't think it is not fine, it's compeletly fine!
+	//g_free will get 2 parameter, which just need 1.
+	//But , that's fine here, because of __cdecl calling conveation
+	//But , windows platform , gtk uses __stdcall ??. Not sure	
+	g_slist_foreach(qd->group_list,g_free,NULL);
 	g_slist_free(qd->group_list);
 	qd->group_list = NULL;
 	
