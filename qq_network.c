@@ -996,7 +996,6 @@ gboolean connect_to_server(PurpleConnection *gc, gchar *server, gint port)
 void qq_disconnect(PurpleConnection *gc)
 {
 	qq_data *qd;
-	GSList *l;
 
 	g_return_if_fail(gc != NULL && gc->proto_data != NULL);
 	qd = (qq_data *) gc->proto_data;
@@ -1042,10 +1041,6 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
 
-	//Don't think it is not fine, it's compeletly fine!
-	//g_free will get 2 parameter, which just need 1.
-	//But , that's fine here, because of __cdecl calling conveation
-	//But , windows platform , gtk uses __stdcall ??. Not sure	
 	g_slist_foreach(qd->group_list,g_free,NULL);
 	g_slist_free(qd->group_list);
 	qd->group_list = NULL;
@@ -1252,11 +1247,13 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 {
 	qq_data *qd;
 	guint8 *buf;
-	gint buf_len;
+	gint buf_len=0;
 	guint8 *encrypted;
 	gint encrypted_len;
 	gint bytes_sent;
 	guint16 seq;
+	GSList *l;
+	qq_room_data * rmd;
 
 	g_return_val_if_fail(gc != NULL && gc->proto_data != NULL, -1);
 	qd = (qq_data *) gc->proto_data;
@@ -1266,23 +1263,41 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 
 	switch (room_cmd)
 	{
+	case QQ_ROOM_CMD_GET_QUN_LIST:
+		buf_len = qq_put8(buf, QQ_ROOM_CMD_GET_QUN_LIST);
+		buf_len += qq_put16(buf+buf_len, (guint16)g_slist_length(qd->rooms));
+		for (l=qd->rooms; l; l=l->next)
+		{
+			rmd = (qq_room_data *)(l->data);
+			if (rmd)
+			{
+				buf_len += qq_put32(buf+buf_len, rmd->id);
+				buf_len += qq_put32(buf+buf_len, 0x00000000);
+				buf_len += qq_put8(buf+buf_len, 0x00);
+			}
+		}
+		break;
 	case QQ_ROOM_CMD_GET_INFO:
 		buf_len = qq_put8(buf, QQ_ROOM_CMD_GET_INFO);
-		buf_len += qq_put32(buf+buf_len, qd->uid);
 		buf_len += qq_put32(buf+buf_len, room_id);
+		buf_len += qq_put32(buf+buf_len, ship32);
+		break;
+	case QQ_ROOM_CMD_GET_MEMBERS_INFO:
+	case QQ_ROOM_CMD_GET_ONLINES:
+		buf_len = qq_put8(buf, room_cmd);
+		buf_len += qq_put32(buf + buf_len, room_id);
+		if (data != NULL && data_len > 0) {
+			buf_len += qq_putdata(buf + buf_len, data, data_len);
+		}
+		break;
+	case QQ_ROOM_CMD_JOIN:
+		buf_len = qq_put8(buf, room_cmd);
+		buf_len += qq_put32(buf + buf_len, room_id);
+		rmd = qq_room_data_find(gc, room_id);
+		buf_len += qq_put32(buf + buf_len, rmd->qun_id);
+		buf_len += qq_put8(buf + buf_len, 0x00);
 		break;
 	}
-	
-	///* encap room_cmd and room id to buf*/
-	//buf_len = qq_put8(buf, 0x1F);
-	//buf_len += qq_put8(buf + buf_len, room_cmd);
-	//if (room_id != 0) {
-	//	/* id 0 is for QQ Demo Group, now they are closed*/
-	//	buf_len += qq_put32(buf + buf_len, room_id);
-	//}
-	//if (data != NULL && data_len > 0) {
-	//	buf_len += qq_putdata(buf + buf_len, data, data_len);
-	//}
 
 	qd->send_seq++;
 	seq = qd->send_seq;

@@ -34,9 +34,10 @@ enum {
 	QQ_ROOM_INFO_DISPLAY
 };
 
-gint qq_request_room_get_buddies(PurpleConnection *gc, guint32 room_id, guint32 update_class);
+gint qq_request_room_get_members_info(PurpleConnection *gc, guint32 room_id, guint32 update_class, guint32 index);
 
 void qq_process_room_cmd_get_info(guint8 *data, gint len, guint32 action, PurpleConnection *gc);
 void qq_process_room_cmd_get_onlines(guint8 *data, gint len, PurpleConnection *gc);
-void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *gc);
+void qq_process_room_cmd_get_members_info(guint8 *data, gint len, guint32 index, PurpleConnection *gc);
+void qq_process_room_cmd_get_qun_list(guint8 *data, gint data_len, PurpleConnection *gc);
 #endif

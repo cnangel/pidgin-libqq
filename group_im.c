@@ -51,28 +51,28 @@ PurpleConversation *qq_room_conv_open(PurpleConnection *gc, qq_room_data *rmd)
 	gchar *topic_utf8;
 
 	g_return_val_if_fail(rmd != NULL, NULL);
-	g_return_val_if_fail(rmd->title_utf8, NULL);
+	g_return_val_if_fail(rmd->name, NULL);
 
 	conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT,
-			rmd->title_utf8, purple_connection_get_account(gc));
+			rmd->name, purple_connection_get_account(gc));
 	if (conv != NULL)	{
 		/* show only one conversation per room */
 		return conv;
 	}
 
-	serv_got_joined_chat(gc, rmd->id, rmd->title_utf8);
-	conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, rmd->title_utf8, purple_connection_get_account(gc));
+	serv_got_joined_chat(gc, rmd->id, rmd->name);
+	conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, rmd->name, purple_connection_get_account(gc));
 	if (conv != NULL) {
-		if (rmd->notice_utf8 != NULL) {
-			topic_utf8 = g_strdup_printf("%u %s", rmd->ext_id, rmd->notice_utf8);
+		if (rmd->bulletin != NULL) {
+			topic_utf8 = g_strdup_printf("%u %s", rmd->qun_id, rmd->bulletin);
 		} else {
-			topic_utf8 = g_strdup_printf("%u", rmd->ext_id);
+			topic_utf8 = g_strdup_printf("%u", rmd->qun_id);
 		}
 		purple_debug_info("QQ", "Chat topic = %s\n", topic_utf8);
 		purple_conv_chat_set_topic(PURPLE_CONV_CHAT(conv), NULL, topic_utf8);
 		g_free(topic_utf8);
 
-		if (rmd->is_got_buddies)
+		if (rmd->has_got_members_info)
 			qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_ONLINES, rmd->id);
 		else
 			qq_update_room(gc, 0, rmd->id);
@@ -94,9 +94,9 @@ void qq_room_conv_set_onlines(PurpleConnection *gc, qq_room_data *rmd)
 	g_return_if_fail(rmd != NULL);
 
 	conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT,
-			rmd->title_utf8, purple_connection_get_account(gc));
+			rmd->name, purple_connection_get_account(gc));
 	if (conv == NULL) {
-		purple_debug_warning("QQ", "Conversation \"%s\" is not opened\n", rmd->title_utf8);
+		purple_debug_warning("QQ", "Conversation \"%s\" is not opened\n", rmd->name);
 		return;
 	}
 	g_return_if_fail(rmd->members != NULL);
@@ -243,7 +243,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	bytes += qq_gettime(&im_text.send_time, data + bytes);
 	bytes += qq_get32(&im_text.version, data + bytes);
 	bytes += qq_get16(&(im_text.msg_len), data + bytes);
-	purple_debug_info("QQ", "Room IM, ext id %u, seq %u, version 0x%04X, len %u\n",
+	purple_debug_info("QQ", "Room IM, qun id %u, seq %u, version 0x%04X, len %u\n",
 		im_text.ext_id, im_text.msg_seq, im_text.version, im_text.msg_len);
 
 	if (im_text.msg_len != data_len - bytes) {

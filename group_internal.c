@@ -30,26 +30,26 @@
 #include "group_internal.h"
 #include "utils.h"
 
-static qq_room_data *room_data_new(guint32 id, guint32 ext_id, const gchar *title)
+qq_room_data *room_data_new(guint32 id, guint32 qun_id, const gchar *title)
 {
 	qq_room_data *rmd;
 
-	purple_debug_info("QQ", "Created room data: %s, ext id %u, id %u\n",
+	purple_debug_info("QQ", "Created room data: %s, qun id %u, id %u\n",
 			title == NULL ? "(NULL)" : title,
-			ext_id, id);
+			qun_id, id);
 	rmd = g_new0(qq_room_data, 1);
 	rmd->my_role = QQ_ROOM_ROLE_NO;
 	rmd->id = id;
-	rmd->ext_id = ext_id;
+	rmd->qun_id = qun_id;
 	rmd->type8 = 0x01;       /* assume permanent Qun */
 	rmd->creator_uid = 10000;     /* assume by QQ admin */
 	rmd->category = 0x01;
 	rmd->auth_type = 0x02;        /* assume need auth */
-	rmd->title_utf8 = g_strdup(title == NULL ? "" : title);
-	rmd->desc_utf8 = g_strdup("");
-	rmd->notice_utf8 = g_strdup("");
+	rmd->name = g_strdup(title == NULL ? "" : title);
+	rmd->intro = g_strdup("");
+	rmd->bulletin = g_strdup("");
 	rmd->members = NULL;
-	rmd->is_got_buddies = FALSE;
+	rmd->has_got_members_info = FALSE;
 	return rmd;
 }
 
@@ -62,9 +62,9 @@ static qq_room_data *room_data_new_by_hashtable(PurpleConnection *gc, GHashTable
 
 	value = g_hash_table_lookup(data, QQ_ROOM_KEY_INTERNAL_ID);
 	id = value ? strtoul(value, NULL, 10) : 0;
-	value = g_hash_table_lookup(data, QQ_ROOM_KEY_EXTERNAL_ID);
+	value = g_hash_table_lookup(data, QQ_ROOM_KEY_QUN_ID);
 	ext_id = value ? strtoul(value, NULL, 10) : 0;
-	value = g_hash_table_lookup(data, QQ_ROOM_KEY_TITLE_UTF8);
+	value = g_hash_table_lookup(data, QQ_ROOM_KEY_NAME);
 
 	rmd = room_data_new(id, ext_id, value);
 	rmd->my_role = QQ_ROOM_ROLE_YES;
@@ -95,9 +95,9 @@ static void room_data_free(qq_room_data *rmd)
 {
 	g_return_if_fail(rmd != NULL);
 	room_buddies_free(rmd);
-	g_free(rmd->title_utf8);
-	g_free(rmd->desc_utf8);
-	g_free(rmd->notice_utf8);
+	g_free(rmd->name);
+	g_free(rmd->intro);
+	g_free(rmd->bulletin);
 	g_free(rmd);
 }
 
@@ -105,8 +105,8 @@ void qq_room_update_chat_info(PurpleChat *chat, qq_room_data *rmd)
 {
 	GHashTable *components;
 
-	if (rmd->title_utf8 != NULL && strlen(rmd->title_utf8) > 0) {
-		purple_blist_alias_chat(chat, rmd->title_utf8);
+	if (rmd->name != NULL && strlen(rmd->name) > 0) {
+		purple_blist_alias_chat(chat, rmd->name);
 	}
 
 	components = purple_chat_get_components(chat);
@@ -115,10 +115,10 @@ void qq_room_update_chat_info(PurpleChat *chat, qq_room_data *rmd)
 		     g_strdup(QQ_ROOM_KEY_INTERNAL_ID),
 		     g_strdup_printf("%u", rmd->id));
 	g_hash_table_replace(components,
-		     g_strdup(QQ_ROOM_KEY_EXTERNAL_ID),
-		     g_strdup_printf("%u", rmd->ext_id));
+		     g_strdup(QQ_ROOM_KEY_QUN_ID),
+		     g_strdup_printf("%u", rmd->qun_id));
 	g_hash_table_replace(components,
-		     g_strdup(QQ_ROOM_KEY_TITLE_UTF8), g_strdup(rmd->title_utf8));
+		     g_strdup(QQ_ROOM_KEY_NAME), g_strdup(rmd->name));
 }
 
 static PurpleChat *chat_new(PurpleConnection *gc, qq_room_data *rmd)
@@ -127,25 +127,25 @@ static PurpleChat *chat_new(PurpleConnection *gc, qq_room_data *rmd)
 	PurpleGroup *g;
 	PurpleChat *chat;
 
-	purple_debug_info("QQ", "Add new chat: id %u, ext id %u, title %s\n",
-		rmd->id, rmd->ext_id,
-		rmd->title_utf8 == NULL ? "(NULL)" : rmd->title_utf8);
+	purple_debug_info("QQ", "Add new chat: id %u, qun id %u, title %s\n",
+		rmd->id, rmd->qun_id,
+		rmd->name == NULL ? "(NULL)" : rmd->name);
 
 	components = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 	g_hash_table_insert(components,
 			    g_strdup(QQ_ROOM_KEY_INTERNAL_ID), g_strdup_printf("%u", rmd->id));
-	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_EXTERNAL_ID),
-			    g_strdup_printf("%u", rmd->ext_id));
-	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_TITLE_UTF8), g_strdup(rmd->title_utf8));
+	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_QUN_ID),
+			    g_strdup_printf("%u", rmd->qun_id));
+	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_NAME), g_strdup(rmd->name));
 
-	chat = purple_chat_new(purple_connection_get_account(gc), rmd->title_utf8, components);
+	chat = purple_chat_new(purple_connection_get_account(gc), rmd->name, components);
 	g = qq_group_find_or_new(PURPLE_GROUP_QQ_ROOM);
 	purple_blist_add_chat(chat, g, NULL);
 
 	return chat;
 }
 
-PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 ext_id)
+PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 qun_id)
 {
 	qq_data *qd;
 	qq_room_data *rmd;
@@ -155,19 +155,19 @@ PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 ext_id
 	g_return_val_if_fail (gc != NULL && gc->proto_data != NULL, NULL);
 	qd = (qq_data *) gc->proto_data;
 
-	g_return_val_if_fail(id != 0 && ext_id != 0, NULL);
+	g_return_val_if_fail(id != 0 && qun_id != 0, NULL);
 
-	purple_debug_info("QQ", "Find or add new room: id %u, ext id %u\n", id, ext_id);
+	purple_debug_info("QQ", "Find or add new room: id %u, qun id %u\n", id, qun_id);
 
 	rmd = qq_room_data_find(gc, id);
 	if (rmd == NULL) {
-		rmd = room_data_new(id, ext_id, NULL);
+		rmd = room_data_new(id, qun_id, NULL);
 		g_return_val_if_fail(rmd != NULL, NULL);
 		rmd->my_role = QQ_ROOM_ROLE_YES;
 		qd->rooms = g_slist_append(qd->rooms, rmd);
 	}
 
-	num_str = g_strdup_printf("%u", ext_id);
+	num_str = g_strdup_printf("%u", qun_id);
 	chat = purple_blist_find_chat(purple_connection_get_account(gc), num_str);
 	g_free(num_str);
 	if (chat) {
@@ -192,7 +192,7 @@ void qq_room_remove(PurpleConnection *gc, guint32 id)
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail (rmd != NULL);
 
-	ext_id = rmd->ext_id;
+	ext_id = rmd->qun_id;
 	qd->rooms = g_slist_remove(qd->rooms, rmd);
 	room_data_free(rmd);
 
@@ -358,7 +358,7 @@ guint32 qq_room_get_next_conv(PurpleConnection *gc, guint32 room_id)
 
 		if (rmd->my_role == QQ_ROOM_ROLE_YES || rmd->my_role == QQ_ROOM_ROLE_ADMIN) {
 			if (NULL != purple_find_conversation_with_account(
-						PURPLE_CONV_TYPE_CHAT,rmd->title_utf8, purple_connection_get_account(gc))) {
+						PURPLE_CONV_TYPE_CHAT,rmd->name, purple_connection_get_account(gc))) {
 				/* In convseration*/
 				return rmd->id;
 			}

@@ -65,13 +65,14 @@ static void set_all_offline(qq_room_data *rmd)
 }
 
 /* send packet to get info for each group member */
-gint qq_request_room_get_buddies(PurpleConnection *gc, guint32 room_id, guint32 update_class)
+gint qq_request_room_get_members_info( PurpleConnection *gc, guint32 room_id, guint32 update_class, guint32 index )
 {
 	guint8 *raw_data;
 	gint bytes, num;
 	GList *list;
 	qq_room_data *rmd;
 	qq_buddy_data *bd;
+	guint32 i = 0;
 
 	g_return_val_if_fail(room_id > 0, 0);
 
@@ -94,15 +95,24 @@ gint qq_request_room_get_buddies(PurpleConnection *gc, guint32 room_id, guint32 
 	bytes = 0;
 
 	list = rmd->members;
+	/* index shipped from last request 
+		send 30 uids one time	*/
 	while (list != NULL) {
-		bd = (qq_buddy_data *) list->data;
-		if (check_update_interval(bd))
-			bytes += qq_put32(raw_data + bytes, bd->uid);
+		if (i>=index)
+		{
+			bd = (qq_buddy_data *) list->data;
+			if (check_update_interval(bd))
+				bytes += qq_put32(raw_data + bytes, bd->uid);
+		}
+		i++;
+		if (i==index+30) break;
 		list = list->next;
 	}
+	/* if reach the end */
+	if (list == NULL)	i=0;
 
-	qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_BUDDIES, rmd->id, raw_data, bytes,
-			update_class, 0);
+	qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_MEMBERS_INFO, rmd->id, raw_data, bytes,
+			update_class, i);
 	return num;
 }
 
@@ -139,9 +149,9 @@ static void room_info_display(PurpleConnection *gc, qq_room_data *rmd)
 	room_info = purple_notify_user_info_new();
 
 	/* XXX: Should this be "Topic"? */
-	purple_notify_user_info_add_pair(room_info, _("Room Title"), rmd->title_utf8);
-	purple_notify_user_info_add_pair(room_info, _("Notice"), rmd->notice_utf8);
-	purple_notify_user_info_add_pair(room_info, _("Detail"), rmd->desc_utf8);
+	purple_notify_user_info_add_pair(room_info, _("Room Title"), rmd->name);
+	purple_notify_user_info_add_pair(room_info, _("Notice"), rmd->bulletin);
+	purple_notify_user_info_add_pair(room_info, _("Detail"), rmd->intro);
 
 	purple_notify_user_info_add_section_break(room_info);
 
@@ -161,11 +171,41 @@ static void room_info_display(PurpleConnection *gc, qq_room_data *rmd)
 	purple_notify_user_info_add_pair(room_info, _("Authorize"), utf8_value);
 	g_free(utf8_value);
 
-	utf8_value = g_strdup_printf(("%u"), rmd->ext_id);
+	utf8_value = g_strdup_printf(("%u"), rmd->qun_id);
 	purple_notify_userinfo(gc, utf8_value, room_info, NULL, NULL);
 	g_free(utf8_value);
 
 	purple_notify_user_info_destroy(room_info);
+}
+
+void qq_process_room_cmd_get_qun_list( guint8 *data, gint data_len, PurpleConnection *gc )
+{
+	qq_data *qd;
+	qq_room_data *rmd;
+	guint32 id, qun_id;
+	gint bytes;
+	guint8 num;
+	guint8 i;
+
+	g_return_if_fail(data != NULL && data_len > 0);
+	qd = (qq_data *) gc->proto_data;
+
+	/* qq_show_packet("Room List", data, data_len); */
+
+	bytes = 0;
+	bytes += qq_get8(&num, data);
+	for (i=0; i<num; ++i)
+	{	
+		bytes += qq_get32(&id, data+bytes);
+		bytes += qq_get32(&qun_id, data+bytes);
+		bytes ++;
+
+		rmd = qq_room_data_find(gc, id);
+		rmd->qun_id = qun_id;
+		rmd->my_role = QQ_ROOM_ROLE_YES;
+		purple_debug_info("QQ", "Qun added id: %u qun_id: %u\n",
+			rmd->id, rmd->qun_id);
+	}
 }
 
 void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, PurpleConnection *gc)
@@ -176,13 +216,12 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	PurpleChat *chat;
 	PurpleConversation *conv;
 	guint8 organization, role;
-	guint16 unknown, max_members;
-	guint32 member_uid, id, ext_id;
-	guint32 unknown4;
-	guint8 unknown1;
-	gint bytes, num;
-	gchar *notice;
-	gchar *topic_utf8;
+	guint16 max_members;
+	guint32 member_uid, id, qun_id, last_uid;
+	gint bytes; 
+	guint num;
+	guint8 has_more;
+	gchar *topic;
 
 	g_return_if_fail(data != NULL && data_len > 0);
 	qd = (qq_data *) gc->proto_data;
@@ -193,47 +232,41 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	bytes += qq_get32(&id, data + bytes);
 	g_return_if_fail(id > 0);
 
-	bytes += qq_get32(&ext_id, data + bytes);
-	g_return_if_fail(ext_id > 0);
+	bytes += qq_get32(&qun_id, data + bytes);
+	g_return_if_fail(qun_id > 0);
 
-	chat = qq_room_find_or_new(gc, id, ext_id);
+	chat = qq_room_find_or_new(gc, id, qun_id);
 	g_return_if_fail(chat != NULL);
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
+	bytes += 4;	//Unknown 00 00 00 03
 	bytes += qq_get8(&(rmd->type8), data + bytes);
-	bytes += qq_get32(&unknown4, data + bytes);	/* unknown 4 bytes */
+	bytes += 4;	//maybe vip sign
 	bytes += qq_get32(&(rmd->creator_uid), data + bytes);
 	bytes += qq_get8(&(rmd->auth_type), data + bytes);
-	bytes += qq_get32(&unknown4, data + bytes);	/* oldCategory */
-	bytes += qq_get16(&unknown, data + bytes);
+	bytes += 4	;	/* oldCategory */
+	bytes += 2;	// 00 00
 	bytes += qq_get32(&(rmd->category), data + bytes);
 	bytes += qq_get16(&max_members, data + bytes);
-	bytes += qq_get8(&unknown1, data + bytes);
-	/* the following, while Eva:
-	 * 4(unk), 4(verID), 1(nameLen), nameLen(roomNameContent), 1(0x00),
-	 * 2(roomNoticeLen), roomNoticeLen(roomNoticeContent, 1(roomDescLen),
-	 * roomDestLen(roomDestcontent)) */
-	bytes += qq_get8(&unknown1, data + bytes);
-	purple_debug_info("QQ", "type: %u creator: %u category: %u maxmembers: %u\n",
+	bytes += 1; 
+	bytes += 8;
+	purple_debug_info("QQ", "type: %u creator: %u category: %u max_members: %u\n",
 			rmd->type8, rmd->creator_uid, rmd->category, max_members);
 
-	if (qd->client_version >= 2010) {
-		/* skip 7 bytes unknow in qq2007 0x(00 00 01 00 00 00 fc)*/
-		bytes += 7;
-	}
-	/* qq_show_packet("Room Info", data + bytes, data_len - bytes); */
-	/* strlen + <str content> */
-	bytes += qq_get_vstr(&(rmd->title_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
-	bytes += qq_get16(&unknown, data + bytes);	/* 0x0000 */
-	bytes += qq_get_vstr(&notice, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
-	bytes += qq_get_vstr(&(rmd->desc_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
-
-	purple_debug_info("QQ", "room [%s] notice [%s] desc [%s] unknow 0x%04X\n",
-			rmd->title_utf8, notice, rmd->desc_utf8, unknown);
+	bytes += qq_get_vstr(&(rmd->name), NULL, sizeof(guint8), data + bytes);
+	bytes += 2;	/* 0x0000 */
+	bytes += qq_get_vstr(&(rmd->bulletin), NULL, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&(rmd->intro), NULL, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&(rmd->token), NULL, sizeof(guint16), data + bytes);
+	purple_debug_info("QQ", "room [%s] bulletin [%s] intro [%s] \n",
+			rmd->name, rmd->bulletin, rmd->intro);
+	bytes += 2;		//Unknown
+	bytes += qq_get32(&last_uid, data + bytes);	/* last_uid of this recv, request more with it */
+	bytes += qq_get8(&has_more, data + bytes);	/* if there are more, request again */
+	/* now comes the member list separated by 0x00 */
 
 	num = 0;
-	/* now comes the member list separated by 0x00 */
 	while (bytes < data_len) {
 		bytes += qq_get32(&member_uid, data + bytes);
 		num++;
@@ -250,38 +283,35 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 		if (bd != NULL)
 			bd->role = role;
 	}
-	if(bytes > data_len) {
-		purple_debug_error("QQ",
-			"group_cmd_get_group_info: Dangerous error! maybe protocol changed, notify me!");
+
+	if (has_more)
+	{
+		qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_INFO, id, NULL, 0,
+			0, last_uid);
+	} else {
+		purple_debug_info("QQ", "group \"%s\" has %d members\n", rmd->name, num);
+
+		if (rmd->creator_uid == qd->uid)
+			rmd->my_role = QQ_ROOM_ROLE_ADMIN;
+
+		qq_room_update_chat_info(chat, rmd);
+
+		if (action == QQ_ROOM_INFO_DISPLAY) {
+			room_info_display(gc, rmd);
+		}
+
+		conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT,
+			rmd->name, purple_connection_get_account(gc));
+		if(NULL == conv) {
+			purple_debug_warning("QQ", "Conversation \"%s\" is not opened\n", rmd->name);
+			return;
+		}
+
+		topic = g_strdup_printf("%u %s", rmd->qun_id, rmd->bulletin);
+		purple_debug_info("QQ", "Set chat topic to %s\n", topic);
+		purple_conv_chat_set_topic(PURPLE_CONV_CHAT(conv), NULL, topic);
+		g_free(topic);
 	}
-
-	purple_debug_info("QQ", "group \"%s\" has %d members\n", rmd->title_utf8, num);
-
-	if (rmd->creator_uid == qd->uid)
-		rmd->my_role = QQ_ROOM_ROLE_ADMIN;
-
-	/* filter \r\n in notice */
-	qq_filter_str(notice);
-	rmd->notice_utf8 = g_strdup(notice);
-	g_free(notice);
-
-	qq_room_update_chat_info(chat, rmd);
-
-	if (action == QQ_ROOM_INFO_DISPLAY) {
-		room_info_display(gc, rmd);
-	}
-
-	conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT,
-			rmd->title_utf8, purple_connection_get_account(gc));
-	if(NULL == conv) {
-		purple_debug_warning("QQ", "Conversation \"%s\" is not opened\n", rmd->title_utf8);
-		return;
-	}
-
-	topic_utf8 = g_strdup_printf("%u %s", rmd->ext_id, rmd->notice_utf8);
-	purple_debug_info("QQ", "Set chat topic to %s\n", topic_utf8);
-	purple_conv_chat_set_topic(PURPLE_CONV_CHAT(conv), NULL, topic_utf8);
-	g_free(topic_utf8);
 }
 
 void qq_process_room_cmd_get_onlines(guint8 *data, gint len, PurpleConnection *gc)
@@ -325,12 +355,12 @@ void qq_process_room_cmd_get_onlines(guint8 *data, gint len, PurpleConnection *g
 			"group_cmd_get_online_members: Dangerous error! maybe protocol changed, notify developers!");
 	}
 
-	purple_debug_info("QQ", "Group \"%s\" has %d online members\n", rmd->title_utf8, num);
+	purple_debug_info("QQ", "Group \"%s\" has %d online members\n", rmd->name, num);
 	qq_room_conv_set_onlines(gc, rmd);
 }
 
 /* process the reply to get_members_info packet */
-void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *gc)
+void qq_process_room_cmd_get_members_info( guint8 *data, gint len, guint32 index, PurpleConnection *gc )
 {
 	gint bytes;
 	gint num;
@@ -342,7 +372,7 @@ void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *g
 
 	g_return_if_fail(data != NULL && len > 0);
 
-	/* qq_show_packet("qq_process_room_cmd_get_buddies", data, len); */
+	/* qq_show_packet("qq_process_room_cmd_get_members_info", data, len); */
 
 	bytes = 0;
 	bytes += qq_get32(&id, data + bytes);
@@ -352,7 +382,7 @@ void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *g
 	g_return_if_fail(rmd != NULL);
 
 	num = 0;
-	/* now starts the member info, as get buddy list reply */
+
 	while (bytes < len) {
 		bytes += qq_get32(&member_uid, data + bytes);
 		g_return_if_fail(member_uid > 0);
@@ -363,12 +393,12 @@ void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *g
 		bytes += qq_get16(&(bd->face), data + bytes);
 		bytes += qq_get8(&(bd->age), data + bytes);
 		bytes += qq_get8(&(bd->gender), data + bytes);
+		/* only here use old charset GB18030 */
 		bytes += qq_get_vstr(&nick, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 		bytes += qq_get16(&unknown, data + bytes);
 		bytes += qq_get8(&(bd->ext_flag), data + bytes);
 		bytes += qq_get8(&(bd->comm_flag), data + bytes);
 
-		/* filter \r\n in nick */
 		qq_filter_str(nick);
 		bd->nickname = g_strdup(nick);
 		g_free(nick);
@@ -385,9 +415,14 @@ void qq_process_room_cmd_get_buddies(guint8 *data, gint len, PurpleConnection *g
 		purple_debug_error("QQ",
 				"group_cmd_get_members_info: Dangerous error! maybe protocol changed, notify developers!");
 	}
-	purple_debug_info("QQ", "Group \"%s\" got %d member info\n", rmd->title_utf8, num);
+	purple_debug_info("QQ", "Group \"%s\" got %d member info\n", rmd->name, num);
 
-	rmd->is_got_buddies = TRUE;
+	if (index)
+	{
+		qq_request_room_get_members_info(gc, id, 0, index);
+		return;
+	}
+	rmd->has_got_members_info = TRUE;
 	qq_room_conv_set_onlines(gc, rmd);
 }
 

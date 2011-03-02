@@ -200,7 +200,7 @@ void qq_group_process_modify_members_reply(guint8 *data, gint len, PurpleConnect
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
-	purple_debug_info("QQ", "Succeed in modify members for room %u\n", rmd->ext_id);
+	purple_debug_info("QQ", "Succeed in modify members for room %u\n", rmd->qun_id);
 
 	qq_room_got_chat_in(gc, id, 0, _("Successfully changed Qun members"), now);
 }
@@ -222,12 +222,12 @@ void qq_room_change_info(PurpleConnection *gc, qq_room_data *rmd)
 	/* 009-010 */
 	bytes += qq_put16(data + bytes, rmd->category);
 
-	bytes += qq_put_vstr(data + bytes, rmd->title_utf8, QQ_CHARSET_DEFAULT);
+	bytes += qq_put_vstr(data + bytes, rmd->name, QQ_CHARSET_DEFAULT);
 
 	bytes += qq_put16(data + bytes, 0x0000);
 
-	bytes += qq_put_vstr(data + bytes, rmd->notice_utf8, QQ_CHARSET_DEFAULT);
-	bytes += qq_put_vstr(data + bytes, rmd->desc_utf8, QQ_CHARSET_DEFAULT);
+	bytes += qq_put_vstr(data + bytes, rmd->bulletin, QQ_CHARSET_DEFAULT);
+	bytes += qq_put_vstr(data + bytes, rmd->intro, QQ_CHARSET_DEFAULT);
 
 	qq_send_room_cmd(gc, QQ_ROOM_CMD_CHANGE_INFO, rmd->id, data, bytes);
 }
@@ -337,7 +337,7 @@ void qq_group_process_create_group_reply(guint8 *data, gint len, PurpleConnectio
 	qq_send_room_cmd_only(gc, QQ_ROOM_CMD_ACTIVATE, id);
 	qq_update_room(gc, 0, rmd->id);
 
-	purple_debug_info("QQ", "Succeed in create Qun, ext id %u\n", rmd->ext_id);
+	purple_debug_info("QQ", "Succeed in create Qun, qun id %u\n", rmd->qun_id);
 
 	add_req = g_new0(qq_room_req, 1);
 	add_req->gc = gc;
@@ -368,7 +368,7 @@ void qq_group_process_activate_group_reply(guint8 *data, gint len, PurpleConnect
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
-	purple_debug_info("QQ", "Succeed in activate Qun %u\n", rmd->ext_id);
+	purple_debug_info("QQ", "Succeed in activate Qun %u\n", rmd->qun_id);
 }
 
 void qq_group_manage_group(PurpleConnection *gc, GHashTable *data)
@@ -414,7 +414,7 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 
 	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
-	purple_debug_info("QQ", "%u requested to join room, ext id %u\n", member_id, ext_id);
+	purple_debug_info("QQ", "%u requested to join room, qun id %u\n", member_id, ext_id);
 
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);

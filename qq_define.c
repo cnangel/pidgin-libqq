@@ -239,8 +239,8 @@ const gchar *qq_get_room_cmd_desc(gint room_cmd)
 		return "ROOM_CMD_SEND_IM";
 	case QQ_ROOM_CMD_GET_ONLINES:
 		return "ROOM_CMD_GET_ONLINES";
-	case QQ_ROOM_CMD_GET_BUDDIES:
-		return "ROOM_CMD_GET_BUDDIES";
+	case QQ_ROOM_CMD_GET_MEMBERS_INFO:
+		return "ROOM_CMD_GET_MEMBERS_INFO";
 	case QQ_ROOM_CMD_CHANGE_CARD:
 		return "ROOM_CMD_CHANGE_CARD";
 	case QQ_ROOM_CMD_GET_REALNAMES:

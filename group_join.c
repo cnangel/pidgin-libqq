@@ -139,7 +139,7 @@ static void do_room_join_request(PurpleConnection *gc, qq_room_data *rmd)
 
 	purple_debug_info("QQ", "Room id %u needs authentication\n", rmd->id);
 
-	msg = g_strdup_printf("QQ Qun %u needs authentication\n", rmd->ext_id);
+	msg = g_strdup_printf("QQ Qun %u needs authentication\n", rmd->qun_id);
 	add_req = g_new0(qq_room_req, 1);
 	add_req->gc = gc;
 	add_req->id = rmd->id;
@@ -149,7 +149,7 @@ static void do_room_join_request(PurpleConnection *gc, qq_room_data *rmd)
 			   _("Send"),
 			   G_CALLBACK(group_join_cb),
 			   _("Cancel"), G_CALLBACK(room_join_cancel_cb),
-			   purple_connection_get_account(gc), rmd->title_utf8, NULL,
+			   purple_connection_get_account(gc), rmd->name, NULL,
 			   add_req);
 	g_free(msg);
 }
@@ -215,7 +215,7 @@ void qq_process_group_cmd_join_group_auth(guint8 *data, gint len, PurpleConnecti
 
 	rmd = qq_room_data_find(gc, id);
 	if (rmd != NULL) {
-		msg = g_strdup_printf(_("Successfully joined Qun %s (%u)"), rmd->title_utf8, rmd->ext_id);
+		msg = g_strdup_printf(_("Successfully joined Qun %s (%u)"), rmd->name, rmd->qun_id);
 		qq_got_message(gc, msg);
 		g_free(msg);
 	} else {
@@ -241,8 +241,8 @@ void qq_process_group_cmd_join_group(guint8 *data, gint len, PurpleConnection *g
 	}
 
 	bytes = 0;
-	bytes += qq_get32(&id, data + bytes);
 	bytes += qq_get8(&reply, data + bytes);
+	bytes += qq_get32(&id, data + bytes);
 
 	/* join group OK */
 	rmd = qq_room_data_find(gc, id);
@@ -250,27 +250,27 @@ void qq_process_group_cmd_join_group(guint8 *data, gint len, PurpleConnection *g
 	g_return_if_fail(rmd != NULL);
 	switch (reply) {
 	case QQ_ROOM_JOIN_OK:
-		purple_debug_info("QQ", "Succeeded in joining group \"%s\"\n", rmd->title_utf8);
+		purple_debug_info("QQ", "Succeeded in joining group \"%s\"\n", rmd->name);
 		rmd->my_role = QQ_ROOM_ROLE_YES;
 		/* this must be shown before getting online members */
 		qq_room_conv_open(gc, rmd);
 		break;
 	case QQ_ROOM_JOIN_NEED_AUTH:
 		purple_debug_info("QQ",
-			   "Failed to join room ext id %u %s, needs authentication\n",
-			   rmd->ext_id, rmd->title_utf8);
+			   "Failed to join room qun id %u %s, needs authentication\n",
+			   rmd->qun_id, rmd->name);
 		rmd->my_role = QQ_ROOM_ROLE_NO;
 		do_room_join_request(gc, rmd);
 		break;
 	case QQ_ROOM_JOIN_DENIED:
-		msg = g_strdup_printf(_("Qun %u denied from joining"), rmd->ext_id);
+		msg = g_strdup_printf(_("Qun %u denied from joining"), rmd->qun_id);
 		purple_notify_info(gc, _("QQ Qun Operation"), _("Failed:"), msg);
 		g_free(msg);
 		break;
 	default:
 		purple_debug_info("QQ",
-			   "Failed to join room ext id %u %s, unknown reply: 0x%02x\n",
-			   rmd->ext_id, rmd->title_utf8, reply);
+			   "Failed to join room qun id %u %s, unknown reply: 0x%02x\n",
+			   rmd->qun_id, rmd->name, reply);
 
 		purple_notify_info(gc, _("QQ Qun Operation"), _("Failed:"), _("Join Qun, Unknown Reply"));
 	}
@@ -279,17 +279,17 @@ void qq_process_group_cmd_join_group(guint8 *data, gint len, PurpleConnection *g
 /* Attempt to join a group without auth */
 void qq_group_join(PurpleConnection *gc, GHashTable *data)
 {
-	gchar *ext_id_str;
+	gchar *qun_id_str;
 	gchar *id_str;
-	guint32 ext_id;
+	guint32 qun_id;
 	guint32 id;
 	qq_room_data *rmd;
 
 	g_return_if_fail(data != NULL);
 
-	ext_id_str = g_hash_table_lookup(data, QQ_ROOM_KEY_EXTERNAL_ID);
+	qun_id_str = g_hash_table_lookup(data, QQ_ROOM_KEY_QUN_ID);
 	id_str = g_hash_table_lookup(data, QQ_ROOM_KEY_INTERNAL_ID);
-	purple_debug_info("QQ", "Join room %s, extend id %s\n", id_str, ext_id_str);
+	purple_debug_info("QQ", "Join room %s, extend id %s\n", id_str, qun_id_str);
 
 	if (id_str != NULL) {
 		id = strtoul(id_str, NULL, 10);
@@ -302,16 +302,16 @@ void qq_group_join(PurpleConnection *gc, GHashTable *data)
 		}
 	}
 
-	purple_debug_info("QQ", "Search and join extend id %s\n", ext_id_str);
-	if (ext_id_str == NULL) {
+	purple_debug_info("QQ", "Search and join extend id %s\n", qun_id_str);
+	if (qun_id_str == NULL) {
 		return;
 	}
-	ext_id = strtoul(ext_id_str, NULL, 10);
-	if (ext_id == 0) {
+	qun_id = strtoul(qun_id_str, NULL, 10);
+	if (qun_id == 0) {
 		return;
 	}
 
-	qq_request_room_search(gc, ext_id, QQ_ROOM_SEARCH_FOR_JOIN);
+	qq_request_room_search(gc, qun_id, QQ_ROOM_SEARCH_FOR_JOIN);
 }
 
 void qq_room_quit(PurpleConnection *gc, guint32 room_id)
@@ -354,12 +354,12 @@ static void add_to_roomlist(qq_data *qd, qq_room_data *rmd)
 	PurpleRoomlistRoom *room;
 	gchar field[11];
 
-	room = purple_roomlist_room_new(PURPLE_ROOMLIST_ROOMTYPE_ROOM, rmd->title_utf8, NULL);
-	g_snprintf(field, sizeof(field), "%u", rmd->ext_id);
+	room = purple_roomlist_room_new(PURPLE_ROOMLIST_ROOMTYPE_ROOM, rmd->name, NULL);
+	g_snprintf(field, sizeof(field), "%u", rmd->qun_id);
 	purple_roomlist_room_add_field(qd->roomlist, room, field);
 	g_snprintf(field, sizeof(field), "%u", rmd->creator_uid);
 	purple_roomlist_room_add_field(qd->roomlist, room, field);
-	purple_roomlist_room_add_field(qd->roomlist, room, rmd->desc_utf8);
+	purple_roomlist_room_add_field(qd->roomlist, room, rmd->intro);
 	g_snprintf(field, sizeof(field), "%u", rmd->id);
 	purple_roomlist_room_add_field(qd->roomlist, room, field);
 	g_snprintf(field, sizeof(field), "%d", rmd->type8);
@@ -368,7 +368,7 @@ static void add_to_roomlist(qq_data *qd, qq_room_data *rmd)
 	purple_roomlist_room_add_field(qd->roomlist, room, field);
 	g_snprintf(field, sizeof(field), "%d", rmd->category);
 	purple_roomlist_room_add_field(qd->roomlist, room, field);
-	purple_roomlist_room_add_field(qd->roomlist, room, rmd->title_utf8);
+	purple_roomlist_room_add_field(qd->roomlist, room, rmd->name);
 	purple_roomlist_room_add(qd->roomlist, room);
 
 	purple_roomlist_set_in_progress(qd->roomlist, FALSE);
@@ -392,7 +392,7 @@ void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guint3
 
 	/* now it starts with group_info_entry */
 	bytes += qq_get32(&(rmd.id), data + bytes);
-	bytes += qq_get32(&(rmd.ext_id), data + bytes);
+	bytes += qq_get32(&(rmd.qun_id), data + bytes);
 	bytes += qq_get8(&(rmd.type8), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
@@ -401,10 +401,10 @@ void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guint3
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get32(&(rmd.category), data + bytes);
-	bytes += qq_get_vstr(&(rmd.title_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&(rmd.name), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 	bytes += qq_get16(&(unknown), data + bytes);
 	bytes += qq_get8(&(rmd.auth_type), data + bytes);
-	bytes += qq_get_vstr(&(rmd.desc_utf8), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
+	bytes += qq_get_vstr(&(rmd.intro), QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 	/* end of one qq_group */
 	if(bytes != len) {
 		purple_debug_error("QQ",
@@ -412,7 +412,7 @@ void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guint3
 	}
 
 	if (ship32 == QQ_ROOM_SEARCH_FOR_JOIN) {
-		chat = qq_room_find_or_new(gc, rmd.id, rmd.ext_id);
+		chat = qq_room_find_or_new(gc, rmd.id, rmd.qun_id);
 		g_return_if_fail(chat != NULL);
 
 		qq_room_update_chat_info(chat, &rmd);

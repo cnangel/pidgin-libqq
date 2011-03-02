@@ -466,7 +466,6 @@ static void field_request_new(PurpleRequestFieldGroup *group, guint index, guint
 	guint8 * info;
 	guint bytes=0;
 	guint16 size;
-	GDate g_date;
 
 	g_return_if_fail(index > 0);
 

@@ -29,8 +29,8 @@
 #include "group.h"
 
 #define QQ_ROOM_KEY_INTERNAL_ID					"id"
-#define QQ_ROOM_KEY_EXTERNAL_ID					"ext_id"
-#define QQ_ROOM_KEY_TITLE_UTF8					"title_utf8"
+#define QQ_ROOM_KEY_QUN_ID					"qun_id"
+#define QQ_ROOM_KEY_NAME					"name"
 
 PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 ext_id);
 void qq_room_remove(PurpleConnection *gc, guint32 id);
@@ -46,5 +46,6 @@ qq_room_data *qq_room_data_find(PurpleConnection *gc, guint32 room_id);
 
 guint32 qq_room_get_next(PurpleConnection *gc, guint32 room_id);
 guint32 qq_room_get_next_conv(PurpleConnection *gc, guint32 room_id);
+qq_room_data *room_data_new(guint32 id, guint32 qun_id, const gchar *title);
 
 #endif

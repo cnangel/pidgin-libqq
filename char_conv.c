@@ -87,7 +87,7 @@ gint qq_get_vstr( gchar **ret, const gchar *from_charset, gsize len_size, guint8
 	if (len) {
 		if (from_charset)
 		{
-			*ret = do_convert((gchar *) (data + len_size), len, &len, UTF8, from_charset);
+			*ret = do_convert((gchar *) (data + len_size), len, NULL, UTF8, from_charset);
 		} else {
 			*ret = (gchar *)g_malloc0(len+1);
 			g_memmove(*ret, data+len_size, len);

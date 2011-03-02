@@ -1116,6 +1116,9 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	qd = (qq_data *) gc->proto_data;
 	qd->buddy_list = NULL;
 
+	/* now initiate QQ Qun, do it first as it may take longer to finish */
+	qq_room_data_initial(gc);
+
 	bytes = 1;
 	qq_get8(&ret, data + bytes);
 	if (ret) {
@@ -1125,7 +1128,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 
 	bytes = 18;
 	bytes += qq_get16(&num, data+bytes);
-	
+
 	for (i=0; i<num; i++) {
 		bytes += qq_get32(&uid, data+bytes);
 		bytes += qq_get8(&type, data+bytes);
@@ -1142,8 +1145,10 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 		} else if (type == 0x04) {
 			rmd = qq_room_data_find(gc, uid);
 			if(rmd == NULL) {
-				purple_debug_info("QQ", "Unknown room uid %u\n", uid);
-				qq_send_room_cmd_only(gc, QQ_ROOM_CMD_GET_INFO, uid);
+				rmd = room_data_new(uid, 0, NULL);
+				g_return_val_if_fail(rmd != NULL, QQ_LOGIN_REPLY_ERR);
+				rmd->my_role = QQ_ROOM_ROLE_YES;
+				qd->rooms = g_slist_append(qd->rooms, rmd);
 			} else {
 				rmd->my_role = QQ_ROOM_ROLE_YES;
 			}

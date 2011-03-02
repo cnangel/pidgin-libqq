@@ -541,13 +541,13 @@ void qq_update_room(PurpleConnection *gc, guint8 room_cmd, guint32 room_id)
 					QQ_CMD_CLASS_UPDATE_ROOM, 0);
 			break;
 		case QQ_ROOM_CMD_GET_INFO:
-			ret = qq_request_room_get_buddies(gc, room_id, QQ_CMD_CLASS_UPDATE_ROOM);
+			ret = qq_request_room_get_members_info(gc, room_id, QQ_CMD_CLASS_UPDATE_ROOM, 0);
 			if (ret <= 0) {
 				qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_ONLINES, room_id, NULL, 0,
 						QQ_CMD_CLASS_UPDATE_ROOM, 0);
 			}
 			break;
-		case QQ_ROOM_CMD_GET_BUDDIES:
+		case QQ_ROOM_CMD_GET_MEMBERS_INFO:
 			qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_ONLINES, room_id, NULL, 0,
 					QQ_CMD_CLASS_UPDATE_ROOM, 0);
 			break;
@@ -560,10 +560,12 @@ void qq_update_room(PurpleConnection *gc, guint8 room_cmd, guint32 room_id)
 
 void qq_update_all_rooms(PurpleConnection *gc, guint8 room_cmd, guint32 room_id)
 {
+	qq_data * qd;
 	gboolean is_new_turn = FALSE;
 	guint32 next_id;
 
-	g_return_if_fail(gc != NULL);
+	g_return_if_fail (gc != NULL && gc->proto_data != NULL);
+	qd = (qq_data *) gc->proto_data;
 
 	next_id = qq_room_get_next(gc, room_id);
 	purple_debug_info("QQ", "Update rooms, next id %u, prev id %u\n", next_id, room_id);
@@ -581,21 +583,22 @@ void qq_update_all_rooms(PurpleConnection *gc, guint8 room_cmd, guint32 room_id)
 
 	switch (room_cmd) {
 		case 0:
-			qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_INFO, next_id, NULL, 0,
+			qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_QUN_LIST, 0, NULL, g_slist_length(qd->rooms) * 16,
 					QQ_CMD_CLASS_UPDATE_ALL, 0);
 			break;
+		case QQ_ROOM_CMD_GET_QUN_LIST:
 		case QQ_ROOM_CMD_GET_INFO:
 			if (!is_new_turn) {
 				qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_INFO, next_id, NULL, 0,
 						QQ_CMD_CLASS_UPDATE_ALL, 0);
 			} else {
-				qq_request_room_get_buddies(gc, next_id, QQ_CMD_CLASS_UPDATE_ALL);
+				qq_request_room_get_members_info(gc, next_id, QQ_CMD_CLASS_UPDATE_ALL, 0);
 			}
 			break;
-		case QQ_ROOM_CMD_GET_BUDDIES:
+		case QQ_ROOM_CMD_GET_MEMBERS_INFO:
 			/* last command */
 			if (!is_new_turn) {
-				qq_request_room_get_buddies(gc, next_id, QQ_CMD_CLASS_UPDATE_ALL);
+				qq_request_room_get_members_info(gc, next_id, QQ_CMD_CLASS_UPDATE_ALL, 0);
 			} else {
 				purple_debug_info("QQ", "Finished update\n");
 			}
@@ -720,7 +723,7 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 
 	if (room_id <= 0) {
 		purple_debug_warning("QQ",
-			"Invaild room id, [%05d], 0x%02X %s for %d, len %d\n",
+			"room id is 0, [%05d], 0x%02X %s for %d, len %d\n",
 			seq, room_cmd, qq_get_room_cmd_desc(room_cmd), room_id, rcved_len);
 		/* Some room cmd has no room id, like QQ_ROOM_CMD_SEARCH */
 	}
@@ -754,7 +757,7 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 						seq, room_cmd, qq_get_room_cmd_desc(room_cmd), room_id, rcved_len);
 			} else {
 				purple_debug_warning("QQ",
-					   "Not a member of room \"%s\"\n", rmd->title_utf8);
+					   "Not a member of room \"%s\"\n", rmd->name);
 				rmd->my_role = QQ_ROOM_ROLE_NO;
 			}
 			break;
@@ -771,6 +774,9 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 
 	/* seems ok so far, so we process the reply according to sub_cmd */
 	switch (reply_cmd) {
+	case QQ_ROOM_CMD_GET_QUN_LIST:
+		qq_process_room_cmd_get_qun_list(data + bytes, data_len - bytes, gc);
+		break;
 	case QQ_ROOM_CMD_GET_INFO:
 		qq_process_room_cmd_get_info(data + bytes, data_len - bytes, ship32, gc);
 		break;
@@ -807,8 +813,8 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 	case QQ_ROOM_CMD_GET_ONLINES:
 		qq_process_room_cmd_get_onlines(data + bytes, data_len - bytes, gc);
 		break;
-	case QQ_ROOM_CMD_GET_BUDDIES:
-		qq_process_room_cmd_get_buddies(data + bytes, data_len - bytes, gc);
+	case QQ_ROOM_CMD_GET_MEMBERS_INFO:
+		qq_process_room_cmd_get_members_info(data + bytes, data_len - bytes, ship32, gc);
 		break;
 	default:
 		purple_debug_warning("QQ", "Unknown room cmd 0x%02X %s\n",
@@ -977,9 +983,6 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			purple_debug_info("QQ", "Login replies OK; everything is fine\n");
 			purple_connection_set_state(gc, PURPLE_CONNECTED);
 			qd->is_login = TRUE;	/* must be defined after sev_finish_login */
-
-			/* now initiate QQ Qun, do it first as it may take longer to finish */
-			qq_room_data_initial(gc);
 
 			/* is_login, but we have packets before login */
 			qq_trans_process_remained(gc);

@@ -841,10 +841,10 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				fmt = g_new0(qq_im_format, 1);
 			
 				bytes += 1;		//Unknown 0x00
-
-				bytes += qq_get8(&fmt->rgb[0], data+bytes);
-				bytes += qq_get8(&fmt->rgb[1], data+bytes);
+				
 				bytes += qq_get8(&fmt->rgb[2], data+bytes);
+				bytes += qq_get8(&fmt->rgb[1], data+bytes);
+				bytes += qq_get8(&fmt->rgb[0], data+bytes);
 
 				bytes += qq_get8(&fmt->font_size, data+bytes);
 				/* font attr guint8 : bold:00000001 XOR italic 00000010 XOR underline 00000100*/
