@@ -1108,7 +1108,6 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	guint8 type;
 	guint8 group_id;
 	qq_room_data *rmd;
-	PurpleBuddy * buddy;
 	qq_buddy_group * bg;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
@@ -1162,13 +1161,18 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 
 void qq_clean_group_buddy_list( PurpleConnection *gc, GSList * buddy_list )
 {
+	qq_data *qd;
 	PurpleBuddy * bd;
+	qq_room_data *rmd;
 	GSList * list;
 	guint32 uid;
 	PurpleBlistNode *node;
 	PurpleBlistNode *node_next;
 	g_return_if_fail(gc != NULL || gc->account != NULL);
 
+	qd = (qq_data *) gc->proto_data;
+
+	qd->buddy_list = NULL;
 	node = purple_blist_get_root();
 	while (node)
 	{
@@ -1197,7 +1201,18 @@ void qq_clean_group_buddy_list( PurpleConnection *gc, GSList * buddy_list )
 			qq_buddy_free(bd);
 		}
 	}
+
+	for (list=qd->rooms; list; list=list->next)
+	{
+		rmd = (qq_room_data *)list->data;
+		if (rmd->my_role == QQ_ROOM_ROLE_NO)
+		{
+			qq_room_remove(gc, rmd->id);
+		}
+	}
+	
 	g_free(list);
+
 
 }
 

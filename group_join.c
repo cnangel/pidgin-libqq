@@ -228,31 +228,34 @@ void qq_process_group_cmd_join_group(guint8 *data, gint len, PurpleConnection *g
 {
 	gint bytes;
 	guint32 id;
-	guint8 reply;
 	qq_room_data *rmd;
 	gchar *msg;
 
 	g_return_if_fail(data != NULL && len > 0);
 
-	if (len < 5) {
+	if (len < 4) {
 		purple_debug_error("QQ",
 			   "Invalid join room reply, expect %d bytes, read %d bytes\n", 5, len);
 		return;
 	}
 
 	bytes = 0;
-	bytes += qq_get8(&reply, data + bytes);
 	bytes += qq_get32(&id, data + bytes);
 
 	/* join group OK */
 	rmd = qq_room_data_find(gc, id);
 	/* need to check if group is NULL or not. */
 	g_return_if_fail(rmd != NULL);
+
+	purple_debug_info("QQ", "Succeeded in joining group \"%s\"\n", rmd->name);
+	rmd->my_role = QQ_ROOM_ROLE_YES;
+	qq_room_conv_open(gc, rmd);
+
+	/*
 	switch (reply) {
 	case QQ_ROOM_JOIN_OK:
 		purple_debug_info("QQ", "Succeeded in joining group \"%s\"\n", rmd->name);
 		rmd->my_role = QQ_ROOM_ROLE_YES;
-		/* this must be shown before getting online members */
 		qq_room_conv_open(gc, rmd);
 		break;
 	case QQ_ROOM_JOIN_NEED_AUTH:
@@ -273,10 +276,10 @@ void qq_process_group_cmd_join_group(guint8 *data, gint len, PurpleConnection *g
 			   rmd->qun_id, rmd->name, reply);
 
 		purple_notify_info(gc, _("QQ Qun Operation"), _("Failed:"), _("Join Qun, Unknown Reply"));
-	}
+	}	*/
 }
 
-/* Attempt to join a group without auth */
+/* Attempt to join a group without auth or a process to open chat room */
 void qq_group_join(PurpleConnection *gc, GHashTable *data)
 {
 	gchar *qun_id_str;

@@ -404,6 +404,7 @@ void qq_room_data_initial(PurpleConnection *gc)
 			continue;
 
 		rmd = room_data_new_by_hashtable(gc, purple_chat_get_components(chat));
+		rmd->my_role = QQ_ROOM_ROLE_NO;		//now set all old qun data detached 'cause we don't know if we are still in
 		qd->rooms = g_slist_append(qd->rooms, rmd);
 		count++;
 	}

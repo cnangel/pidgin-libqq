@@ -1284,18 +1284,20 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 		break;
 	case QQ_ROOM_CMD_GET_MEMBERS_INFO:
 	case QQ_ROOM_CMD_GET_ONLINES:
+	case QQ_ROOM_CMD_JOIN:
 		buf_len = qq_put8(buf, room_cmd);
 		buf_len += qq_put32(buf + buf_len, room_id);
 		if (data != NULL && data_len > 0) {
 			buf_len += qq_putdata(buf + buf_len, data, data_len);
 		}
 		break;
-	case QQ_ROOM_CMD_JOIN:
+	case QQ_ROOM_CMD_SEND_IM:
 		buf_len = qq_put8(buf, room_cmd);
 		buf_len += qq_put32(buf + buf_len, room_id);
-		rmd = qq_room_data_find(gc, room_id);
-		buf_len += qq_put32(buf + buf_len, rmd->qun_id);
-		buf_len += qq_put8(buf + buf_len, 0x00);
+		if (data != NULL && data_len > 0) {
+			buf_len += qq_put16(buf + buf_len, data_len);
+			buf_len += qq_putdata(buf + buf_len, data, data_len);
+		}
 		break;
 	}
 

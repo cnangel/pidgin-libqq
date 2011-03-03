@@ -445,7 +445,7 @@ static qq_emoticon *emoticon_find(gchar *name)
 	return ret;
 }
 
-static gchar *emoticon_get(guint8 symbol)
+gchar *emoticon_get(guint8 symbol)
 {
 	g_return_val_if_fail(symbol >= emoticons_sym[0].symbol, NULL);
 	g_return_val_if_fail(symbol <= emoticons_sym[emoticons_sym_num - 2].symbol, NULL);
@@ -780,7 +780,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 
 	struct {
 		guint16 msg_seq;
-		guint32 send_time;
+		time_t send_time;
 		guint16 sender_icon;
 		guint8 unknown1[3];
 		guint8 has_font_attr;
@@ -800,7 +800,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	/* qq_show_packet("IM text", data, len); */
 	bytes = 0;
 	bytes += qq_get16(&(im_text.msg_seq), data + bytes);
-	bytes += qq_get32(&(im_text.send_time), data + bytes);
+	bytes += qq_gettime(&im_text.send_time, data + bytes);
 	bytes += qq_get16(&(im_text.sender_icon), data + bytes);
 	bytes += qq_getdata(im_text.unknown1, sizeof(im_text.unknown1), data + bytes); /* 0x(00 00 00)*/
 	bytes += qq_get8(&(im_text.has_font_attr), data + bytes);
@@ -833,11 +833,10 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	case QQ_MSG_BUDDY_78:
 		{
 			bytes += 8;		//4d 53 47 00 00 00 00 00		MSG.....
-			bytes += qq_get32(&(im_text.send_time), data + bytes);
+			bytes += qq_gettime(&im_text.send_time, data + bytes);
 			bytes += 4;		//random guint32;
 
-			if (im_text.has_font_attr)
-			{
+			if (im_text.has_font_attr)	{
 				fmt = g_new0(qq_im_format, 1);
 			
 				bytes += 1;		//Unknown 0x00
@@ -1015,7 +1014,7 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 }
 
 /* send an IM to uid_to */
-static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, qq_im_format *fmt, GString *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
+static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, qq_im_format *fmt, const GString *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
 {
 	qq_data *qd;
 	guint8 raw_data[1024];
@@ -1031,46 +1030,46 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 
 	/* purple_debug_info("QQ", "Send IM %d-%d\n", frag_count, frag_index); */
 	bytes = 0;
-	/* 000-003: receiver uid */
+	/* receiver uid */
 	bytes += qq_put32(raw_data + bytes, qd->uid);
-	/* 004-007: sender uid */
+	/* sender uid */
 	bytes += qq_put32(raw_data + bytes, uid_to);
-	/* 008-024: Unknown */
+	/* Unknown */
 	bytes += qq_putdata(raw_data + bytes, fill, sizeof(fill));
-	/* 025-026: sender client version */
+	/* sender client version */
 	bytes += qq_put16(raw_data + bytes, qd->client_tag);
-	/* 027-030: receiver uid */
+	/* receiver uid */
 	bytes += qq_put32(raw_data + bytes, qd->uid);
-	/* 031-034: sender uid */
+	/* sender uid */
 	bytes += qq_put32(raw_data + bytes, uid_to);
-	/* 035-040: md5 of (uid+session_key) */
+	/* md5 of (uid+session_key) */
 	bytes += qq_putdata(raw_data + bytes, qd->session_md5, 16);
-	/* 041-042: message type */
+	/* message type */
 	bytes += qq_put16(raw_data + bytes, QQ_NORMAL_IM_TEXT);
-	/* 042-043: sequence number */
+	/* sequence number */
 	bytes += qq_put16(raw_data + bytes, qd->send_seq);
-	/* 044-047: send time */
+	/* send time */
 	now = time(NULL);
-	bytes += qq_put32(raw_data + bytes, (guint32) now);
-	/* 048-049: sender icon */
+	bytes += qq_puttime(raw_data + bytes, &now);
+	/* sender icon */
 	bytes += qq_put16(raw_data + bytes, qd->my_icon);
-	/* 050-052: 00 00 00 Unknown */
+	/* 00 00 00 Unknown */
 	bytes += qq_put32(raw_data + bytes ,0);
 	bytes --;
-	/* 050-050: have_font_attribute 0x01 */
+	/* have_font_attribute 0x01 */
 	bytes += qq_put8(raw_data + bytes, 0x01);
-	/* 051-051: slice count */
+	/* slice count */
 	bytes += qq_put8(raw_data + bytes, frag_count);
-	/* 052-052: slice index */
+	/* slice index */
 	bytes += qq_put8(raw_data + bytes, frag_index);
-	/* 053-053: msg_id */
+	/* msg_id */
 	bytes += qq_put16(raw_data + bytes, msg_id);
-	/* 052-052: text message type (normal/auto-reply) */
+	/* text message type (normal/auto-reply) */
 	bytes += qq_put8(raw_data + bytes, type);
 	/* "MSG" */
 	bytes += qq_put32(raw_data + bytes, 0x4D534700);
 	bytes += qq_put32(raw_data + bytes, 0x00000000);
-	bytes += qq_put32(raw_data + bytes, (guint32) now);
+	bytes += qq_puttime(raw_data + bytes, &now);
 	/* Likely a random int */
 	srand((unsigned)now);
 	bytes += qq_put32(raw_data + bytes, rand());
@@ -1086,7 +1085,7 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	bytes += qq_putdata(raw_data + bytes, fmt->font, fmt->font_len);
 
 	bytes += qq_put16(raw_data + bytes, 0x0000);
-	/* 053-   : msg does not end with 0x00 */
+	/* msg does not end with 0x00 */
 	bytes += qq_putdata(raw_data + bytes, (guint8 *)msg->str, msg->len);
 
 	/* qq_show_packet("QQ_CMD_SEND_IM", raw_data, bytes); */

@@ -42,13 +42,13 @@ enum {
 	QQ_MSG_CREATE_ROOM = 0x0026,
 	QQ_MSG_TEMP_ROOM_IM = 0x002A,
 	QQ_MSG_ROOM_IM = 0x002B,
+	QQ_MSG_ROOM_IM_52 = 0x0052,
 	QQ_MSG_SYS = 0x0030,
 	QQ_MSG_BUDDY_78 = 0x0078,
 	QQ_MSG_BUDDY_84 = 0x0084,
 	QQ_MSG_BUDDY_A6 = 0x00A6,
 	QQ_MSG_BUDDY_A7 = 0x00A7,
 	QQ_MSG_BUDDY_85 = 0x0085,
-	QQ_MSG_BUDDY_52 = 0x0052,
 
 	QQ_MSG_ROOM_MEMBER_IM = 0x008C,
 	QQ_MSG_SOMEBODY = 0x008D,
@@ -82,4 +82,5 @@ void qq_process_im(PurpleConnection *gc, guint8 *data, gint len, guint16 msg_typ
 void qq_process_extend_im(PurpleConnection *gc, guint8 *data, gint len);
 
 gchar *qq_emoticon_to_purple(gchar *text);
+gchar *emoticon_get(guint8 symbol);
 #endif

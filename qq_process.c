@@ -268,7 +268,6 @@ static void process_private_msg(guint8 *data, gint data_len, guint16 seq, Purple
 	switch (header.msg_type) {
 	case QQ_MSG_BUDDY_84:
 	case QQ_MSG_BUDDY_85:
-	case QQ_MSG_BUDDY_52:
 		purple_debug_info("QQ", "MSG from buddy [%d]\n", header.uid_from);
 		qq_process_im(gc, data + bytes, data_len - bytes, header.msg_type);
 		break;
@@ -297,8 +296,9 @@ static void process_private_msg(guint8 *data, gint data_len, guint16 seq, Purple
 	case QQ_MSG_ROOM_IM_UNKNOWN:
 	case QQ_MSG_TEMP_ROOM_IM:
 	case QQ_MSG_ROOM_IM:
+	case QQ_MSG_ROOM_IM_52:
 		purple_debug_info("QQ", "MSG from room [%d]\n", header.uid_from);
-		//qq_process_room_im(data + bytes, data_len - bytes, header.uid_from, gc, header.msg_type);
+		qq_process_room_im(data + bytes, data_len - bytes, header.uid_from, gc, header.msg_type);
 		break;
 	case QQ_MSG_ADD_TO_ROOM:
 		purple_debug_info("QQ", "Notice from [%d], Added\n", header.uid_from);
@@ -806,9 +806,6 @@ void qq_proc_room_cmds(PurpleConnection *gc, guint16 seq,
 		break;
 	case QQ_ROOM_CMD_SEND_IM:
 		qq_process_room_send_im(gc, data + bytes, data_len - bytes);
-		break;
-	case QQ_ROOM_CMD_SEND_IM_EX:
-		qq_process_room_send_im_ex(gc, data + bytes, data_len - bytes);
 		break;
 	case QQ_ROOM_CMD_GET_ONLINES:
 		qq_process_room_cmd_get_onlines(data + bytes, data_len - bytes, gc);

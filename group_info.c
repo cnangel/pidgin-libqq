@@ -217,10 +217,10 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	PurpleConversation *conv;
 	guint8 organization, role;
 	guint16 max_members;
-	guint32 member_uid, id, qun_id, last_uid;
+	guint32 resend_flag, member_uid, id, qun_id, last_uid;
 	gint bytes; 
 	guint num;
-	guint8 has_more;
+	guint8 has_more=0;
 	gchar *topic;
 
 	g_return_if_fail(data != NULL && data_len > 0);
@@ -240,31 +240,37 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
-	bytes += 4;	//Unknown 00 00 00 03
-	bytes += qq_get8(&(rmd->type8), data + bytes);
-	bytes += 4;	//maybe vip sign
-	bytes += qq_get32(&(rmd->creator_uid), data + bytes);
-	bytes += qq_get8(&(rmd->auth_type), data + bytes);
-	bytes += 4	;	/* oldCategory */
-	bytes += 2;	// 00 00
-	bytes += qq_get32(&(rmd->category), data + bytes);
-	bytes += qq_get16(&max_members, data + bytes);
-	bytes += 1; 
-	bytes += 8;
-	purple_debug_info("QQ", "type: %u creator: %u category: %u max_members: %u\n",
+	bytes += qq_get32(&resend_flag, data + bytes);		//first 00 00 00 03, second 00 00 00 02
+
+	if (resend_flag == 0x00000003)
+	{
+		bytes += qq_get8(&(rmd->type8), data + bytes);
+		bytes += 4;	//maybe vip sign
+		bytes += qq_get32(&(rmd->creator_uid), data + bytes);
+		if (rmd->creator_uid == qd->uid)
+			rmd->my_role = QQ_ROOM_ROLE_ADMIN;
+		bytes += qq_get8(&(rmd->auth_type), data + bytes);
+		bytes += 4	;	/* oldCategory */
+		bytes += 2;	// 00 00
+		bytes += qq_get32(&(rmd->category), data + bytes);
+		bytes += qq_get16(&max_members, data + bytes);
+		bytes += 1; 
+		bytes += 8;
+		purple_debug_info("QQ", "type: %u creator: %u category: %u max_members: %u\n",
 			rmd->type8, rmd->creator_uid, rmd->category, max_members);
 
-	bytes += qq_get_vstr(&(rmd->name), NULL, sizeof(guint8), data + bytes);
-	bytes += 2;	/* 0x0000 */
-	bytes += qq_get_vstr(&(rmd->bulletin), NULL, sizeof(guint8), data + bytes);
-	bytes += qq_get_vstr(&(rmd->intro), NULL, sizeof(guint8), data + bytes);
-	bytes += qq_get_vstr(&(rmd->token), NULL, sizeof(guint16), data + bytes);
-	purple_debug_info("QQ", "room [%s] bulletin [%s] intro [%s] \n",
+		bytes += qq_get_vstr(&(rmd->name), NULL, sizeof(guint8), data + bytes);
+		bytes += 2;	/* 0x0000 */
+		bytes += qq_get_vstr(&(rmd->bulletin), NULL, sizeof(guint8), data + bytes);
+		bytes += qq_get_vstr(&(rmd->intro), NULL, sizeof(guint8), data + bytes);
+		bytes += qq_get_vstr(&(rmd->token), NULL, sizeof(guint16), data + bytes);
+		purple_debug_info("QQ", "room [%s] bulletin [%s] intro [%s] \n",
 			rmd->name, rmd->bulletin, rmd->intro);
-	bytes += 2;		//Unknown
-	bytes += qq_get32(&last_uid, data + bytes);	/* last_uid of this recv, request more with it */
-	bytes += qq_get8(&has_more, data + bytes);	/* if there are more, request again */
-	/* now comes the member list separated by 0x00 */
+		bytes += 2;		//Unknown
+		bytes += qq_get32(&last_uid, data + bytes);	/* last_uid of this recv, request more with it */
+		bytes += qq_get8(&has_more, data + bytes);	/* if there are more, request again */
+		/* now comes the member list separated by 0x00 */
+	}
 
 	num = 0;
 	while (bytes < data_len) {
@@ -284,18 +290,14 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 			bd->role = role;
 	}
 
+	purple_debug_info("QQ", "group \"%s\" has received %d members\n", rmd->name, num);
+
 	if (has_more)
 	{
 		qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_GET_INFO, id, NULL, 0,
 			0, last_uid);
 	} else {
-		purple_debug_info("QQ", "group \"%s\" has %d members\n", rmd->name, num);
-
-		if (rmd->creator_uid == qd->uid)
-			rmd->my_role = QQ_ROOM_ROLE_ADMIN;
-
 		qq_room_update_chat_info(chat, rmd);
-
 		if (action == QQ_ROOM_INFO_DISPLAY) {
 			room_info_display(gc, rmd);
 		}
