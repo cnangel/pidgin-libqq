@@ -28,6 +28,9 @@
 #include <glib.h>
 
 #define QQ_CHARSET_DEFAULT      "GB18030"
+#define UTF8                  "UTF-8"
+#define QQ_CHARSET_ZH_CN      "GB18030"
+#define QQ_CHARSET_ENG        "ISO-8859-1"
 
 gint qq_get_vstr(gchar **ret, const gchar *from_charset, gsize len_size, guint8 *data);
 gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, const gchar *to_charset);

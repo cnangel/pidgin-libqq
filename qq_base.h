@@ -87,12 +87,12 @@ guint8 qq_process_login( PurpleConnection *gc, guint8 *data, gint data_len);
 
 void qq_request_login_E9(PurpleConnection *gc);
 void qq_request_login_EA(PurpleConnection *gc);
-void qq_request_login_getlist(PurpleConnection *gc);
+void qq_request_login_getlist(PurpleConnection *gc, guint16 index);
 void qq_request_login_EC(PurpleConnection *gc);
 void qq_request_login_ED(PurpleConnection *gc);
 
-guint8 qq_process_login_getlist(PurpleConnection *gc, guint8 *data, gint data_len);
-void qq_clean_group_buddy_list(PurpleConnection *gc, GSList * buddy_list);
+guint8 qq_process_login_getlist(PurpleConnection *gc, guint8 *data, gint data_len, guint16 index);
+void qq_clean_group_buddy_list(PurpleConnection *gc);
 extern void qq_buddy_free(PurpleBuddy *buddy);
 extern void qq_room_remove(PurpleConnection *gc, guint32 id);
 #endif

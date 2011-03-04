@@ -29,10 +29,6 @@
 #include "packet_parse.h"
 #include "utils.h"
 
-#define UTF8                  "UTF-8"
-#define QQ_CHARSET_ZH_CN      "GB18030"
-#define QQ_CHARSET_ENG        "ISO-8859-1"
-
 #define QQ_NULL_MSG           "(NULL)"	/* return this if conversion fails */
 
 /* convert a string from from_charset to to_charset, using g_convert */

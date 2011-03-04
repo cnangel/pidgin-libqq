@@ -247,7 +247,7 @@ guint32 qq_process_get_group_list(guint8 *data, gint data_len, PurpleConnection 
 	qq_data *qd;
 	gint bytes;
 	guint8 cmd;
-	guint32 position;
+	guint8 position;
 	qq_group * g;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, -1);
@@ -259,14 +259,14 @@ guint32 qq_process_get_group_list(guint8 *data, gint data_len, PurpleConnection 
 	bytes = 0;
 	bytes += qq_get8(&cmd, data + bytes);
 	/* cmd == 0x1F */
-	bytes += qq_get32(&position, data+bytes);
-	if (position == 0x01000000)
+	bytes += qq_get8(&position, data+bytes);
+	if (position == 0x01)
 	{
 		/* no group, return */
 		return 0;
 	}
 
-	bytes += 3;	/* Number of Group 00 00 */
+	bytes += 6;	/* 00 00 00 XX(one byte of Number of Group) 00 00 */
 
 	while (bytes < data_len)
 	{

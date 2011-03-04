@@ -536,7 +536,7 @@ qq_im_format *qq_im_fmt_new_default(void)
 	memset(fmt, 0, sizeof(qq_im_format));
 	fmt->font_len = strlen(msyh);
 	fmt->font = g_strdup(msyh);
-	fmt->font_size = 10;
+	fmt->font_size = 11;
 	/* encoding, 0x8622=GB, 0x0000=EN */
 	fmt->charset = 0x8622;
 
@@ -565,8 +565,7 @@ qq_im_format *qq_im_fmt_new_by_purple(const gchar *msg)
 
 		tmp = g_datalist_get_data(&attribs, "size");
 		if (tmp) {
-			fmt->attr = atoi(tmp) * 3 + 1;
-			fmt->attr &= 0x0f;
+			fmt->font_size = atoi(tmp) * 3 + 1;
 		}
 
 		tmp = g_datalist_get_data(&attribs, "color");
@@ -621,7 +620,7 @@ gchar * qq_im_fmt_to_purple( qq_im_format *fmt, GString *text )
 		g_string_append(text, "</font>");
 	}
 	if (fmt->font_size >= 0) {
-		g_string_append_printf(tmp, "<font size=\"%d\">", fmt->font_size);
+		g_string_append_printf(tmp, "<font size=\"%d\">", ((fmt->font_size-1)&3) ? (fmt->font_size+1)/3 : (fmt->font_size-1)/3);	//fix the difference in size
 		g_string_prepend(text, tmp->str);
 		g_string_set_size(tmp, 0);
 		g_string_append(text, "</font>");
@@ -653,6 +652,7 @@ gint qq_get_im_tail(qq_im_format *fmt, guint8 *data, gint data_len)
 	gint bytes, text_len;
 	guint8 tail_len;
 	guint8 font_len;
+	guint8 font_attr;
 
 	g_return_val_if_fail(fmt != NULL && data != NULL, 0);
 	g_return_val_if_fail(data_len > 1, 0);
@@ -664,7 +664,9 @@ gint qq_get_im_tail(qq_im_format *fmt, guint8 *data, gint data_len)
 	bytes = text_len;
 	/* qq_show_packet("IM tail", data + bytes, tail_len); */
 	bytes += 1;		/* skip 0x00 */
-	bytes += qq_get8(&fmt->attr, data + bytes);
+	bytes += qq_get8(&font_attr, data + bytes);
+	fmt->font_size = font_attr & 0x0F;
+	fmt->attr = font_attr >> 5;
 	bytes += qq_getdata(fmt->rgb, sizeof(fmt->rgb), data + bytes);	/* red,green,blue */
  	bytes += 1;	/* skip 0x00 */
 	bytes += qq_get16(&fmt->charset, data + bytes);
@@ -674,7 +676,7 @@ gint qq_get_im_tail(qq_im_format *fmt, guint8 *data, gint data_len)
 
 	fmt->font_len = font_len;
 	if (fmt->font != NULL)	g_free(fmt->font);
-	fmt->font = g_strndup((gchar *)data + bytes, fmt->font_len);
+	fmt->font = g_convert((gchar *)data + bytes, font_len, UTF8, QQ_CHARSET_DEFAULT, NULL, NULL, NULL);
 	return tail_len;
 }
 
@@ -810,9 +812,9 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	bytes += qq_get8(&(im_text.auto_reply), data + bytes);
 	purple_debug_info("QQ", "IM Seq %u, id %04X, fragment %d-%d, type %d, %s\n",
 			im_text.msg_seq, im_text.msg_id,
-			im_text.fragment_count, im_text.fragment_index,
+			im_text.fragment_index, im_text.fragment_count,
 			im_text.auto_reply,
-			im_text.has_font_attr ? "exist font attr" : "");
+			im_text.has_font_attr ? "font attr exists" : "");
 
 	who = uid_to_purple_name(im_header->uid_from);
 	buddy = purple_find_buddy(gc->account, who);
@@ -913,12 +915,12 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	case QQ_MSG_TO_UNKNOWN:
 	case QQ_MSG_BUDDY_09:	
 		{
-			if (im_text.has_font_attr) {
+			if (1) {
 				fmt = qq_im_fmt_new_default();
 				tail_len = qq_get_im_tail(fmt, data + bytes, len - bytes);
-				im_text.msg = g_string_new_len((gchar *)(data + bytes), len-tail_len);
+				im_text.msg = g_string_new_len((gchar *)(data + bytes), len- bytes - tail_len-1);	//remove the tail 0x20
 			} else	{
-				im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes);
+				im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes-1);		//remove the tail 0x20
 			}
 			msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
 			if (fmt != NULL) {

@@ -360,9 +360,9 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 			if (frag_count <= 1 || frag_count == frag_index + 1) {
 				fmt = qq_im_fmt_new_default();
 				tail_len = qq_get_im_tail(fmt, data + bytes, data_len - bytes);
-				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - tail_len);
+				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - bytes - tail_len - 1); //remove the tail 0x20
 			} else {
-				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - bytes);
+				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - bytes - 1);	//remove the tail 0x20
 			}
 
 			/* group im_group has no flag to indicate whether it has font_attr or not */
