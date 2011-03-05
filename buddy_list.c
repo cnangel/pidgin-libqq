@@ -280,7 +280,7 @@ guint32 qq_process_get_group_list(guint8 *data, gint data_len, PurpleConnection 
 	}
 	/*	if all groups received, position = 0
 		add buddies associated with group */		
-	if (!position)
+	if (position==0)
 	{
 		while (qd->buddy_list)
 		{

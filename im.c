@@ -733,7 +733,6 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 
 	if (im_text.uid_from != im_header->uid_from || im_text.uid_from == 256)
 	{
-		/* TOFIX: "NOW INPUTING" MSG */
 		return;
 	}
 	
@@ -949,6 +948,25 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	g_free(msg_utf8);
 	g_free(who);
 	g_string_free (im_text.msg, FALSE);
+}
+void qq_process_typing( PurpleConnection *gc, guint8 *data, gint len, guint32 uid_from )
+{
+		gint bytes = 0;
+		guint32 uid;
+		gchar *who;
+
+		g_return_if_fail (data != NULL && len > 8);
+
+		bytes += 4;	//00 00 00 00
+		bytes += qq_get32(&uid, data+bytes);
+
+		if (uid_from==uid)
+		{
+			purple_debug_info("QQ", "QQ: %d is typing to you\n", uid_from);
+			who = uid_to_purple_name(uid_from);
+			serv_got_typing(gc, who, 7, PURPLE_TYPING);
+		}
+
 }
 
 /* it is a normal IM, maybe text or video request */
@@ -1236,6 +1254,50 @@ static GSList*  qq_grab_emoticons(const char *msg, const char*username)
 	return list;
 }
 */
+
+unsigned int qq_send_typing( PurpleConnection *gc, const char *who, PurpleTypingState state )
+{
+	PurpleAccount *account;
+	qq_data *qd;
+	guint8 raw_data[16];
+	gint bytes;
+	guint32 uid_to=0;
+
+	g_return_val_if_fail(NULL != gc && NULL != gc->proto_data, -1);
+	g_return_val_if_fail(who != NULL, -1);
+
+	qd = (qq_data *) gc->proto_data;
+
+	if (state != PURPLE_TYPING)
+		return 0;
+
+	uid_to = purple_name_to_uid(who);
+
+	if (uid_to==qd->uid)
+	{
+		/* We'll just fake it, since we're sending to ourself. */
+		serv_got_typing(gc, who, 7, PURPLE_TYPING);
+
+		return 7;
+	}
+
+	if (!uid_to)
+	{
+		return 0;
+	} else {
+		bytes = 0;
+		/* receiver uid */
+		bytes += qq_put32(raw_data + bytes, qd->uid);
+		/* sender uid */
+		bytes += qq_put32(raw_data + bytes, uid_to);
+		bytes += qq_put8(raw_data + bytes, 0);
+
+		/* qq_show_packet("QQ_CMD_SEND_TYPING", raw_data, bytes); */
+		qq_send_cmd(gc, QQ_CMD_SEND_TYPING, raw_data, bytes);
+	}
+
+	return 7;
+}
 
 gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, PurpleMessageFlags flags)
 {

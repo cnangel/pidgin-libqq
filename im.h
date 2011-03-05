@@ -52,7 +52,7 @@ enum {
 
 	QQ_MSG_ROOM_MEMBER_IM = 0x008C,
 	QQ_MSG_SOMEBODY = 0x008D,
-	QQ_MSG_WRITING = 0x0079,
+	QQ_MSG_TYPING = 0x0079,
 	QQ_MSG_STRANGER = 0x0031
 
 };
@@ -77,10 +77,12 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none);
 
 void qq_got_message(PurpleConnection *gc, const gchar *msg);
 gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *message, PurpleMessageFlags flags);
-
+void qq_process_typing( PurpleConnection *gc, guint8 *data, gint len, guint32 uid_from );
 void qq_process_im(PurpleConnection *gc, guint8 *data, gint len, guint16 msg_type);
 void qq_process_extend_im(PurpleConnection *gc, guint8 *data, gint len);
 
 gchar *qq_emoticon_to_purple(gchar *text);
 gchar *emoticon_get(guint8 symbol);
+unsigned int qq_send_typing(PurpleConnection *gc, const char *who, PurpleTypingState state);
+
 #endif

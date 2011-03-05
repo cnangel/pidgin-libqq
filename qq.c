@@ -366,8 +366,13 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	}
 
 	purple_notify_user_info_add_pair(user_info, _("Flag"), str->str);
-
 	g_string_free(str, TRUE);
+
+	if (bd->signature)
+	{
+		purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
+	}
+
 
 #ifdef DEBUG
 	tmp = g_strdup_printf( "%s (%04X)",
@@ -464,9 +469,8 @@ static void qq_show_buddy_info(PurpleConnection *gc, const gchar *who)
 		return;
 	}
 
-	if (qd->client_version >= 2010) {
-		qq_request_get_level(gc, uid);
-	}
+	qq_request_get_level(gc, uid);
+
 	qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
 }
 
@@ -719,6 +723,7 @@ static void action_chat_quit(PurpleBlistNode * node)
 	gchar *num_str;
 	guint32 room_id;
 
+	
 	g_return_if_fail(PURPLE_BLIST_NODE_IS_CHAT(node));
 
 	g_return_if_fail(components != NULL);
@@ -730,6 +735,36 @@ static void action_chat_quit(PurpleBlistNode * node)
 	qq_room_quit(gc, room_id);
 }
 
+static void action_show_chat(PurpleBlistNode * node, gpointer flag)
+{
+	PurpleChat *chat = (PurpleChat *)node;
+	PurpleAccount *account = purple_chat_get_account(chat);
+	PurpleConnection *gc = purple_account_get_connection(account);
+	GHashTable *components = purple_chat_get_components(chat);
+	gchar *num_str;
+	guint32 room_id;
+	qq_room_data *rmd;
+
+	g_return_if_fail(PURPLE_BLIST_NODE_IS_CHAT(node));
+
+	g_return_if_fail(components != NULL);
+
+	num_str = g_hash_table_lookup(components, QQ_ROOM_KEY_INTERNAL_ID);
+	room_id = strtoul(num_str, NULL, 10);
+	g_return_if_fail(room_id != 0);
+
+	rmd = qq_room_data_find(gc, room_id);
+	g_return_if_fail(rmd != NULL);
+	
+	if (flag)
+	{
+		rmd->is_show_chat = TRUE;
+		purple_notify_info(gc, _("QQ Chat Room"), _("Receive and Show QQ Chat Room Message"), num_str);
+	} else {
+		rmd->is_show_chat = FALSE;
+		purple_notify_info(gc, _("QQ Chat Room"), _("QQ Chat Room Message Blocked"), num_str);
+	}
+}
 static void action_chat_get_info(PurpleBlistNode * node)
 {
 	PurpleChat *chat = (PurpleChat *)node;
@@ -777,6 +812,7 @@ static GList *qq_actions(PurplePlugin *plugin, gpointer context)
 	PurplePluginAction *act;
 
 	m = NULL;
+
 	act = purple_plugin_action_new(_("Change Icon"), action_change_icon);
 	m = g_list_append(m, act);
 
@@ -890,6 +926,13 @@ static GList *qq_chat_menu(PurpleBlistNode *node)
 	PurpleMenuAction *act;
 
 	m = NULL;
+
+	act = purple_menu_action_new(_(" Block chat room msg"), PURPLE_CALLBACK(action_show_chat), NULL, NULL);
+	m = g_list_append(m, act);
+
+	act = purple_menu_action_new(_(" Show chat room msg"), PURPLE_CALLBACK(action_show_chat), (gpointer)1, NULL);
+	m = g_list_append(m, act);
+
 	act = purple_menu_action_new(_("Get Info"), PURPLE_CALLBACK(action_chat_get_info), NULL, NULL);
 	m = g_list_append(m, act);
 
@@ -985,7 +1028,7 @@ static PurplePluginProtocolInfo prpl_info =
 	qq_close,					/* close */
 	qq_send_im,				/* send_im */
 	NULL,							/* set_info */
-	NULL,							/* send_typing	*/
+	qq_send_typing,							/* send_typing	*/
 	qq_show_buddy_info,		/* get_info */
 	qq_change_status,			/* change status */
 	NULL,							/* set_idle */

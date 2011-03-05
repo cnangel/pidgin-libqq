@@ -209,6 +209,10 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_BUDDY_MEMO";
 	case QQ_CMD_GET_GROUP_LIST:
 		return "CMD_GET_GROUP_LIST";
+	case QQ_CMD_SEND_TYPING:
+		return "CMD_SEND_TYPING";
+	case QQ_CMD_GET_BUDDY_SIGN:
+		return "CMD_GET_BUDDY_SIGN";
 	default:
 		return "CMD_UNKNOWN";
 	}

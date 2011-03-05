@@ -1000,3 +1000,66 @@ void qq_process_get_level_reply(guint8 *data, gint data_len, PurpleConnection *g
 	}
 }
 
+void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, guint32 count )
+{
+	qq_data *qd = (qq_data *) gc->proto_data;
+	PurpleBuddy *buddy;
+	qq_buddy_data *bd;
+	guint8 *buf;
+	GSList *buddies, *it;
+	gint bytes;
+	guint16 i;
+
+	buf = g_newa(guint8, MAX_PACKET_SIZE);
+
+	bytes = 0;
+	bytes += qq_put8(buf + bytes, 0x83);
+	bytes += 2;	//num of buddies, fill it later
+
+	buddies = purple_find_buddies(purple_connection_get_account(gc), NULL);
+
+	for (it = buddies,i=0; it; it = it->next) {
+		if (i<count) { i++; continue; }
+		if (i>=count+50) break;		//send 50 buddies one time
+		buddy = it->data;
+		if (buddy == NULL) continue;
+		if ((bd = purple_buddy_get_protocol_data(buddy)) == NULL) continue;
+		if (bd->uid == 0) continue;	/* keep me as end of packet*/
+		if (bd->uid == qd->uid) continue;
+		bytes += qq_put32(buf + bytes, bd->uid);
+		bytes += qq_put32(buf + bytes, 0x00000000);		//signature modified time, normally null
+		i++;
+	}
+	qq_put16(buf + 1, i-count);	//num of buddies
+
+	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDY_SIGN, buf, bytes, update_class, it ? i : 0);
+}
+
+void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc)
+{
+	gint bytes;
+	guint32 uid, sign_time, last_uid;
+	guint8 ret;
+	qq_buddy_data *bd;
+	gchar *sign;
+	qq_data * qd = (qq_data *) gc->proto_data;
+
+	bytes = 1;		//83
+	bytes += qq_get8(&ret, data+bytes);
+	bytes += qq_get32(&last_uid, data+bytes);
+
+	while (bytes<data_len)
+	{
+		bytes += qq_get32(&uid, data+bytes);
+		bytes += 4;	//signature modified time, no need
+		bd = qq_buddy_data_find(gc, uid);
+		if (bd)
+		{
+			bytes += qq_get_vstr(&sign, NULL, sizeof(guint8), data+bytes);
+			purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign);
+			bd->signature = sign;
+		} else {
+			bytes += *(guint8 *)(data+bytes) ;
+		}
+	}
+}

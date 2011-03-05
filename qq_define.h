@@ -50,6 +50,7 @@ enum {
 	QQ_CMD_CHANGE_STATUS = 0x000d,		/* change my online status */
 	QQ_CMD_GET_GROUP_LIST = 0x0001,		/* get buddy group label */
 	QQ_CMD_ACK_SYS_MSG = 0x0012,			/* ack system message */
+	QQ_CMD_SEND_TYPING = 0x00D5,			/* send now typing */
 	QQ_CMD_SEND_IM = 0x00CD,			/* send message */
 	QQ_CMD_RECV_IM = 0x0017,			/* receive message */
 	QQ_CMD_RECV_IM_CE = 0x00CE,

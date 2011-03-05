@@ -178,7 +178,7 @@ void qq_room_got_chat_in(PurpleConnection *gc,
 	g_return_if_fail(rmd != NULL);
 
 	purple_debug_info("QQ", "is_show_chat:%d\n", qd->is_show_chat);
-	if (NULL == conv && qd->is_show_chat) {
+	if (NULL == conv && qd->is_show_chat && rmd->is_show_chat) {
 		conv = qq_room_conv_open(gc, rmd);
 	}
 

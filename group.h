@@ -56,7 +56,7 @@ struct _qq_room_data {
 	guint8 *token;
 	/* all these will be loaded from the network */
 
-
+	gboolean is_show_chat;
 	gboolean has_got_members_info;
 	GList *members;
 };

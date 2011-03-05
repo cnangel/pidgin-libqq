@@ -474,7 +474,7 @@ guint8 qq_process_captcha(PurpleConnection *gc, guint8 *data, gint data_len)
 	bytes += qq_getdata(qd->ld.token_captcha, qd->ld.token_captcha_len, data + bytes);
 	/* qq_show_packet("Get token ex", qd->ld.token_ex, qd->ld.token_ex_len); */
 
-	if(!need_captcha)
+	if(need_captcha==0)
 	{
 		purple_debug_info("QQ", "Captcha verified, result %d\n", need_captcha);
 		return QQ_LOGIN_REPLY_OK;
