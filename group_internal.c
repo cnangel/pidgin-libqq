@@ -50,6 +50,7 @@ qq_room_data *room_data_new(guint32 id, guint32 qun_id, const gchar *title)
 	rmd->bulletin = g_strdup("");
 	rmd->members = NULL;
 	rmd->has_got_members_info = FALSE;
+	rmd->is_show_chat = TRUE;
 	return rmd;
 }
 
