@@ -59,7 +59,7 @@ QQSOURCES = \
 
 AM_CFLAGS = $(st)
 
-libqq_la_LDFLAGS = -module -avoid-version
+libqq_la_LDFLAGS = -module -avoid-version --no-la-files
 
 if STATIC_QQ
 
@@ -101,3 +101,6 @@ AM_CPPFLAGS +=  \
 	-I$(top_srcdir)/libpurple \
 	-I$(top_builddir)/libpurple 
 endif
+
+install-exec-hook:
+	rm -f $(DESTDIR)$(libdir)/libfoo.la
