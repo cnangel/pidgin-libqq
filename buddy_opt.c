@@ -200,17 +200,18 @@ PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 gr
 
 	qd = (qq_data *)gc->proto_data;
 
+	for (l=qd->group_list; l; l=l->next)
+	{
+		if (((qq_group *)(l->data))->group_id == group_id) break;
+	}
+	/* if group_id not found && group_id is not 0 (not root group) */ 
+	if (l==NULL && group_id)	{
+		purple_debug_error("QQ","cannot find group id: %u", group_id);
+		return NULL;
+	}
+
 	if (group_id)
 	{
-		for (l=qd->group_list; l; l=l->next)
-		{
-			if (((qq_group *)(l->data))->group_id == group_id) break;
-		}
-	
-		if (l==NULL)	{
-			purple_debug_error("QQ","cannot find group id: %u", group_id);
-			return NULL;
-		}
 		buddy = qq_buddy_find(gc, uid);
 		if (buddy)		//if buddy already exist, we need check if he is in new group
 		{	
