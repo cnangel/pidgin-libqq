@@ -676,7 +676,7 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "Jeff Ye : http://www.sinomac.com<br>\n");
 	g_string_append(info, "Hu Zheng : http://forlinux.yeah.net<br>\n");
 	g_string_append(info, "yunfan : http://www.myswear.net<br>\n");
-	g_string_append(info, "libqq Team : http://openq.linuxsir.org<br>\n");
+	g_string_append(info, "OpenQ Team : http://openq.linuxsir.org<br>\n");
 	g_string_append(info, "LumaQQ Team : http://lumaqq.linuxsir.org<br>\n");
 	g_string_append(info, "Pidgin Team : http://www.pidgin.im<br>\n");
 	g_string_append(info, "Huang Guan : http://home.xxsyzx.com<br>\n");
