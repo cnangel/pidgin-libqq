@@ -37,12 +37,12 @@
 
 static void _qq_group_search_callback(PurpleConnection *gc, const gchar *input)
 {
-	guint32 ext_id;
+	guint32 qun_id;
 
 	g_return_if_fail(input != NULL);
-	ext_id = strtoul(input, NULL, 10);
+	qun_id = strtoul(input, NULL, 10);
 	/* 0x00000000 means search for demo group */
-	qq_request_room_search(gc, ext_id, QQ_ROOM_SEARCH_ONLY);
+	qq_request_room_search(gc, qun_id, QQ_ROOM_SEARCH_ONLY);
 }
 
 static void _qq_group_search_cancel_callback(PurpleConnection *gc, const gchar *input)

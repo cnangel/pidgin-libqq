@@ -336,18 +336,18 @@ void qq_room_quit(PurpleConnection *gc, guint32 room_id)
 }
 
 /* send packet to search for qq_group */
-void qq_request_room_search(PurpleConnection *gc, guint32 ext_id, int action)
+void qq_request_room_search(PurpleConnection *gc, guint32 qun_id, int action)
 {
 	guint8 raw_data[16] = {0};
 	gint bytes = 0;
 	guint8 type;
 
-	purple_debug_info("QQ", "Search QQ Qun %u\n", ext_id);
-	type = (ext_id == 0x00000000) ? QQ_ROOM_SEARCH_TYPE_DEMO : QQ_ROOM_SEARCH_TYPE_BY_ID;
+	purple_debug_info("QQ", "Search QQ Qun %u\n", qun_id);
+	type = (qun_id == 0x00000000) ? QQ_ROOM_SEARCH_TYPE_DEMO : QQ_ROOM_SEARCH_TYPE_BY_ID;
 
 	bytes = 0;
 	bytes += qq_put8(raw_data + bytes, type);
-	bytes += qq_put32(raw_data + bytes, ext_id);
+	bytes += qq_put32(raw_data + bytes, qun_id);
 
 	qq_send_room_cmd_mess(gc, QQ_ROOM_CMD_SEARCH, 0, raw_data, bytes, 0, action);
 }

@@ -738,6 +738,11 @@ static void action_chat_quit(PurpleBlistNode * node)
 	g_return_if_fail(components != NULL);
 
 	num_str = g_hash_table_lookup(components, QQ_ROOM_KEY_INTERNAL_ID);
+	if (!num_str)
+	{
+		purple_debug_error("QQ", "Cannot find Room! Wait and Retry");
+		return;
+	}
 	room_id = strtoul(num_str, NULL, 10);
 	g_return_if_fail(room_id != 0);
 
@@ -759,6 +764,11 @@ static void action_show_chat(PurpleBlistNode * node, gpointer flag)
 	g_return_if_fail(components != NULL);
 
 	num_str = g_hash_table_lookup(components, QQ_ROOM_KEY_INTERNAL_ID);
+	if (!num_str)
+	{
+		purple_debug_error("QQ", "Cannot find Room! Wait and Retry");
+		return;
+	}
 	room_id = strtoul(num_str, NULL, 10);
 	g_return_if_fail(room_id != 0);
 
@@ -788,6 +798,11 @@ static void action_chat_get_info(PurpleBlistNode * node)
 	g_return_if_fail(components != NULL);
 
 	num_str = g_hash_table_lookup(components, QQ_ROOM_KEY_INTERNAL_ID);
+	if (!num_str)
+	{
+		purple_debug_error("QQ", "Cannot find Room! Wait and Retry");
+		return;
+	}
 	room_id = strtoul(num_str, NULL, 10);
 	g_return_if_fail(room_id != 0);
 

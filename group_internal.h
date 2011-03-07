@@ -32,7 +32,7 @@
 #define QQ_ROOM_KEY_QUN_ID					"qun_id"
 #define QQ_ROOM_KEY_NAME					"name"
 
-PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 ext_id);
+PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 qun_id);
 void qq_room_remove(PurpleConnection *gc, guint32 id);
 void qq_room_update_chat_info(PurpleChat *chat, qq_room_data *rmd);
 

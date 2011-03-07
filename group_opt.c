@@ -313,7 +313,7 @@ static void room_create_cb(qq_room_req *add_req)
 void qq_group_process_create_group_reply(guint8 *data, gint len, PurpleConnection *gc)
 {
 	gint bytes;
-	guint32 id, ext_id;
+	guint32 id, qun_id;
 	qq_room_data *rmd;
 	qq_room_req *add_req;
 	qq_data *qd;
@@ -324,10 +324,10 @@ void qq_group_process_create_group_reply(guint8 *data, gint len, PurpleConnectio
 
 	bytes = 0;
 	bytes += qq_get32(&id, data + bytes);
-	bytes += qq_get32(&ext_id, data + bytes);
-	g_return_if_fail(id > 0 && ext_id);
+	bytes += qq_get32(&qun_id, data + bytes);
+	g_return_if_fail(id > 0 && qun_id);
 
-	qq_room_find_or_new(gc, id, ext_id);
+	qq_room_find_or_new(gc, id, qun_id);
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
@@ -380,6 +380,11 @@ void qq_group_manage_group(PurpleConnection *gc, GHashTable *data)
 	g_return_if_fail(data != NULL);
 
 	id_ptr = g_hash_table_lookup(data, QQ_ROOM_KEY_INTERNAL_ID);
+	if (!id_ptr)
+	{
+		purple_debug_error("QQ", "Cannot find Room! Wait and Retry");
+		return;
+	}
 	id = strtoul(id_ptr, NULL, 10);
 	g_return_if_fail(id > 0);
 
@@ -393,7 +398,7 @@ void qq_group_manage_group(PurpleConnection *gc, GHashTable *data)
 /* receive an application to join the group */
 void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, PurpleConnection *gc)
 {
-	guint32 ext_id, member_id;
+	guint32 qun_id, member_id;
 	guint8 type8;
 	gchar *msg, *reason;
 	qq_room_req *add_req;
@@ -406,22 +411,22 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 
 	/* FIXME: check length here */
 
-	bytes += qq_get32(&ext_id, data + bytes);
+	bytes += qq_get32(&qun_id, data + bytes);
 	bytes += qq_get8(&type8, data + bytes);
 	bytes += qq_get32(&member_id, data + bytes);
 
-	g_return_if_fail(ext_id > 0 && member_id > 0);
+	g_return_if_fail(qun_id > 0 && member_id > 0);
 
 	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
-	purple_debug_info("QQ", "%u requested to join room, qun id %u\n", member_id, ext_id);
+	purple_debug_info("QQ", "%u requested to join room, qun id %u\n", member_id, qun_id);
 
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 	if (qq_room_buddy_find(rmd, member_id)) {
 		purple_debug_info("QQ", "Approve join, buddy joined before\n");
 		msg = g_strdup_printf(_("%u requested to join Qun %u for %s"),
-				member_id, ext_id, reason);
+				member_id, qun_id, reason);
 		qq_room_got_chat_in(gc, id, 0, msg, now);
 		qq_send_cmd_group_auth(gc, rmd, QQ_ROOM_AUTH_REQUEST_APPROVE, member_id, "");
 		g_free(msg);
@@ -433,7 +438,7 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 		qq_request_get_buddy_info(gc, member_id, 0, QQ_BUDDY_INFO_DISPLAY);
 	}
 	who = uid_to_purple_name(member_id);
-	msg = g_strdup_printf(_("%u request to join Qun %u"), member_id, ext_id);
+	msg = g_strdup_printf(_("%u request to join Qun %u"), member_id, qun_id);
 
 	add_req = g_new0(qq_room_req, 1);
 	add_req->gc = gc;
@@ -456,7 +461,7 @@ void qq_process_room_buddy_request_join(guint8 *data, gint len, guint32 id, Purp
 /* the request to join a group is rejected */
 void qq_process_room_buddy_rejected(guint8 *data, gint len, guint32 id, PurpleConnection *gc)
 {
-	guint32 ext_id, admin_uid;
+	guint32 qun_id, admin_uid;
 	guint8 type8;
 	gchar *msg, *reason;
 	qq_room_data *rmd;
@@ -466,20 +471,20 @@ void qq_process_room_buddy_rejected(guint8 *data, gint len, guint32 id, PurpleCo
 
 	/* FIXME: check length here */
 	bytes = 0;
-	bytes += qq_get32(&ext_id, data + bytes);
+	bytes += qq_get32(&qun_id, data + bytes);
 	bytes += qq_get8(&type8, data + bytes);
 	bytes += qq_get32(&admin_uid, data + bytes);
 
-	g_return_if_fail(ext_id > 0 && admin_uid > 0);
+	g_return_if_fail(qun_id > 0 && admin_uid > 0);
 
 	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
 	msg = g_strdup_printf
-		(_("Failed to join Qun %u, operated by admin %u"), ext_id, admin_uid);
+		(_("Failed to join Qun %u, operated by admin %u"), qun_id, admin_uid);
 
 	purple_notify_warning(gc, _("QQ Qun Operation"), msg, reason);
 
-	qq_room_find_or_new(gc, id, ext_id);
+	qq_room_find_or_new(gc, id, qun_id);
 	rmd = qq_room_data_find(gc, id);
 	if (rmd != NULL) {
 		rmd->my_role = QQ_ROOM_ROLE_NO;
@@ -492,7 +497,7 @@ void qq_process_room_buddy_rejected(guint8 *data, gint len, guint32 id, PurpleCo
 /* the request to join a group is approved */
 void qq_process_room_buddy_approved(guint8 *data, gint len, guint32 id, PurpleConnection *gc)
 {
-	guint32 ext_id, admin_uid;
+	guint32 qun_id, admin_uid;
 	guint8 type8;
 	gchar *msg, *reason;
 	qq_room_data *rmd;
@@ -503,22 +508,22 @@ void qq_process_room_buddy_approved(guint8 *data, gint len, guint32 id, PurpleCo
 
 	/* FIXME: check length here */
 	bytes = 0;
-	bytes += qq_get32(&ext_id, data + bytes);
+	bytes += qq_get32(&qun_id, data + bytes);
 	bytes += qq_get8(&type8, data + bytes);
 	bytes += qq_get32(&admin_uid, data + bytes);
 
-	g_return_if_fail(ext_id > 0 && admin_uid > 0);
+	g_return_if_fail(qun_id > 0 && admin_uid > 0);
 	/* it is also a "нч" here, so do not display */
 	bytes += qq_get_vstr(&reason, QQ_CHARSET_DEFAULT, sizeof(guint8), data + bytes);
 
-	qq_room_find_or_new(gc, id, ext_id);
+	qq_room_find_or_new(gc, id, qun_id);
 	rmd = qq_room_data_find(gc, id);
 	if (rmd != NULL) {
 		rmd->my_role = QQ_ROOM_ROLE_YES;
 	}
 
 	msg = g_strdup_printf(_("<b>Joining Qun %u is approved by admin %u for %s</b>"),
-			ext_id, admin_uid, reason);
+			qun_id, admin_uid, reason);
 	now = time(NULL);
 	qq_room_got_chat_in(gc, id, 0, msg, now);
 
@@ -529,7 +534,7 @@ void qq_process_room_buddy_approved(guint8 *data, gint len, guint32 id, PurpleCo
 /* process the packet when removed from a group */
 void qq_process_room_buddy_removed(guint8 *data, gint len, guint32 id, PurpleConnection *gc)
 {
-	guint32 ext_id, uid;
+	guint32 qun_id, uid;
 	guint8 type8;
 	gchar *msg;
 	qq_room_data *rmd;
@@ -540,13 +545,13 @@ void qq_process_room_buddy_removed(guint8 *data, gint len, guint32 id, PurpleCon
 
 	/* FIXME: check length here */
 	bytes = 0;
-	bytes += qq_get32(&ext_id, data + bytes);
+	bytes += qq_get32(&qun_id, data + bytes);
 	bytes += qq_get8(&type8, data + bytes);
 	bytes += qq_get32(&uid, data + bytes);
 
-	g_return_if_fail(ext_id > 0 && uid > 0);
+	g_return_if_fail(qun_id > 0 && uid > 0);
 
-	qq_room_find_or_new(gc, id, ext_id);
+	qq_room_find_or_new(gc, id, qun_id);
 	rmd = qq_room_data_find(gc, id);
 	if (rmd != NULL) {
 		rmd->my_role = QQ_ROOM_ROLE_NO;
@@ -560,7 +565,7 @@ void qq_process_room_buddy_removed(guint8 *data, gint len, guint32 id, PurpleCon
 /* process the packet when added to a group */
 void qq_process_room_buddy_joined(guint8 *data, gint len, guint32 id, PurpleConnection *gc)
 {
-	guint32 ext_id, uid;
+	guint32 qun_id, uid;
 	guint8 type8;
 	qq_room_data *rmd;
 	gint bytes;
@@ -571,13 +576,13 @@ void qq_process_room_buddy_joined(guint8 *data, gint len, guint32 id, PurpleConn
 
 	/* FIXME: check length here */
 	bytes = 0;
-	bytes += qq_get32(&ext_id, data + bytes);
+	bytes += qq_get32(&qun_id, data + bytes);
 	bytes += qq_get8(&type8, data + bytes);
 	bytes += qq_get32(&uid, data + bytes);
 
-	g_return_if_fail(ext_id > 0 && id > 0);
+	g_return_if_fail(qun_id > 0 && id > 0);
 
-	qq_room_find_or_new(gc, id, ext_id);
+	qq_room_find_or_new(gc, id, qun_id);
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 

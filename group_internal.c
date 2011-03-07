@@ -58,16 +58,16 @@ qq_room_data *room_data_new(guint32 id, guint32 qun_id, const gchar *title)
 static qq_room_data *room_data_new_by_hashtable(PurpleConnection *gc, GHashTable *data)
 {
 	qq_room_data *rmd;
-	guint32 id, ext_id;
+	guint32 id, qun_id;
 	gchar *value;
 
 	value = g_hash_table_lookup(data, QQ_ROOM_KEY_INTERNAL_ID);
 	id = value ? strtoul(value, NULL, 10) : 0;
 	value = g_hash_table_lookup(data, QQ_ROOM_KEY_QUN_ID);
-	ext_id = value ? strtoul(value, NULL, 10) : 0;
+	qun_id = value ? strtoul(value, NULL, 10) : 0;
 	value = g_hash_table_lookup(data, QQ_ROOM_KEY_NAME);
 
-	rmd = room_data_new(id, ext_id, value);
+	rmd = room_data_new(id, qun_id, value);
 	rmd->my_role = QQ_ROOM_ROLE_YES;
 	return rmd;
 }
@@ -184,7 +184,7 @@ void qq_room_remove(PurpleConnection *gc, guint32 id)
 	PurpleChat *chat;
 	qq_room_data *rmd;
 	gchar *num_str;
-	guint32 ext_id;
+	guint32 qun_id;
 
 	g_return_if_fail (gc != NULL && gc->proto_data != NULL);
 	qd = (qq_data *) gc->proto_data;
@@ -193,12 +193,12 @@ void qq_room_remove(PurpleConnection *gc, guint32 id)
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail (rmd != NULL);
 
-	ext_id = rmd->qun_id;
+	qun_id = rmd->qun_id;
 	qd->rooms = g_slist_remove(qd->rooms, rmd);
 	room_data_free(rmd);
 
-	purple_debug_info("QQ", "Find and remove chat, ext_id %u\n", ext_id);
-	num_str = g_strdup_printf("%u", ext_id);
+	purple_debug_info("QQ", "Find and remove chat, qun_id %u\n", qun_id);
+	num_str = g_strdup_printf("%u", qun_id);
 	chat = purple_blist_find_chat(purple_connection_get_account(gc), num_str);
 	g_free(num_str);
 
