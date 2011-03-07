@@ -109,5 +109,5 @@ AM_CPPFLAGS += ${PURPLE_CFLAGS}  \
 	-I$(top_builddir)/libpurple 
 
 # remove .la files
-install-exec-hook:
+install-data-hook:
 	rm -f $(DESTDIR)$(libdir)/libqq.la
