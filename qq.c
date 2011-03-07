@@ -654,11 +654,11 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "rakescar : provided filter for HTML tag<br>\n");
 	g_string_append(info, "yyw : improved performance on PPC linux<br>\n");
 	g_string_append(info, "lvxiang : provided ip to location original code<br>\n");
-	g_string_append(info, "markhuetsch : libqq merge into libpurple, maintainer 2006-2007<br>\n");
+	g_string_append(info, "markhuetsch : OpenQ merge into libpurple, maintainer 2006-2007<br>\n");
 	g_string_append(info, "ccpaging : maintainer since 2007<br>\n");
 	g_string_append(info, "icesky : maintainer since 2007<br>\n");
 	g_string_append(info, "csyfek : faces, maintainer since 2007<br>\n");
-	g_string_append(info, "V.E.O : maintainer since 2011<br>\n");
+	g_string_append(info, "V.E.O : maintainer since 2011, OpenQ rename to libqq<br>\n");
 	g_string_append(info, "<br>\n");
 
 	g_string_append(info, _("<p><b>Lovely Patch Writers</b>:<br>\n"));
@@ -676,11 +676,11 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "Jeff Ye : http://www.sinomac.com<br>\n");
 	g_string_append(info, "Hu Zheng : http://forlinux.yeah.net<br>\n");
 	g_string_append(info, "yunfan : http://www.myswear.net<br>\n");
-	g_string_append(info, "libqq Team : http://libqq.linuxsir.org<br>\n");
+	g_string_append(info, "libqq Team : http://openq.linuxsir.org<br>\n");
 	g_string_append(info, "LumaQQ Team : http://lumaqq.linuxsir.org<br>\n");
 	g_string_append(info, "Pidgin Team : http://www.pidgin.im<br>\n");
 	g_string_append(info, "Huang Guan : http://home.xxsyzx.com<br>\n");
-	g_string_append(info, "libqq Google Group : http://groups.google.com/group/libqq<br>\n");
+	g_string_append(info, "OpenQ Google Group : http://groups.google.com/group/openq<br>\n");
 	g_string_append(info, "LibQQ Google code : http://libqq-pidgin.googlecode.com<br>\n");
 	g_string_append(info, "<br>\n");
 
