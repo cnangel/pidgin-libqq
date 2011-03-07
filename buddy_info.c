@@ -197,6 +197,7 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	guint bytes;
 	guint16 size;
 	guint8 * info;
+	qq_buddy_data *bd;
 
 	user_info = purple_notify_user_info_new();
 
@@ -206,6 +207,9 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	value = g_strdup_printf("%d", uid);
 	purple_notify_user_info_add_pair(user_info, _(field_infos[0].text), value);
 	g_free(value);
+
+	bd = qq_buddy_data_find(gc, uid);
+	purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
 
 	bytes += 4;
 	bytes += qq_get16(&num, data+bytes);
@@ -1020,12 +1024,10 @@ void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, gu
 
 	for (it = buddies,i=0; it; it = it->next) {
 		if (i<count) { i++; continue; }
-		if (i>=count+50) break;		//send 50 buddies one time
+		if (i>=count+10) break;		//send 10 buddies one time
 		buddy = it->data;
 		if (buddy == NULL) continue;
 		if ((bd = purple_buddy_get_protocol_data(buddy)) == NULL) continue;
-		if (bd->uid == 0) continue;	/* keep me as end of packet*/
-		if (bd->uid == qd->uid) continue;
 		bytes += qq_put32(buf + bytes, bd->uid);
 		bytes += qq_put32(buf + bytes, 0x00000000);		//signature modified time, normally null
 		i++;
@@ -1038,10 +1040,10 @@ void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, gu
 void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc)
 {
 	gint bytes;
-	guint32 uid, sign_time, last_uid;
+	guint32 uid, last_uid;
 	guint8 ret;
 	qq_buddy_data *bd;
-	gchar *sign;
+	gchar *sign, *who;
 	qq_data * qd = (qq_data *) gc->proto_data;
 
 	bytes = 1;		//83
@@ -1056,8 +1058,13 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 		if (bd)
 		{
 			bytes += qq_get_vstr(&sign, NULL, sizeof(guint8), data+bytes);
-			purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign);
-			bd->signature = sign;
+			if (sign)
+			{
+				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign);
+				bd->signature = sign;
+				who = uid_to_purple_name(uid);
+				purple_prpl_got_user_status(gc->account, who, "mobile", PURPLE_MOOD_NAME, bd->signature, NULL);
+			}		
 		} else {
 			bytes += *(guint8 *)(data+bytes) ;
 		}

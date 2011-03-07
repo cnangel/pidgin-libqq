@@ -263,6 +263,7 @@ static gchar *qq_status_text(PurpleBuddy *b)
 
 	status = g_string_new("");
 
+	/* we only provide Mood here
 	switch(bd->status) {
 		case QQ_BUDDY_OFFLINE:
 			g_string_append(status, _("Offline"));
@@ -270,7 +271,6 @@ static gchar *qq_status_text(PurpleBuddy *b)
 		case QQ_BUDDY_ONLINE_NORMAL:
 			g_string_append(status, _("Online"));
 			break;
-			/* TODO What does this status mean? Labelling it as offline... */
 		case QQ_BUDDY_CHANGE_TO_OFFLINE:
 			g_string_append(status, _("Offline"));
 			break;
@@ -285,6 +285,11 @@ static gchar *qq_status_text(PurpleBuddy *b)
 			break;
 		default:
 			g_string_printf(status, _("Unknown-%d"), bd->status);
+	}
+	*/
+	if (bd->signature)
+	{
+		g_string_append(status, bd->signature);
 	}
 
 	return g_string_free(status, FALSE);
@@ -441,6 +446,10 @@ static GList *qq_status_types(PurpleAccount *ga)
 
 	status = purple_status_type_new_full(PURPLE_STATUS_MOBILE,
 			"mobile", NULL, FALSE, FALSE, TRUE);
+	types = g_list_append(types, status);
+
+	status = purple_status_type_new_full(PURPLE_STATUS_MOOD,
+			"mood", _("Mood"), TRUE, TRUE, TRUE);
 	types = g_list_append(types, status);
 
 	return types;
