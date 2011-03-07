@@ -9,7 +9,7 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the 
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
-AC_INIT([libqq-pidgin],[0.50],[http://code.google.com/p/libqq-pidgin/issues/list])
+AC_INIT([libqq-pidgin],[0.63],[http://code.google.com/p/libqq-pidgin/issues/list])
 #AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,8 +18,6 @@ AC_PROG_CC
 AM_DISABLE_STATIC
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
-
-AC_DEFINE(DISPLAY_VERSION,["0.50"])
 
 PKG_CHECK_MODULES([PURPLE],[purple >= 2.0.0],,AC_MSG_ERROR([
 *** libpurple 2.0+ is required to build.]))
