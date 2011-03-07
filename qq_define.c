@@ -45,7 +45,7 @@
 #define QQ_CLIENT_0C49 0x0C49	/* QQ2004II */
 #define QQ_CLIENT_0D05 0x0D05	/* QQ2005 beta1 */
 #define QQ_CLIENT_0D51 0x0D51	/* QQ2005 beta2 */
-#define QQ_CLIENT_0D55 0x0d55	/* QQ2005 used by openq before */
+#define QQ_CLIENT_0D55 0x0d55	/* QQ2005 used by libqq before */
 #define QQ_CLIENT_0D61 0x0D61	/* QQ2005 */
 #define QQ_CLIENT_05A5 0x05A5	/* ? */
 #define QQ_CLIENT_05F1 0x0F15	/* QQ2006 Spring Festival */

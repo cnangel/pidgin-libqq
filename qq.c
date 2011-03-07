@@ -57,7 +57,7 @@
 #include "utils.h"
 #include "version.h"
 
-#define OPENQ_VERSION 		"0.3.2-p20"
+#define LIBQQ_VERSION 		"0.63"
 
 static GList *server_list_build(gchar select)
 {
@@ -631,7 +631,7 @@ static void action_show_account_info(PurplePluginAction *action)
 	g_string_free(info, TRUE);
 }
 
-static void action_about_openq(PurplePluginAction *action)
+static void action_about_libqq(PurplePluginAction *action)
 {
 	PurpleConnection *gc = (PurpleConnection *) action->context;
 	GString *info;
@@ -654,7 +654,7 @@ static void action_about_openq(PurplePluginAction *action)
 	g_string_append(info, "rakescar : provided filter for HTML tag<br>\n");
 	g_string_append(info, "yyw : improved performance on PPC linux<br>\n");
 	g_string_append(info, "lvxiang : provided ip to location original code<br>\n");
-	g_string_append(info, "markhuetsch : OpenQ merge into libpurple, maintainer 2006-2007<br>\n");
+	g_string_append(info, "markhuetsch : libqq merge into libpurple, maintainer 2006-2007<br>\n");
 	g_string_append(info, "ccpaging : maintainer since 2007<br>\n");
 	g_string_append(info, "icesky : maintainer since 2007<br>\n");
 	g_string_append(info, "csyfek : faces, maintainer since 2007<br>\n");
@@ -676,11 +676,11 @@ static void action_about_openq(PurplePluginAction *action)
 	g_string_append(info, "Jeff Ye : http://www.sinomac.com<br>\n");
 	g_string_append(info, "Hu Zheng : http://forlinux.yeah.net<br>\n");
 	g_string_append(info, "yunfan : http://www.myswear.net<br>\n");
-	g_string_append(info, "OpenQ Team : http://openq.linuxsir.org<br>\n");
+	g_string_append(info, "libqq Team : http://libqq.linuxsir.org<br>\n");
 	g_string_append(info, "LumaQQ Team : http://lumaqq.linuxsir.org<br>\n");
 	g_string_append(info, "Pidgin Team : http://www.pidgin.im<br>\n");
 	g_string_append(info, "Huang Guan : http://home.xxsyzx.com<br>\n");
-	g_string_append(info, "OpenQ Google Group : http://groups.google.com/group/openq<br>\n");
+	g_string_append(info, "libqq Google Group : http://groups.google.com/group/libqq<br>\n");
 	g_string_append(info, "LibQQ Google code : http://libqq-pidgin.googlecode.com<br>\n");
 	g_string_append(info, "<br>\n");
 
@@ -697,7 +697,7 @@ static void action_about_openq(PurplePluginAction *action)
 	g_string_append(info, _("<i>Feel free to join us!</i> :)"));
 	g_string_append(info, "</body></html>");
 
-	title = g_strdup_printf(_("About OpenQ %s"), OPENQ_VERSION);
+	title = g_strdup_printf(_("About libqq %s"), LIBQQ_VERSION);
 	purple_notify_formatted(gc, title, title, NULL, info->str, NULL, NULL);
 
 	g_free(title);
@@ -718,7 +718,7 @@ static void action_about_openq(PurplePluginAction *action)
    purple_request_input(gc, _("Create QQ Qun"),
    _("Input Qun name here"),
    _("Only QQ members can create permanent Qun"),
-   "OpenQ", FALSE, FALSE, NULL,
+   "libqq", FALSE, FALSE, NULL,
    _("Create"), G_CALLBACK(qq_create_room), _("Cancel"), NULL, gc);
    }
 */
@@ -846,7 +846,7 @@ static GList *qq_actions(PurplePlugin *plugin, gpointer context)
 	act = purple_plugin_action_new(_("Update all QQ Quns"), action_update_all_rooms);
 	m = g_list_append(m, act);
 
-	act = purple_plugin_action_new(_("About OpenQ"), action_about_openq);
+	act = purple_plugin_action_new(_("About libqq"), action_about_libqq);
 	m = g_list_append(m, act);
 	/*
 	   act = purple_plugin_action_new(_("Qun: Search a permanent Qun"), _qq_menu_search_or_add_permanent_group);
