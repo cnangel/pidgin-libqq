@@ -1,3 +1,13 @@
+
+2011.03.06 - V.E.O <V.E.O(at)TOM.COM>
+	* QQ qun IM back to work.
+
+2011.02.26 - V.E.O <V.E.O(at)TOM.COM>
+	* Basic IM back to work.
+
+2011.01.24 - V.E.O <V.E.O(at)TOM.COM>
+	* fork openq as libqq. Try to support QQ protocol version 2010
+
 2009.04.23 - flos <lonicerae(at)gmail.com>
 	* Fixed a bug of updating buddy who is not in user's buddy list
 
