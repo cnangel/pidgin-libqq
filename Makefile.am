@@ -3,11 +3,16 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = libpurple \
 	Makefile.mingw
 
-if BUILD_SEPERATE
-pkgdir=@PURPLE_PLUGINDIR@
-else
-pkgdir = $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
-endif
+
+
+# If build out side pidgin source, pluginsdir will be set to @PURPLE_PLUGINDIR@
+# If build in side pidgin source, pluginsdir will be empty, with is what it should be
+# Then empty pluginsdir will be set to $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
+# So this fits both situation
+
+pluginsdir ?= $(libdir)/purple-@PURPLE_MAJOR_VERSION@
+
+pkgdir = ${pluginsdir}
 
 QQSOURCES = \
 	buddy_info.c \
@@ -70,7 +75,7 @@ libqq_la_CFLAGS    = $(AM_CFLAGS)
 
 else
 
-st =
+st = -DPURPLE_PLUGINS
 noinst_LTLIBRARIES =
 pkg_LTLIBRARIES  = libqq.la
 libqq_la_SOURCES = $(QQSOURCES)
@@ -92,15 +97,17 @@ libqq_tmp_la_LIBADD = $(libqq_la_LIBADD)
 AM_CPPFLAGS= \
 	-DQQ_BUDDY_ICON_DIR=\"$(datadir)/pixmaps/purple/buddy_icons/qq\" \
 	$(DEBUG_CFLAGS) \
-	$(GLIB_CFLAGS)
+	$(GLIB_CFLAGS) 
 
-if BUILD_SEPERATE
-AM_CPPFLAGS += @PURPLE_CFLAGS@ -Ilibpurple -DPURPLE_PLUGINS
-else
-AM_CPPFLAGS +=  \
+
+# If build out side pidgin source, PURPLE_CFLAGS will be set properly 
+# If build in side pidgin source, PURPLE_CFLAGS will be empty, with is what it should be
+# So this fits both situation
+
+AM_CPPFLAGS += ${PURPLE_CFLAGS}  \
 	-I$(top_srcdir)/libpurple \
 	-I$(top_builddir)/libpurple 
-endif
 
+# remove .la files
 install-exec-hook:
-	rm -f $(DESTDIR)$(libdir)/libfoo.la
+	rm -f $(DESTDIR)$(libdir)/libqq.la
