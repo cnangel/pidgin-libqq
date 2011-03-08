@@ -105,9 +105,10 @@ AM_CPPFLAGS= \
 # So this fits both situation
 
 AM_CPPFLAGS += ${PURPLE_CFLAGS}  \
+	${st}	\
 	-I$(top_srcdir)/libpurple \
 	-I$(top_builddir)/libpurple 
 
 # remove .la files
 install-data-hook:
-	rm -f $(DESTDIR)$(libdir)/libqq.la
+	rm -f $(pluginsdir)/libqq.la
