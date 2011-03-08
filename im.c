@@ -691,7 +691,7 @@ void qq_got_message(PurpleConnection *gc, const gchar *msg)
 
 	g_return_if_fail(qd->uid > 0);
 
-	qq_buddy_find_or_new(gc, qd->uid, 0);
+	qq_buddy_find_or_new(gc, qd->uid, 0xFF);
 
 	from = uid_to_purple_name(qd->uid);
 	serv_got_im(gc, from, msg, PURPLE_MESSAGE_SYSTEM, now);
@@ -1257,7 +1257,6 @@ static GSList*  qq_grab_emoticons(const char *msg, const char*username)
 
 unsigned int qq_send_typing( PurpleConnection *gc, const char *who, PurpleTypingState state )
 {
-	PurpleAccount *account;
 	qq_data *qd;
 	guint8 raw_data[16];
 	gint bytes;

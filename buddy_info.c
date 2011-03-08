@@ -858,7 +858,7 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 			purple_account_set_alias(account, nickname);
 		}
 		/* find me in buddy list */
-		buddy = qq_buddy_find_or_new(gc, uid, 0);
+		buddy = qq_buddy_find_or_new(gc, uid, 0xFF);
 	} else {
 		buddy = purple_find_buddy(gc->account, who);
 		/* purple_debug_info("QQ", "buddy=%p\n", (void*)buddy); */

@@ -138,7 +138,7 @@ PurpleBuddy * qq_buddy_new( PurpleConnection *gc, guint32 uid, PurpleGroup * gro
 	gchar * group_name;
 
 	g_return_val_if_fail(gc->account != NULL && uid != 0, NULL);
-
+	/* deprecated when fix qq_process_add_buddy_no_auth */
 	if (!group)
 	{
 		group_name = g_strdup_printf(PURPLE_GROUP_QQ_FORMAT,
@@ -188,7 +188,7 @@ PurpleBuddy *qq_buddy_find(PurpleConnection *gc, guint32 uid)
 	return buddy;
 }
 
-PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 group_id )
+PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 group_id)
 {
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
@@ -200,19 +200,21 @@ PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 gr
 
 	qd = (qq_data *)gc->proto_data;
 
+	buddy = qq_buddy_find(gc, uid);
+	/* group_id==0xFF only when add an unknown stranger */
+	if (group_id==0xFF) {
+		if (buddy)	goto buddy_data_check;
+		else group_id=0;		//add stranger to group 0
+	}
+
+	/* find input group_id */
 	for (l=qd->group_list; l; l=l->next)
 	{
 		if (((qq_group *)(l->data))->group_id == group_id) break;
 	}
-	/* if group_id not found && group_id is not 0 (not root group) */ 
-	if (l==NULL && group_id)	{
-		purple_debug_error("QQ","cannot find group id: %u", group_id);
-		return NULL;
-	}
 
-	if (group_id)
-	{
-		buddy = qq_buddy_find(gc, uid);
+	/* if group_id found */
+	if (l)	{
 		if (buddy)		//if buddy already exist, we need check if he is in new group
 		{	
 			old_group = purple_buddy_get_group(buddy);
@@ -220,24 +222,24 @@ PurpleBuddy * qq_buddy_find_or_new( PurpleConnection *gc, guint32 uid, guint8 gr
 			if (old_group != purple_find_group(g->group_name))
 			{
 				qq_buddy_free(buddy);
-			} else	return buddy; 
+			} else	goto buddy_data_check;
 		}
-
 		old_group = purple_find_group(((qq_group *)(l->data))->group_name);
 		buddy = qq_buddy_new(gc, uid, old_group);
 	} else {
-		buddy = qq_buddy_find(gc, uid);
-		if (buddy == NULL) {
-			buddy = qq_buddy_new(gc, uid, NULL);
+		if (group_id==0)
+		{
+			if (!buddy)
+				buddy = qq_buddy_new(gc, uid, NULL);
+			goto buddy_data_check;
 		}
-	}
-	
-	if (buddy == NULL) {
+		purple_debug_error("QQ","cannot find group id: %u", group_id);
 		return NULL;
 	}
-	if (purple_buddy_get_protocol_data(buddy) != NULL) {
+
+buddy_data_check:
+	if (purple_buddy_get_protocol_data(buddy) != NULL)
 		return buddy;
-	}
 
 	bd = qq_buddy_data_new(uid);
 	purple_buddy_set_protocol_data(buddy, bd);
@@ -792,7 +794,7 @@ void qq_process_add_buddy_no_auth(PurpleConnection *gc,
 
 	if (strtol(reply, NULL, 10) == 0) {
 		/* add OK */
-		qq_buddy_find_or_new(gc, uid, 0);
+		qq_buddy_find_or_new(gc, uid, 0xFF);
 
 		qq_request_get_buddy_info(gc, uid, 0, 0);
 		qq_request_get_level(gc, uid);
@@ -845,7 +847,7 @@ void qq_process_add_buddy_no_auth_ex(PurpleConnection *gc,
 
 	if (reply == 0x99) {
 		purple_debug_info("QQ", "Successfully added buddy %u\n", uid);
-		qq_buddy_find_or_new(gc, uid, 0);
+		qq_buddy_find_or_new(gc, uid, 0xFF);
 
 		qq_request_get_buddy_info(gc, uid, 0, 0);
 		qq_request_get_level(gc, uid);
@@ -1167,7 +1169,7 @@ static void server_buddy_added_me(PurpleConnection *gc, gchar *from, gchar *to,
 
 	server_buddy_check_code(gc, from, data, data_len);
 
-	qq_buddy_find_or_new(gc, uid, 0);
+	qq_buddy_find_or_new(gc, uid, 0xFF);
 	qq_request_get_buddy_info(gc, uid, 0, 0);
 	qq_request_get_buddies_online(gc, 0, 0);
 	qq_request_get_level(gc, uid);
