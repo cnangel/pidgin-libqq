@@ -19,6 +19,9 @@ AM_DISABLE_STATIC
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
 
+# Check for pkg-config
+PKG_PROG_PKG_CONFIG
+
 PKG_CHECK_MODULES([PURPLE],[purple >= 2.0.0],,AC_MSG_ERROR([
 *** libpurple 2.0+ is required to build.]))
 AC_SUBST(PURPLE_CFLAGS)
