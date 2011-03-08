@@ -203,6 +203,12 @@ static const gchar *get_im_type_desc(gint type)
 			return "QQ_MSG_BUDDY_84";
 		case QQ_MSG_BUDDY_85:
 			return "QQ_MSG_BUDDY_85";
+		case QQ_MSG_BUDDY_78:
+			return "QQ_MSG_BUDDY_78";
+		case QQ_MSG_BUDDY_A6:
+			return "QQ_MSG_BUDDY_A6";
+		case QQ_MSG_BUDDY_A7:
+			return "QQ_MSG_BUDDY_A7";
 		default:
 			return "QQ_MSG_UNKNOWN";
 	}
@@ -274,6 +280,7 @@ static void process_private_msg(guint8 *data, gint data_len, guint16 seq, Purple
 	case QQ_MSG_TO_UNKNOWN:
 	case QQ_MSG_BUDDY_09:		
 	case QQ_MSG_BUDDY_A6:
+	case QQ_MSG_BUDDY_A7:
 	case QQ_MSG_BUDDY_78:
 		purple_debug_info("QQ	", "MSG from buddy [%d]\n", header.uid_from);
 		bytes += 1;
