@@ -62,8 +62,6 @@ QQSOURCES = \
 	utils.c \
 	utils.h
 
-AM_CFLAGS = $(st)
-
 libqq_la_LDFLAGS = -module -avoid-version --no-la-files
 
 if STATIC_QQ
@@ -109,6 +107,6 @@ AM_CPPFLAGS += ${PURPLE_CFLAGS}  \
 	-I$(top_srcdir)/libpurple \
 	-I$(top_builddir)/libpurple 
 
-# remove .la files
+# remove .la files, DESTDIR is here for make install DESTDIR=somedir
 install-data-hook:
-	rm -f $(pluginsdir)/libqq.la
+	rm -f ${DESTDIR}$(pluginsdir)/libqq.la
