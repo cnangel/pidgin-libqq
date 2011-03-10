@@ -981,7 +981,7 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			qq_request_login_getlist(gc, 0x0001);
 			break;
 		case QQ_CMD_LOGIN_GETLIST:
-			ret_8 = qq_process_login_getlist(gc, data, data_len, ship32);
+			ret_8 = qq_process_login_getlist(gc, data, data_len);
 			if (ret_8 == QQ_LOGIN_REPLY_OK)
 			{
 				qq_request_login_ED(gc);

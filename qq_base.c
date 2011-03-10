@@ -452,7 +452,7 @@ void qq_captcha_input_dialog(PurpleConnection *gc,qq_captcha_data *captcha)
 guint8 qq_process_captcha(PurpleConnection *gc, guint8 *data, gint data_len)
 {
 	qq_data *qd;
-	int bytes;
+	gint bytes;
 	guint8 captcha_cmd;
 	guint8 need_captcha;
 	guint16 png_len;
@@ -1068,7 +1068,7 @@ void qq_request_login_getlist( PurpleConnection *gc, guint16 index )
 		next time request with it, to verify if list has changed	*/
 
 	bytes += qq_put16(raw_data+bytes, index);
-	qq_send_cmd_mess(gc, QQ_CMD_LOGIN_GETLIST, raw_data, bytes, 0, index);
+	qq_send_cmd(gc, QQ_CMD_LOGIN_GETLIST, raw_data, bytes);
 }
 
 void qq_request_login_ED( PurpleConnection *gc )
@@ -1097,7 +1097,7 @@ void qq_request_login_EC( PurpleConnection *gc )
 	qq_send_cmd(gc, QQ_CMD_LOGIN_EC, raw_data, bytes);
 }
 
-guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_len, guint16 index )
+guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_len )
 {
 	qq_data *qd;
 	gint bytes;
@@ -1109,7 +1109,8 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	guint8 group_id;
 	qq_room_data *rmd;
 	qq_buddy_group * bg;
-	guint16 next_index;
+	guint16 index_count;
+	guint16 index_next;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
 
@@ -1126,9 +1127,9 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 		return QQ_LOGIN_REPLY_OK;
 	}
 	bytes = 14;
-	qq_get16(&next_index, data + bytes);
+	bytes += qq_get16(&index_count, data + bytes);
+	bytes += qq_get16(&index_next, data + bytes);
 	
-	bytes = 18;
 	bytes += qq_get16(&num, data+bytes);
 
 	for (i=0; i<num; ++i) {
@@ -1156,10 +1157,10 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 			}
 		}
 	}
-	if (next_index > index)	//need request more
+	if (index_next < index_count)	//need request more
 	{
-		qq_request_login_getlist(gc, next_index);
-		return next_index;
+		qq_request_login_getlist(gc, index_next);
+		return index_next;
 	} else {
 		/* clean deleted buddies */
 		qq_clean_group_buddy_list(gc);
