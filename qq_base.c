@@ -1110,7 +1110,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	qq_room_data *rmd;
 	qq_buddy_group * bg;
 	guint16 index_count;
-	guint16 index_next;
+	guint16 index;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
 
@@ -1128,7 +1128,7 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	}
 	bytes = 14;
 	bytes += qq_get16(&index_count, data + bytes);
-	bytes += qq_get16(&index_next, data + bytes);
+	bytes += qq_get16(&index, data + bytes);
 	
 	bytes += qq_get16(&num, data+bytes);
 
@@ -1157,10 +1157,11 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 			}
 		}
 	}
-	if (index_next < index_count)	//need request more
+	if (index < index_count)	//need request more
 	{
-		qq_request_login_getlist(gc, index_next);
-		return index_next;
+		index++;
+		qq_request_login_getlist(gc, index);
+		return index;
 	} else {
 		/* clean deleted buddies */
 		qq_clean_group_buddy_list(gc);
