@@ -209,8 +209,9 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	g_free(value);
 
 	bd = qq_buddy_data_find(gc, uid);
-	purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
-
+	if (bd && bd->signature)
+		purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
+	
 	bytes += 4;
 	bytes += qq_get16(&num, data+bytes);
 
