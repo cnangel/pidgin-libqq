@@ -201,6 +201,7 @@ void qq_process_room_cmd_get_qun_list( guint8 *data, gint data_len, PurpleConnec
 		bytes ++;
 
 		rmd = qq_room_data_find(gc, id);
+		g_return_if_fail(rmd != NULL);
 		rmd->qun_id = qun_id;
 		rmd->my_role = QQ_ROOM_ROLE_YES;
 		purple_debug_info("QQ", "Qun added id: %u qun_id: %u\n",
