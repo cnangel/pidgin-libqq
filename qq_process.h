@@ -52,5 +52,7 @@ void qq_update_all(PurpleConnection *gc, guint16 cmd);
 void qq_update_online(PurpleConnection *gc, guint16 cmd);
 void qq_update_room(PurpleConnection *gc, guint8 room_cmd, guint32 room_id);
 void qq_update_all_rooms(PurpleConnection *gc, guint8 room_cmd, guint32 room_id);
+
+extern void qq_close(PurpleConnection *gc);
 #endif
 

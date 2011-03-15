@@ -42,7 +42,7 @@
 #include "send_file.h"
 #include "utils.h"
 
-#define QQ_MSG_IM_MAX               513	/* max length of IM */
+#define QQ_MSG_IM_MAX               512	/* max length of IM */
 
 enum {
 	QQ_IM_TEXT = 0x01,
@@ -1034,12 +1034,11 @@ void qq_process_im( PurpleConnection *gc, guint8 *data, gint len, guint16 msg_ty
 }
 
 /* send an IM to uid_to */
-static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, qq_im_format *fmt, const GString *msg, guint16 msg_id, guint8 frag_count, guint8 frag_index)
+static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, qq_im_format *fmt, const GString *msg, guint16 msg_id, time_t send_time, guint8 frag_count, guint8 frag_index)
 {
 	qq_data *qd;
 	guint8 raw_data[1024];
 	gint bytes;
-	time_t now;
 	static guint8 fill[] = {
 		0x00, 0x00, 0x00, 0x0D, 
 		0x00, 0x01, 0x00, 0x04,
@@ -1069,8 +1068,7 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	/* sequence number */
 	bytes += qq_put16(raw_data + bytes, qd->send_seq);
 	/* send time */
-	now = time(NULL);
-	bytes += qq_puttime(raw_data + bytes, &now);
+	bytes += qq_puttime(raw_data + bytes, &send_time);
 	/* sender icon */
 	bytes += qq_put16(raw_data + bytes, qd->my_icon);
 	/* 00 00 00 Unknown */
@@ -1089,9 +1087,9 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	/* "MSG" */
 	bytes += qq_put32(raw_data + bytes, 0x4D534700);
 	bytes += qq_put32(raw_data + bytes, 0x00000000);
-	bytes += qq_puttime(raw_data + bytes, &now);
+	bytes += qq_puttime(raw_data + bytes, &send_time);
 	/* Likely a random int */
-	srand((unsigned)now);
+	srand((unsigned)send_time);
 	bytes += qq_put32(raw_data + bytes, rand());
 	/* font attr set */
 	bytes += qq_put8(raw_data + bytes, 0x00);
@@ -1116,9 +1114,9 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 {
 	GSList *string_list = NULL;
 	GString *string_seg;
-	gchar *start, *p;
+	gchar *start0=NULL, *p0=NULL, *start1=NULL, *p1=NULL, *end1=NULL;
 	guint msg_len;
-	guint16 string_len;
+	guint16 string_len=0;
 	guint16 string_ad_len;
 	qq_emoticon *emoticon;
 	static gchar em_v[] = {
@@ -1127,59 +1125,95 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 
 	g_return_val_if_fail(msg_stripped != NULL, NULL);
 
-	//start = msg_stripped;
+	//start0 = msg_stripped;
 	msg_len = strlen(msg_stripped);
 	string_seg = g_string_new("");
 
-	p = msg_stripped;
-	while (p)
+	p0 = msg_stripped;
+	start0 = p0;
+	while (p0)
 	{
-		start = p;
-
-		p = g_utf8_strchr(p, -1, '/');
-		if (p=start) p=NULL;	//if stuck in loop
-		if (!p)	string_len = msg_stripped + msg_len - start;		//if not find emoticon, append all remained data
-		else 	string_len = p - start;
-
-		if (string_len >0)
+		p0 = g_utf8_strchr(p0, -1, '/');
+		
+		if (!p0)		//if '/' not found, append proper bytes data
 		{
-			if (string_seg->len + string_len + 6 > QQ_MSG_IM_MAX) {
-				/* enough chars to send */
-				string_list = g_slist_append(string_list, string_seg);
-				string_seg = g_string_new("");
+			start1 = start0;
+			end1 = msg_stripped + msg_len;
+		}
+		else {
+			if (emoticon = emoticon_find(p0))		//find out if it is a emoticon
+			{
+				/* if emoticon is found, append proper bytes of text before '/'  */
+				start1 = start0;
+				end1 = p0;
+			} else {		//just a '/'
+				p0++;
+				continue;
 			}
-			g_string_append_c(string_seg, 0x01);		//TEXT FLAG
-			string_ad_len = string_len + 3;		//len of text with prepended data
-			string_ad_len = htons(string_ad_len);
-			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
-			g_string_append_c(string_seg, 0x01);		//Unknown FLAG
-			string_ad_len = htons(string_len);
-			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
-			g_string_append_len(string_seg, start, string_len);
 		}
 
-		/* Append emoticon */
-		if ( !is_smiley_none && p )
+		p1 = start1;
+		while (p1 < end1)
 		{
-			if (string_seg->len  + 12 > QQ_MSG_IM_MAX) {
+			if (end1 - p1 + 6 > QQ_MSG_IM_MAX)
+			{
+				/* get n utf8 chars with certain size */
+				start1 = p1;
+				while (p1 < start1 + QQ_MSG_IM_MAX - 6)
+					p1 = g_utf8_next_char(p1);
+				p1 = g_utf8_prev_char (p1);
+
+				string_len = p1 - start1;
+			} else {
+				start1 = p1;
+				p1 = end1;
+				string_len = p1 - start1;
+			}
+
+			if (string_len >0)
+			{
+				if (string_seg->len + string_len + 6 > QQ_MSG_IM_MAX)		//6 is wrapper size of text
+				{
+					/* enough chars to send */
+					string_list = g_slist_append(string_list, string_seg);
+					string_seg = g_string_new("");
+				}
+				g_string_append_c(string_seg, 0x01);		//TEXT FLAG
+				string_ad_len = string_len + 3;		//len of text plus prepended data
+				string_ad_len = htons(string_ad_len);
+				g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+				g_string_append_c(string_seg, 0x01);		//Unknown FLAG
+				string_ad_len = htons(string_len);
+				g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+				g_string_append_len(string_seg, start1, string_len);
+			}
+		}
+		
+
+		/* if '/' is found, first check if it is emoticon, if so, append it */
+		if ( !is_smiley_none && p0 )
+		{
+			if (string_seg->len  + 12 > QQ_MSG_IM_MAX)		//12 is size of a emoticon
+			{
 				/* enough chars to send */
 				string_list = g_slist_append(string_list, string_seg);
 				string_seg = g_string_new("");
 			}
-			emoticon = emoticon_find(p);
+
 			if (emoticon != NULL) {
 				purple_debug_info("QQ", "found emoticon %s as 0x%02X\n",
-						emoticon->name, emoticon->symbol);
+					emoticon->name, emoticon->symbol);
 				/* Until Now, We haven't the new emoticon key database */
 				/* So Just Send a Settled V Gesture */
 				g_string_append_len(string_seg, em_v, sizeof(em_v));
 
 				//g_string_append_c(string_seg, 0x14);
 				//g_string_append_c(string_seg, emoticon->symbol);
-				p += strlen(emoticon->name);
-				continue;
+				p0 += strlen(emoticon->name);
+				start0 = p0;
 			} else {
-				purple_debug_info("QQ", "Not found emoticon %.20s\n", p);
+				/* DO NOT uncomment it, p0 is not NULL ended */
+				//purple_debug_info("QQ", "Not found emoticon %.20s\n", p0);
 			}
 		}
 	}
@@ -1311,6 +1345,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	gboolean is_smiley_none;
 	guint8 frag_count, frag_index;
 	guint16 msg_id;
+	time_t send_time;
 
 	g_return_val_if_fail(NULL != gc && NULL != gc->proto_data, -1);
 	g_return_val_if_fail(who != NULL && what != NULL, -1);
@@ -1360,8 +1395,9 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	fmt = qq_im_fmt_new_by_purple(what);
 	frag_count = g_slist_length(segments);
 	frag_index = 0;
+	send_time = time(NULL);
 	for (it = segments; it; it = it->next) {
-		request_send_im(gc, uid_to, type, fmt, (GString *)it->data, msg_id, frag_count, frag_index);
+		request_send_im(gc, uid_to, type, fmt, (GString *)it->data, msg_id, send_time, frag_count, frag_index);
 		g_string_free(it->data, TRUE);
 		frag_index++;
 	}

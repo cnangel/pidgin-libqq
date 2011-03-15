@@ -156,14 +156,21 @@ static void do_msg_sys(PurpleConnection *gc, guint8 *data, gint data_len)
 {
 	guint8 reply;
 	gchar *msg;
+	qq_data * qd;
 
-	g_return_if_fail(data != NULL && data_len != 0);
+	g_return_if_fail(gc != NULL && gc->proto_data != NULL && data != NULL && data_len != 0);
+
+	qd = (qq_data *)gc->proto_data;
 
 	qq_get8(&reply, data+4);
 	qq_get_vstr(&msg, NULL, sizeof(guint8), data+5);
 
-	if (reply == 0x01)
-		purple_debug_warning("QQ", "We are kicked out by QQ server\n");
+	if (reply == 0x01) {
+		purple_debug_error("QQ", "We are kicked out by QQ server\n");
+		purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_OTHER_ERROR, msg);
+		qq_update_buddy_status(gc, qd->uid, QQ_BUDDY_OFFLINE, 0);
+		qq_close(gc);
+	}
 
 	qq_got_message(gc, msg);
 }
@@ -957,9 +964,7 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			if (ret_8 != QQ_LOGIN_REPLY_OK) {
 				return ret_8;
 			}
-			if (qd->client_version >= 2010) {
-				qq_request_login(gc);
-			}
+			qq_request_login(gc);
 			break;
 		case QQ_CMD_LOGIN:
 			ret_8 = qq_process_login(gc, data, data_len);

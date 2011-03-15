@@ -789,11 +789,9 @@ static void connect_cb(gpointer data, gint source, const gchar *error_message)
 
 	set_all_keys( gc );
 
-	if (qd->client_version >= 2010) {
-		purple_connection_update_progress(gc, _("Getting server"), 2, QQ_CONNECT_STEPS);
-		qq_request_touch_server(gc);
-		return;
-	}
+	purple_connection_update_progress(gc, _("Getting server"), 2, QQ_CONNECT_STEPS);
+	qq_request_touch_server(gc);
+	return;
 }
 
 #ifndef purple_proxy_connect_udp
@@ -1197,7 +1195,7 @@ gint qq_send_cmd(PurpleConnection *gc, guint16 cmd, guint8 *data, gint data_len)
 	qd = (qq_data *) gc->proto_data;
 	g_return_val_if_fail(data != NULL && data_len > 0, -1);
 
-	if (cmd != QQ_CMD_LOGOUT) {
+	if (cmd != QQ_CMD_LOGOUT && cmd != QQ_CMD_SEND_TYPING) {
 		seq = ++qd->send_seq;
 		is_save2trans = TRUE;
 	} else {
