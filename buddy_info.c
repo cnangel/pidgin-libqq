@@ -197,7 +197,7 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	guint bytes;
 	guint16 size;
 	guint8 * info;
-	qq_buddy_data *bd;
+	gchar *moodtext;
 
 	user_info = purple_notify_user_info_new();
 
@@ -208,10 +208,15 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	purple_notify_user_info_add_pair(user_info, _(field_infos[0].text), value);
 	g_free(value);
 
-	bd = qq_buddy_data_find(gc, uid);
-	if (bd && bd->signature)
-		purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
-	
+	moodtext = purple_status_get_attr_string(purple_presence_get_status
+		(purple_buddy_get_presence(purple_find_buddy
+		(gc->account, who)), PURPLE_MOOD_NAME), PURPLE_MOOD_COMMENT);
+
+	if (moodtext)
+	{
+		purple_notify_user_info_add_pair(user_info, _("Signature"), moodtext);
+	}
+
 	bytes += 4;
 	bytes += qq_get16(&num, data+bytes);
 
@@ -1043,8 +1048,7 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 	gint bytes;
 	guint32 uid, last_uid;
 	guint8 ret;
-	qq_buddy_data *bd;
-	gchar *sign, *who;
+	gchar *sign, *who, *sign_stripped;
 	qq_data * qd = (qq_data *) gc->proto_data;
 
 	bytes = 1;		//83
@@ -1055,17 +1059,18 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 	{
 		bytes += qq_get32(&uid, data+bytes);
 		bytes += 4;	//signature modified time, no need
-		bd = qq_buddy_data_find(gc, uid);
-		if (bd)
+		if (qq_buddy_data_find(gc, uid))
 		{
 			bytes += qq_get_vstr(&sign, NULL, sizeof(guint8), data+bytes);
 			if (sign)
 			{
-				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign);
-				bd->signature = sign;
+				sign_stripped = purple_markup_escape_text(sign, -1);
+				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign_stripped);
 				who = uid_to_purple_name(uid);
-				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_NAME, bd->signature, NULL);
-			}		
+				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_COMMENT, sign_stripped, NULL);
+				g_free(sign);
+				g_free(sign_stripped);
+			}
 		} else {
 			bytes += *(guint8 *)(data+bytes) ;
 		}

@@ -254,14 +254,12 @@ static const gchar *qq_list_icon(PurpleAccount *a, PurpleBuddy *b)
 /* a short status text beside buddy icon*/
 static gchar *qq_status_text(PurpleBuddy *b)
 {
-	qq_buddy_data *bd;
-	GString *status;
+	PurpleStatus *status;
+	PurplePresence *presence;
+	gchar *moodtext, *ret;
 
-	bd = purple_buddy_get_protocol_data(b);
-	if (bd == NULL)
-		return NULL;
-
-	status = g_string_new("");
+	presence = purple_buddy_get_presence(b);
+	status = purple_presence_get_status(presence, "mood");
 
 	/* we only provide Mood here
 	switch(bd->status) {
@@ -287,12 +285,14 @@ static gchar *qq_status_text(PurpleBuddy *b)
 			g_string_printf(status, _("Unknown-%d"), bd->status);
 	}
 	*/
-	if (bd->signature)
+	moodtext = purple_status_get_attr_string(status, PURPLE_MOOD_COMMENT);
+	if (moodtext)
 	{
-		g_string_append(status, bd->signature);
+		ret = g_strdup(moodtext);		//ret will be free by invoker
+		return ret;
 	}
 
-	return g_string_free(status, FALSE);
+	return NULL;
 }
 
 
@@ -302,9 +302,13 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	qq_buddy_data *bd;
 	gchar *tmp;
 	GString *str;
+	PurplePresence *presence;
+	PurpleStatus *status;
+	gchar *moodtext;
 
 	g_return_if_fail(b != NULL);
 
+	presence = purple_buddy_get_presence(b);
 	bd = purple_buddy_get_protocol_data(b);
 	if (bd == NULL)
 		return;
@@ -373,11 +377,12 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	purple_notify_user_info_add_pair(user_info, _("Flag"), str->str);
 	g_string_free(str, TRUE);
 
-	if (bd->signature)
+	status = purple_presence_get_status(presence, PURPLE_MOOD_NAME);
+	moodtext = purple_status_get_attr_string(status, PURPLE_MOOD_COMMENT);
+	if (moodtext)
 	{
-		purple_notify_user_info_add_pair(user_info, _("Signature"), bd->signature);
+		purple_notify_user_info_add_pair(user_info, _("Signature"), moodtext);
 	}
-
 
 #ifdef DEBUG
 	tmp = g_strdup_printf( "%s (%04X)",
@@ -448,8 +453,8 @@ static GList *qq_status_types(PurpleAccount *ga)
 			"mobile", NULL, FALSE, FALSE, TRUE);
 	types = g_list_append(types, status);
 
-	status = purple_status_type_new_full(PURPLE_STATUS_MOOD,
-			"mood", _("Mood"), TRUE, TRUE, TRUE);
+	status = purple_status_type_new_with_attrs(PURPLE_STATUS_MOOD,
+			PURPLE_MOOD_NAME, _("Mood"), TRUE, TRUE, TRUE, PURPLE_MOOD_COMMENT, _("Mood Text"), purple_value_new(PURPLE_TYPE_STRING), NULL);
 	types = g_list_append(types, status);
 
 	return types;

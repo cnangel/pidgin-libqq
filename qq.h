@@ -112,7 +112,6 @@ struct _qq_buddy_data {
 	time_t signon;
 	time_t idle;
 	time_t last_update;
-	gchar *signature;
 	gint8  role;		/* role in group, used only in group->members list */
 };
 
