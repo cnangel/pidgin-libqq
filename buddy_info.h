@@ -51,11 +51,11 @@
 #define QQ_FRIEND_FLAG_MOBILE           0x10
 #define QQ_FRIEND_FLAG_BIND_MOBILE  0x20
 */
-#define QQ_COMM_FLAG_QQ_VIP			0x02
+#define QQ_COMM_FLAG_QQ_VIP			0x04
 #define QQ_COMM_FLAG_QQ_MEMBER		0x04
 #define QQ_COMM_FLAG_TCP_MODE    	0x10
-#define QQ_COMM_FLAG_MOBILE       	0x20
-#define QQ_COMM_FLAG_BIND_MOBILE	0x40
+#define QQ_COMM_FLAG_MOBILE       	0x02
+#define QQ_COMM_FLAG_BIND_MOBILE	0x20
 #define QQ_COMM_FLAG_VIDEO          	0x80
 
 #define QQ_EXT_FLAG_ZONE				0x02

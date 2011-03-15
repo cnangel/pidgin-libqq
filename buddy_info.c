@@ -1064,7 +1064,7 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign);
 				bd->signature = sign;
 				who = uid_to_purple_name(uid);
-				purple_prpl_got_user_status(gc->account, who, "mobile", PURPLE_MOOD_NAME, bd->signature, NULL);
+				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_NAME, bd->signature, NULL);
 			}		
 		} else {
 			bytes += *(guint8 *)(data+bytes) ;
