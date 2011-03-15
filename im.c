@@ -903,7 +903,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				}
 			}
 
-			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
+			msg_escaped = purple_markup_escape_text(im_text.msg->str, im_text.msg->len);
 			if (fmt != NULL) {
 				msg_utf8 = qq_im_fmt_to_purple(fmt, g_string_new(msg_escaped));
 				qq_im_fmt_free(fmt);
@@ -926,19 +926,22 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes-1);		//remove the tail 0x20
 			}
 
-			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
+			msg_utf8 = qq_to_utf8(im_text.msg->str, QQ_CHARSET_DEFAULT);
+			msg_escaped = purple_markup_escape_text(msg_utf8, -1);
 			msg_smiley = qq_emoticon_to_purple(msg_escaped);
 
 			if (fmt != NULL) {
 				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
-				msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
-				g_free(msg_fmt);
+				g_free(msg_smiley);
+				g_free(msg_utf8);
+				msg_utf8 =  msg_fmt;
 				qq_im_fmt_free(fmt);
 			} else {
-				msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
+				g_free(msg_utf8);
+				msg_utf8 =  msg_smiley;
 			}
 			g_free(msg_escaped);
-			g_free(msg_smiley);
+
 			break;
 		}
 	default:
