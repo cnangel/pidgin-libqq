@@ -1048,7 +1048,7 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 	gint bytes;
 	guint32 uid, last_uid;
 	guint8 ret;
-	gchar *sign, *who, *sign_stripped;
+	gchar *sign, *who, *sign_escaped;
 	qq_data * qd = (qq_data *) gc->proto_data;
 
 	bytes = 1;		//83
@@ -1064,12 +1064,12 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 			bytes += qq_get_vstr(&sign, NULL, sizeof(guint8), data+bytes);
 			if (sign)
 			{
-				sign_stripped = purple_markup_escape_text(sign, -1);
-				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign_stripped);
+				sign_escaped = purple_markup_escape_text(sign, -1);
+				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign_escaped);
 				who = uid_to_purple_name(uid);
-				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_COMMENT, sign_stripped, NULL);
+				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_COMMENT, sign_escaped, NULL);
 				g_free(sign);
-				g_free(sign_stripped);
+				g_free(sign_escaped);
 			}
 		} else {
 			bytes += *(guint8 *)(data+bytes) ;

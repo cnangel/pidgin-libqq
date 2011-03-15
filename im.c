@@ -641,8 +641,10 @@ gchar * qq_im_fmt_to_purple( qq_im_format *fmt, GString *text )
 		g_string_append(text, "</u>");
 	}
 
-	g_string_free(tmp, TRUE);
+	
 	ret = text->str;
+	g_string_free(tmp, TRUE);
+	g_string_free(text, FALSE);
 	return ret;
 }
 
@@ -765,7 +767,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 {
 	guint16 purple_msg_flag;
 	gchar *who;
-	gchar *msg_smiley, *msg_fmt, *msg_utf8;
+	gchar *msg_smiley, *msg_fmt, *msg_utf8, *msg_escaped;
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
 	gint bytes, tail_len;
@@ -866,8 +868,8 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				switch (type) {
 				case 0x01:	//text
 					qq_get_vstr(&text, NULL, sizeof(guint16), msg_data+1);		//+1 bypass msg_dataseg_flag 0x01
-					g_free(msg_data);
 					g_string_append(im_text.msg, text);
+					g_free(msg_data);
 					g_free(text);
 					break;
 				case 0x02:	//emoticon
@@ -901,11 +903,13 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				}
 			}
 
+			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
 			if (fmt != NULL) {
-				msg_utf8 = qq_im_fmt_to_purple(fmt, im_text.msg);
+				msg_utf8 = qq_im_fmt_to_purple(fmt, g_string_new(msg_escaped));
 				qq_im_fmt_free(fmt);
+				g_free(msg_escaped);
 			} else {
-				msg_utf8 =  im_text.msg->str;
+				msg_utf8 =  msg_escaped;
 			}
 			break;
 		}
@@ -921,7 +925,10 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 			} else	{
 				im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes-1);		//remove the tail 0x20
 			}
-			msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
+
+			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
+			msg_smiley = qq_emoticon_to_purple(msg_escaped);
+
 			if (fmt != NULL) {
 				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
 				msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
@@ -930,6 +937,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 			} else {
 				msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
 			}
+			g_free(msg_escaped);
 			g_free(msg_smiley);
 			break;
 		}
@@ -947,7 +955,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 
 	g_free(msg_utf8);
 	g_free(who);
-	g_string_free (im_text.msg, FALSE);
+	g_string_free (im_text.msg, TRUE);
 }
 void qq_process_typing( PurpleConnection *gc, guint8 *data, gint len, guint32 uid_from )
 {

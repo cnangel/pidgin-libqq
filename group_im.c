@@ -205,7 +205,7 @@ void qq_room_got_chat_in(PurpleConnection *gc,
 /* recv an IM from a group chat */
 void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnection *gc, guint16 msg_type)
 {
-	gchar *msg_smiley, *msg_fmt, *msg_utf8;
+	gchar *msg_smiley, *msg_fmt, *msg_utf8, *msg_escaped;
 	gint bytes, tail_len;
 	struct {
 		guint32 qun_id;
@@ -345,12 +345,13 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 					}	*/	
 				}
 			}
-
+			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
 			if (fmt != NULL) {
-				msg_utf8 = qq_im_fmt_to_purple(fmt, im_text.msg);
+				msg_utf8 = qq_im_fmt_to_purple(fmt, g_string_new(msg_escaped));
 				qq_im_fmt_free(fmt);
+				g_free(msg_escaped);
 			} else {
-				msg_utf8 =  im_text.msg->str;
+				msg_utf8 =  msg_escaped;
 			}
 			break;
 		}
@@ -364,9 +365,9 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 			} else {
 				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - bytes - 1);	//remove the tail 0x20
 			}
-
+			msg_escaped = purple_markup_escape_text(im_text.msg->str, -1);
 			/* group im_group has no flag to indicate whether it has font_attr or not */
-			msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
+			msg_smiley = qq_emoticon_to_purple(msg_escaped);
 			if (fmt != NULL) {
 				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
 				msg_utf8 =  qq_to_utf8(msg_fmt, QQ_CHARSET_DEFAULT);
@@ -375,6 +376,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 			} else {
 				msg_utf8 =  qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
 			}
+			g_free(msg_escaped);
 			g_free(msg_smiley);
 			break;
 		}
@@ -385,7 +387,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
  	qq_room_got_chat_in(gc, id, im_text.member_uid, msg_utf8, im_text.send_time);
 
 	g_free(msg_utf8);
-	g_string_free(im_text.msg, FALSE);
+	g_string_free(im_text.msg, TRUE);
 }
 
 /* send IM to a group */
