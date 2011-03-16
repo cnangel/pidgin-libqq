@@ -529,13 +529,13 @@ void qq_im_fmt_free(qq_im_format *fmt)
 qq_im_format *qq_im_fmt_new_default(void)
 {
 	qq_im_format *fmt;
-	const gchar msyh[] = {
-		0xE5, 0xBE, 0xAE, 0xE8, 0xBD, 0xAF, 0xE9, 0x9B, 0x85, 0xE9, 0xBB, 0x91, 0x00
-	};		/*Microsoft YaHei*/
+	const gchar Tahoma[] = {
+		0x54, 0x61, 0x68, 0x6F, 0x6D, 0x61, 0x00
+	};
 	fmt = g_new0(qq_im_format, 1);
 	memset(fmt, 0, sizeof(qq_im_format));
-	fmt->font_len = strlen(msyh);
-	fmt->font = g_strdup(msyh);
+	fmt->font_len = strlen(Tahoma);
+	fmt->font = g_strdup(Tahoma);
 	fmt->font_size = 11;
 	/* encoding, 0x8622=GB, 0x0000=EN */
 	fmt->charset = 0x8622;
