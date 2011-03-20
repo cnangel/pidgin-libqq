@@ -144,19 +144,21 @@ PurpleBuddy * qq_buddy_new( PurpleConnection *gc, guint32 uid, PurpleGroup * gro
 		group_name = g_strdup_printf(PURPLE_GROUP_QQ_FORMAT,
 			purple_account_get_username(gc->account));
 		group = qq_group_find_or_new(group_name);
+		g_free(group_name);
 		if (group == NULL) {
 			purple_debug_error("QQ", "Failed creating group\n");
 			return NULL;
 		}
 	}
 
-	purple_debug_info("QQ", "Add new purple buddy: [%u]\n", uid);
+	group_name = purple_group_get_name(group);
+	purple_debug_info("QQ", "Add new purple buddy: [%u], at Group [%s]\n", uid, group_name);
 	who = uid_to_purple_name(uid);
 	buddy = purple_buddy_new(gc->account, who, NULL);	/* alias is NULL */
 	purple_buddy_set_protocol_data(buddy, NULL);
 
 	g_free(who);
-
+	
 	purple_blist_add_buddy(buddy, NULL, group, NULL);
 
 	return buddy;

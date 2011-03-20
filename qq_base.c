@@ -1115,10 +1115,11 @@ guint8 qq_process_login_getlist( PurpleConnection *gc, guint8 *data, gint data_l
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
 
 	qd = (qq_data *) gc->proto_data;
-	qd->buddy_list = NULL;
 
 	/* now initiate QQ Qun, do it first as it may take longer to finish */
 	qq_room_data_initial(gc);
+	
+	//qq_show_packet("GETLIST", data, data_len);
 
 	bytes = 1;
 	qq_get8(&ret, data + bytes);

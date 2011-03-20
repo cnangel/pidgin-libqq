@@ -1025,7 +1025,7 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 	guint8 ret_8 = 0;
 	guint16 ret_16 = 0;
 	guint32 ret_32 = 0;
-	gboolean is_unknown = FALSE;
+	gboolean not_to_update = FALSE;
 
 	g_return_if_fail(rcved_len > 0);
 
@@ -1107,6 +1107,7 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 			{
 				purple_debug_info("QQ", "Requesting for Group pos: %d\n", ret_32);
 				qq_request_get_group_list(gc, ret_32, 0);
+				not_to_update = TRUE;		//not to update else when get_group not finished
 			}
 			break;
 		case QQ_CMD_GET_BUDDIES_LIST:
@@ -1139,10 +1140,10 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 			break;
 		default:
 			process_unknown_cmd(gc, _("Unknown CLIENT CMD"), data, data_len, cmd, seq);
-			is_unknown = TRUE;
+			not_to_update = TRUE;
 			break;
 	}
-	if (is_unknown)
+	if (not_to_update)
 		return;
 
 	if (update_class == QQ_CMD_CLASS_NONE)

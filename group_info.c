@@ -291,7 +291,7 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 			bd->role = role;
 	}
 
-	purple_debug_info("QQ", "group \"%s\" has received %d members\n", rmd->name, num);
+	purple_debug_info("QQ", "Qun \"%s\" has received %d members\n", rmd->name, num);
 
 	if (has_more)
 	{
