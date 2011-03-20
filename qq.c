@@ -57,7 +57,7 @@
 #include "utils.h"
 #include "version.h"
 
-#define LIBQQ_VERSION 		"0.66"
+#define LIBQQ_VERSION 		"0.67"
 
 static GList *server_list_build(gchar select)
 {
