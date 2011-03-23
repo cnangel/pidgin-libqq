@@ -323,7 +323,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 					purple_smiley = emoticon_get(*emoticon);
 					if (purple_smiley == NULL) {
 						purple_debug_info("QQ", "Not found smiley of 0x%02X\n", *emoticon);
-						g_string_append(im_text.msg, "<IMG ID=\"0\">");
+						g_string_append(im_text.msg, "/v$");
 					} else {
 						purple_debug_info("QQ", "Found 0x%02X smiley is %s\n", *emoticon, purple_smiley);
 						g_string_append(im_text.msg, purple_smiley);
@@ -358,6 +358,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	case QQ_MSG_ROOM_IM_UNKNOWN:
 	case QQ_MSG_ROOM_IM:
 		{
+			/* group im_group has no flag to indicate whether it has font_attr or not */
 			if (frag_count <= 1 || frag_count == frag_index + 1) {
 				fmt = qq_im_fmt_new_default();
 				tail_len = qq_get_im_tail(fmt, data + bytes, data_len - bytes);
@@ -365,13 +366,14 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 			} else {
 				im_text.msg = g_string_new_len((gchar *)(data + bytes), data_len - bytes - 1);	//remove the tail 0x20
 			}
-			msg_utf8 = qq_to_utf8(im_text.msg->str, QQ_CHARSET_DEFAULT);
+
+			msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
+			msg_utf8 = qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
 			msg_escaped = purple_markup_escape_text(msg_utf8, -1);
-			/* group im_group has no flag to indicate whether it has font_attr or not */
-			msg_smiley = qq_emoticon_to_purple(msg_escaped);
+
 			if (fmt != NULL) {
-				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
-				g_free(msg_smiley);
+				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_escaped));
+				g_free(msg_escaped);
 				g_free(msg_utf8);
 				msg_utf8 =  msg_fmt;
 				qq_im_fmt_free(fmt);
@@ -379,7 +381,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 				g_free(msg_utf8);
 				msg_utf8 =  msg_smiley;
 			}
-			g_free(msg_escaped);
+			g_free(msg_smiley);
 			break;
 		}
 	}

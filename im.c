@@ -443,7 +443,6 @@ gchar *qq_emoticon_to_purple(gchar *text)
 	gchar *ret;
 	GString *converted;
 	gchar **segments;
-	gboolean have_smiley;
 	gchar *purple_smiley;
 	gchar *cur;
 	guint8 symbol;
@@ -460,15 +459,12 @@ gchar *qq_emoticon_to_purple(gchar *text)
 	}
 
 	converted = g_string_new("");
-	have_smiley = FALSE;
 	if (segments[0] != NULL) {
 		g_string_append(converted, segments[0]);
 	} else {
 		purple_debug_info("QQ", "segments[0] is NULL\n");
 	}
 	while ((*(++segments)) != NULL) {
-		have_smiley = TRUE;
-
 		cur = *segments;
 		if (cur == NULL) {
 			purple_debug_info("QQ", "current segment is NULL\n");
@@ -493,10 +489,6 @@ gchar *qq_emoticon_to_purple(gchar *text)
 	}
 
 	/* purple_debug_info("QQ", "end of convert\n"); */
-	if (!have_smiley) {
-		g_string_prepend(converted, "<font sml=\"none\">");
-		g_string_append(converted, "</font>");
-	}
 	ret = converted->str;
 	g_string_free(converted, FALSE);
 	return ret;
@@ -908,21 +900,21 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 				im_text.msg = g_string_new_len((gchar *)(data + bytes), len - bytes-1);		//remove the tail 0x20
 			}
 
-			msg_utf8 = qq_to_utf8(im_text.msg->str, QQ_CHARSET_DEFAULT);
+			msg_smiley = qq_emoticon_to_purple(im_text.msg->str);
+			msg_utf8 = qq_to_utf8(msg_smiley, QQ_CHARSET_DEFAULT);
 			msg_escaped = purple_markup_escape_text(msg_utf8, -1);
-			msg_smiley = qq_emoticon_to_purple(msg_escaped);
 
 			if (fmt != NULL) {
-				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_smiley));
-				g_free(msg_smiley);
+				msg_fmt = qq_im_fmt_to_purple(fmt, g_string_new(msg_escaped));
+				g_free(msg_escaped);
 				g_free(msg_utf8);
 				msg_utf8 =  msg_fmt;
 				qq_im_fmt_free(fmt);
 			} else {
 				g_free(msg_utf8);
-				msg_utf8 =  msg_smiley;
+				msg_utf8 =  msg_escaped;
 			}
-			g_free(msg_escaped);
+			g_free(msg_smiley);
 
 			break;
 		}
