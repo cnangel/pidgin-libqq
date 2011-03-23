@@ -663,7 +663,7 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "ccpaging : maintainer since 2007<br>\n");
 	g_string_append(info, "icesky : maintainer since 2007<br>\n");
 	g_string_append(info, "csyfek : faces, maintainer since 2007<br>\n");
-	g_string_append(info, "V.E.O : maintainer since 2011, OpenQ rename to libqq<br>\n");
+	g_string_append(info, "V.E.O : maintainer since 2011, OpenQ rename to LibQQ<br>\n");
 	g_string_append(info, "<br>\n");
 
 	g_string_append(info, _("<p><b>Lovely Patch Writers</b>:<br>\n"));
@@ -702,7 +702,7 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, _("<i>Feel free to join us!</i> :)"));
 	g_string_append(info, "</body></html>");
 
-	title = g_strdup_printf(_("About libqq %s"), LIBQQ_VERSION);
+	title = g_strdup_printf(_("About LibQQ %s"), LIBQQ_VERSION);
 	purple_notify_formatted(gc, title, title, NULL, info->str, NULL, NULL);
 
 	g_free(title);
@@ -866,7 +866,7 @@ static GList *qq_actions(PurplePlugin *plugin, gpointer context)
 	act = purple_plugin_action_new(_("Update all QQ Quns"), action_update_all_rooms);
 	m = g_list_append(m, act);
 
-	act = purple_plugin_action_new(_("About libqq"), action_about_libqq);
+	act = purple_plugin_action_new(_("About LibQQ"), action_about_libqq);
 	m = g_list_append(m, act);
 	/*
 	   act = purple_plugin_action_new(_("Qun: Search a permanent Qun"), _qq_menu_search_or_add_permanent_group);
