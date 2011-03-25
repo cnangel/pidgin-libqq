@@ -60,9 +60,9 @@
 
 #define QQ_EXT_FLAG_ZONE				0x02
 
-#define QQ_BUDDY_GENDER_GG          0x01
-#define QQ_BUDDY_GENDER_MM          0x02
-#define QQ_BUDDY_GENDER_UNKNOWN     0x00
+#define QQ_BUDDY_GENDER_GG          0x00
+#define QQ_BUDDY_GENDER_MM          0x01
+#define QQ_BUDDY_GENDER_UNKNOWN     0xFF
 
 enum {
 	QQ_BUDDY_INFO_UPDATE_ONLY = 0,
