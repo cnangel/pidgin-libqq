@@ -370,7 +370,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 		}
 
 #if 1
-		purple_debug_info("QQ", "buddy [%09d]: ext_flag=0x%02x, comm_flag=0x%02x, nick=%s\n",
+		purple_debug_info("QQ", "buddy [%d]: ext_flag=0x%02x, comm_flag=0x%02x, nick=%s\n",
 				bd.uid, bd.ext_flag, bd.comm_flag, bd.nickname);
 #endif
 

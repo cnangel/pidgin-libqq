@@ -1040,16 +1040,18 @@ void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, gu
 	}
 	qq_put16(buf + 1, i-count);	//num of buddies
 
-	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDY_SIGN, buf, bytes, update_class, it ? i : 0);
+	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_SIGN, buf, bytes, update_class, it ? i : 0);
 }
 
-void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc)
+void qq_process_get_buddies_sign(guint8 *data, gint data_len, PurpleConnection *gc)
 {
 	gint bytes;
 	guint32 uid, last_uid;
 	guint8 ret;
 	gchar *sign, *who, *sign_escaped;
 	qq_data * qd = (qq_data *) gc->proto_data;
+	
+	//qq_show_packet("BUDDIES_SIGN", data, data_len);
 
 	bytes = 1;		//83
 	bytes += qq_get8(&ret, data+bytes);
@@ -1064,7 +1066,7 @@ void qq_process_get_buddy_sign(guint8 *data, gint data_len, PurpleConnection *gc
 			bytes += qq_get_vstr(&sign, NULL, sizeof(guint8), data+bytes);
 			if (sign)
 			{
-				sign_escaped = purple_markup_escape_text(sign, -1);
+				sign_escaped = g_markup_escape_text(sign, -1);
 				purple_debug_info("QQ", "QQ %d Signature: %s\n", uid, sign_escaped);
 				who = uid_to_purple_name(uid);
 				purple_prpl_got_user_status(gc->account, who, PURPLE_MOOD_NAME, PURPLE_MOOD_COMMENT, sign_escaped, NULL);

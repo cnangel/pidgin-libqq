@@ -408,7 +408,7 @@ void qq_process_room_cmd_get_members_info( guint8 *data, gint len, guint32 index
 
 #if 0
 		purple_debug_info("QQ",
-				"member [%09d]: ext_flag=0x%02x, comm_flag=0x%02x, nick=%s\n",
+				"member [%d]: ext_flag=0x%02x, comm_flag=0x%02x, nick=%s\n",
 				member_uid, bd->ext_flag, bd->comm_flag, bd->nickname);
 #endif
 
