@@ -336,13 +336,8 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 		case QQ_BUDDY_GENDER_MM:
 			purple_notify_user_info_add_pair(user_info, _("Gender"), _("Female"));
 			break;
-		case QQ_BUDDY_GENDER_UNKNOWN:
-			purple_notify_user_info_add_pair(user_info, _("Gender"), _("Unknown"));
-			break;
 		default:
-			tmp = g_strdup_printf("Error (%d)", bd->gender);
-			purple_notify_user_info_add_pair(user_info, _("Gender"), tmp);
-			g_free(tmp);
+			purple_notify_user_info_add_pair(user_info, _("Gender"), _("Unknown"));
 	}
 
 	if (bd->level) {

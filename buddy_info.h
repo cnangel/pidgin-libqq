@@ -62,7 +62,6 @@
 
 #define QQ_BUDDY_GENDER_GG          0x00
 #define QQ_BUDDY_GENDER_MM          0x01
-#define QQ_BUDDY_GENDER_UNKNOWN     0xFF
 
 enum {
 	QQ_BUDDY_INFO_UPDATE_ONLY = 0,
@@ -85,11 +84,11 @@ void qq_process_change_info(PurpleConnection *gc, guint8 *data, gint data_len);
 void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, PurpleConnection *gc);
 
 void qq_request_get_level(PurpleConnection *gc, guint32 uid);
-void qq_request_get_buddies_level(PurpleConnection *gc, guint32 update_class);
+void qq_request_get_buddies_level(PurpleConnection *gc, guint32 update_class, guint pos);
 void qq_process_get_level_reply(guint8 *buf, gint buf_len, PurpleConnection *gc);
 
 void qq_update_buddy_icon(PurpleAccount *account, const gchar *who, gint face);
 void request_change_info(PurpleConnection *gc, guint8 *data, guint8 *token, guint token_size);
-void qq_request_get_buddies_sign(PurpleConnection *gc, guint32 update_class, guint32 count);
+void qq_request_get_buddies_sign(PurpleConnection *gc, guint32 update_class, guint32 pos);
 void qq_process_get_buddies_sign(guint8 *data, gint data_len, PurpleConnection *gc);
 #endif

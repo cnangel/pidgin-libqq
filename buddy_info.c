@@ -198,6 +198,7 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 	guint16 size;
 	guint8 * info;
 	gchar *moodtext;
+	qq_buddy_data *bd;
 
 	user_info = purple_notify_user_info_new();
 
@@ -213,9 +214,17 @@ static void info_display_only(PurpleConnection *gc, guint8 *data)
 		(gc->account, who)), PURPLE_MOOD_NAME), PURPLE_MOOD_COMMENT);
 
 	if (moodtext)
-	{
 		purple_notify_user_info_add_pair(user_info, _("Signature"), moodtext);
+
+	bd = qq_buddy_data_find(gc, uid);
+
+	if (bd && bd->level)
+	{
+		value=g_strdup_printf("%u", bd->level);
+		purple_notify_user_info_add_pair(user_info, _("Level"), value);
+		g_free(value);
 	}
+	
 
 	bytes += 4;
 	bytes += qq_get16(&num, data+bytes);
@@ -850,7 +859,10 @@ void qq_process_get_buddy_info(guint8 *data, gint data_len, guint32 action, Purp
 			break;
 		case QQ_INFO_GENDER:
 			gender = *info;
-			if (gender>2) gender = 0;
+			/* conversion needed */
+			if (gender==1) gender = 0;		//Male
+			else if (gender==2) gender = 1;		//Female
+			else gender = 2;		//Unknown
 			break;
 		default:
 			break;
@@ -931,31 +943,35 @@ void qq_request_get_level(PurpleConnection *gc, guint32 uid)
 	qq_send_cmd(gc, QQ_CMD_GET_LEVEL, buf, bytes);
 }
 
-void qq_request_get_buddies_level(PurpleConnection *gc, guint32 update_class)
+void qq_request_get_buddies_level( PurpleConnection *gc, guint32 update_class, guint pos )
 {
 	qq_data *qd = (qq_data *) gc->proto_data;
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
 	guint8 *buf;
 	GSList *buddies, *it;
-	gint bytes;
+	gint bytes, i;
 
 	/* server only reply levels for online buddies */
-	buf = g_newa(guint8, MAX_PACKET_SIZE);
+	buf = g_newa(guint8, 1024);
 
 	bytes = 0;
 	bytes += qq_put8(buf + bytes, 0x89);
 	buddies = purple_find_buddies(purple_connection_get_account(gc), NULL);
-	for (it = buddies; it; it = it->next) {
+
+	for (it = buddies,i=0; it; it = it->next) {
+		if (i<pos) { i++; continue; }
+		if (i>=pos+100) break;		//send 100 buddies one time
 		buddy = it->data;
 		if (buddy == NULL) continue;
 		if ((bd = purple_buddy_get_protocol_data(buddy)) == NULL) continue;
-		if (bd->uid == 0) continue;	/* keep me as end of packet*/
+		if (bd->uid == 0) continue;
 		if (bd->uid == qd->uid) continue;
 		bytes += qq_put32(buf + bytes, bd->uid);
+		i++;
 	}
 	bytes += qq_put32(buf + bytes, qd->uid);
-	qq_send_cmd_mess(gc, QQ_CMD_GET_LEVEL, buf, bytes, update_class, 0);
+	qq_send_cmd_mess(gc, QQ_CMD_GET_LEVEL, buf, bytes, update_class, it ? i : 0);
 }
 
 void qq_process_get_level_reply(guint8 *data, gint data_len, PurpleConnection *gc)
@@ -984,11 +1000,18 @@ void qq_process_get_level_reply(guint8 *data, gint data_len, PurpleConnection *g
 					qd->onlineTime = onlineTime;
 					qd->level = level;
 					qd->activeDays = activeDays;
+				} else {
+					bd = qq_buddy_data_find(gc, uid);
+					if (bd)
+					{
+						bd->level = level;
+						bd->onlineTime = onlineTime;
+					}
 				}
 			}
 			break;
 		case 0x89:
-			while (data_len - bytes >= 12) {
+			while (bytes < data_len) {
 				bytes += qq_get32(&uid, data + bytes);
 				bytes += qq_get16(&level, data + bytes);
 				bytes += 2;
@@ -1010,7 +1033,7 @@ void qq_process_get_level_reply(guint8 *data, gint data_len, PurpleConnection *g
 	}
 }
 
-void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, guint32 count )
+void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, guint32 pos )
 {
 	qq_data *qd = (qq_data *) gc->proto_data;
 	PurpleBuddy *buddy;
@@ -1029,8 +1052,8 @@ void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, gu
 	buddies = purple_find_buddies(purple_connection_get_account(gc), NULL);
 
 	for (it = buddies,i=0; it; it = it->next) {
-		if (i<count) { i++; continue; }
-		if (i>=count+10) break;		//send 10 buddies one time
+		if (i<pos) { i++; continue; }
+		if (i>=pos+10) break;		//send 10 buddies one time
 		buddy = it->data;
 		if (buddy == NULL) continue;
 		if ((bd = purple_buddy_get_protocol_data(buddy)) == NULL) continue;
@@ -1038,7 +1061,7 @@ void qq_request_get_buddies_sign( PurpleConnection *gc, guint32 update_class, gu
 		bytes += qq_put32(buf + bytes, 0x00000000);		//signature modified time, normally null
 		i++;
 	}
-	qq_put16(buf + 1, i-count);	//num of buddies
+	qq_put16(buf + 1, i-pos);	//num of buddies
 
 	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_SIGN, buf, bytes, update_class, it ? i : 0);
 }
