@@ -1,3 +1,4 @@
+mkdir -pv m4
 aclocal
 libtoolize
 aclocal -I m4
