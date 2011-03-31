@@ -307,11 +307,12 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	gchar *moodtext;
 
 	g_return_if_fail(b != NULL);
-
 	presence = purple_buddy_get_presence(b);
 	bd = purple_buddy_get_protocol_data(b);
 	if (bd == NULL)
 		return;
+
+	qq_request_get_level(purple_account_get_connection(purple_buddy_get_account(b)), bd->uid);
 
 	/* if (PURPLE_BUDDY_IS_ONLINE(b) && bd != NULL) */
 	if (bd->ip.s_addr != 0) {

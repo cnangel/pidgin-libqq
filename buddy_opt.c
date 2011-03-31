@@ -309,7 +309,7 @@ void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, gu
 	bytes += qq_getdata(code, code_len, data + bytes);
 
 	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_REMOVE_BUDDY) {
-		request_remove_buddy_ex(gc, uid, code, code_len);
+		//request_remove_buddy_ex(gc, uid, code, code_len);
 		return;
 	}
 	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_ADD_BUDDY) {
