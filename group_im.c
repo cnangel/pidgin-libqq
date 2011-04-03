@@ -225,7 +225,7 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 	guint8 type;
 	guint8 * msg_data;
 	gchar * text;
-	gchar * emoticon;
+	gchar emoticon;
 	gchar * purple_smiley;
 
 	/* at least include im_text.msg_len */
@@ -317,18 +317,17 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 					g_free(text);
 					break;
 				case 0x02:	//emoticon
-					qq_get_vstr(&emoticon, NULL, sizeof(guint16), msg_data+1);		//+1 bypass msg_dataseg_flag 0x01
-					/* remained Unknown data is FF 00 02 14 XX ; FF Unknown msg_dataseg_flag */
+					emoticon = *(msg_data+8);
+					/* remained Unknown data is FF 00 02 14 XX ;old emoticon index */
 					g_free(msg_data);
-					purple_smiley = emoticon_get(*emoticon);
+					purple_smiley = emoticon_get(emoticon);
 					if (purple_smiley == NULL) {
-						purple_debug_info("QQ", "Not found smiley of 0x%02X\n", *emoticon);
+						purple_debug_info("QQ", "Not found smiley of 0x%02X\n", emoticon);
 						g_string_append(im_text.msg, "/v$");
 					} else {
-						purple_debug_info("QQ", "Found 0x%02X smiley is %s\n", *emoticon, purple_smiley);
+						purple_debug_info("QQ", "Found 0x%02X smiley is %s\n", emoticon, purple_smiley);
 						g_string_append(im_text.msg, purple_smiley);
 					}
-					g_free(emoticon);
 					break;
 				case 03:	//image
 					break;

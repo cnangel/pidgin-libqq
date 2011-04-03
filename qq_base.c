@@ -790,6 +790,8 @@ guint8 qq_process_verify_E5( PurpleConnection *gc, guint8 *data, gint data_len )
 	g_return_val_if_fail(gc != NULL  && gc->proto_data != NULL, QQ_LOGIN_REPLY_ERR);
 	qd = (qq_data *) gc->proto_data;
 
+	/*	qq_show_packet("Verify E5", data, data_len); */
+
 	bytes = 4;
 	bytes += qq_getdata(qd->ld.keys[2], QQ_KEY_LENGTH, data+bytes);
 	bytes += 8;
@@ -882,6 +884,8 @@ guint8 qq_process_verify_E3( PurpleConnection *gc, guint8 *data, gint data_len )
 	g_return_val_if_fail(gc != NULL  && gc->proto_data != NULL, QQ_LOGIN_REPLY_ERR);
 	qd = (qq_data *) gc->proto_data;
 
+	/*	qq_show_packet("Verify E3", data, data_len); */
+	
 	bytes = 7;
 	bytes += qq_get8(&len, data+bytes);
 	qd->nickname = g_strndup((gchar *)data + bytes, len);
@@ -998,8 +1002,9 @@ guint8 qq_process_login( PurpleConnection *gc, guint8 *data, gint data_len)
 	guint32 uid;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
-
 	qd = (qq_data *) gc->proto_data;
+
+	/*	qq_show_packet("Process Login", data, data_len);  */
 
 	bytes = 0;
 	bytes += qq_get8(&ret, data + bytes);
