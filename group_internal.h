@@ -31,6 +31,7 @@
 #define QQ_ROOM_KEY_INTERNAL_ID					"id"
 #define QQ_ROOM_KEY_QUN_ID					"qun_id"
 #define QQ_ROOM_KEY_NAME					"name"
+#define QQ_ROOM_KEY_ISSHOW				"is_show_chat"
 
 PurpleChat *qq_room_find_or_new(PurpleConnection *gc, guint32 id, guint32 qun_id);
 void qq_room_remove(PurpleConnection *gc, guint32 id);

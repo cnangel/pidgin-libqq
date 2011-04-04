@@ -779,9 +779,11 @@ static void action_show_chat(PurpleBlistNode * node, gpointer flag)
 	if (flag)
 	{
 		rmd->is_show_chat = TRUE;
+		g_hash_table_replace(components, QQ_ROOM_KEY_ISSHOW, g_strdup_printf("%u", TRUE));
 		purple_notify_info(gc, _("QQ Chat Room"), _("Receive and Show QQ Chat Room Message"), num_str);
 	} else {
 		rmd->is_show_chat = FALSE;
+		g_hash_table_replace(components, QQ_ROOM_KEY_ISSHOW, g_strdup_printf("%u", FALSE));
 		purple_notify_info(gc, _("QQ Chat Room"), _("QQ Chat Room Message Blocked"), num_str);
 	}
 }

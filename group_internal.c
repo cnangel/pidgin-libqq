@@ -68,6 +68,9 @@ static qq_room_data *room_data_new_by_hashtable(PurpleConnection *gc, GHashTable
 	value = g_hash_table_lookup(data, QQ_ROOM_KEY_NAME);
 
 	rmd = room_data_new(id, qun_id, value);
+
+	value = g_hash_table_lookup(data, QQ_ROOM_KEY_ISSHOW);
+	rmd->is_show_chat = value ? ((*value=='0') ? FALSE : TRUE) : TRUE;
 	rmd->my_role = QQ_ROOM_ROLE_YES;
 	return rmd;
 }
@@ -120,6 +123,8 @@ void qq_room_update_chat_info(PurpleChat *chat, qq_room_data *rmd)
 		     g_strdup_printf("%u", rmd->qun_id));
 	g_hash_table_replace(components,
 		     g_strdup(QQ_ROOM_KEY_NAME), g_strdup(rmd->name));
+	g_hash_table_replace(components,
+			g_strdup(QQ_ROOM_KEY_ISSHOW), g_strdup_printf("%u", rmd->is_show_chat));
 }
 
 static PurpleChat *chat_new(PurpleConnection *gc, qq_room_data *rmd)
@@ -138,6 +143,7 @@ static PurpleChat *chat_new(PurpleConnection *gc, qq_room_data *rmd)
 	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_QUN_ID),
 			    g_strdup_printf("%u", rmd->qun_id));
 	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_NAME), g_strdup(rmd->name));
+	g_hash_table_insert(components, g_strdup(QQ_ROOM_KEY_ISSHOW), g_strdup_printf("%u", rmd->is_show_chat));
 
 	chat = purple_chat_new(purple_connection_get_account(gc), rmd->name, components);
 	g = qq_group_find_or_new(PURPLE_GROUP_QQ_ROOM);
