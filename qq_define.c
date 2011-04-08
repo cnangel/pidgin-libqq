@@ -191,6 +191,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "QQ_CMD_CAPTCHA";
 	case QQ_CMD_AUTH:
 		return "CMD_AUTH";
+	case QQ_CMD_VERIFY_DE:
+		return "CMD_VERIFY_DE";
 	case QQ_CMD_VERIFY_E5:
 		return "CMD_VERIFY_E5";
 	case QQ_CMD_VERIFY_E3:

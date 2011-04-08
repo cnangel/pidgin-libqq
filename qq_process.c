@@ -884,6 +884,9 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 				}
 			}
 			break;
+		case QQ_CMD_VERIFY_DE:
+			data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[0]);
+			break;
 		case QQ_CMD_VERIFY_E5:
 			data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[1]);
 			break;
@@ -947,6 +950,15 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			break;
 		case QQ_CMD_AUTH:
 			ret_8 = qq_process_auth(gc, data, data_len);
+			if (ret_8 == QQ_LOGIN_REPLY_DE)
+			{
+				qq_request_verify_DE(gc);
+			} else if (ret_8 == QQ_LOGIN_REPLY_OK) {
+				qq_request_verify_E5(gc);
+			} else	return ret_8;
+			break;
+		case QQ_CMD_VERIFY_DE:
+			ret_8 = qq_process_verify_DE(gc, data, data_len);
 			if (ret_8 != QQ_LOGIN_REPLY_OK) {
 				return ret_8;
 			}

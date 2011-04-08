@@ -138,7 +138,6 @@ gboolean qq_process_keep_alive(guint8 *data, gint data_len, PurpleConnection *gc
 	return TRUE;
 }
 
-/* For QQ2010 */
 void qq_request_touch_server(PurpleConnection *gc)
 {
 	qq_data *qd;
@@ -562,14 +561,17 @@ void qq_request_auth(PurpleConnection *gc)
 
 	/* Encrypted password and put in encrypted */
 	bytes = 0;
-	bytes += qq_put32(raw_data + bytes, 0x1B9BCCD9);
+
+	srand(now);
+	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 
 	raw_data[bytes++]=0x00;	raw_data[bytes++]=0x01;
 		
 	bytes += qq_put32(raw_data + bytes, qd->uid);
 	bytes += qq_putdata(raw_data + bytes, touch_fill + 8, 12);	/* touch_fill Data2 */
 
-	raw_data[bytes++]=0x00;	raw_data[bytes++]=0x00; raw_data[bytes++]=0x01;
+	raw_data[bytes++]=0x00;	raw_data[bytes++]=0x00;
+	raw_data[bytes++]=0x00;		//when login again, it's 0x01
 
 	bytes += qq_putdata(raw_data + bytes, qd->ld.pwd_md5, sizeof(qd->ld.pwd_md5));
 	
@@ -605,13 +607,13 @@ void qq_request_auth(PurpleConnection *gc)
 	bytes += qq_put32(raw_data + bytes, crc32(0xFFFFFFFF, qd->ld.random_key, sizeof(qd->ld.random_key)));
 
 	bytes += qq_put32(raw_data + bytes, 0x01772E01);
-	bytes += qq_put32(raw_data + bytes, 0xBCA75E24);
+	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 
 	bytes += qq_put16(raw_data +bytes, sizeof(auth_key[1]));
 	bytes += qq_putdata(raw_data +bytes, auth_key[1], sizeof(auth_key[1]));
 
 	raw_data[bytes++]=0x02;
-	bytes += qq_put32(raw_data + bytes, 0xAD98B7D2);
+	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 
 	bytes += qq_put16(raw_data + bytes, sizeof(auth_key[2]));
 	bytes += qq_putdata(raw_data + bytes, auth_key[2], sizeof(auth_key[2]));
@@ -658,7 +660,7 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 
 	if (ret == 0) {
 		/* get token_auth */
-		if (qd->ld.token_auth == NULL) qd->ld.token_auth = g_new0(guint8 *,3);
+		if (qd->ld.token_auth == NULL) qd->ld.token_auth = g_new0(guint8 *,4);
 
 		for (i=0; i<3; ++i)
 		{
@@ -676,13 +678,27 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 			bytes += qq_getdata(qd->ld.token_auth[i], qd->ld.token_auth_len[i], data + bytes);
 		}
 
-		/* Key Used in verify_E5 Packet */
+		/* Key Used in verify_E5 or verify_DE Packet */
 		bytes += qq_getdata(qd->ld.keys[0], sizeof(qd->ld.keys[0]), data+bytes);
-		bytes += 2;
+
+		/* token_DE used in verify_DE Packet */
+		if (qd->ld.token_auth[3] != NULL) g_free(qd->ld.token_auth[3]);
+		bytes += qq_get16(&qd->ld.token_auth_len[3], data + bytes);
+		if (qd->ld.token_auth_len[3])		//if user don't have QQ ling pai (dynamic token), it's 00 00
+		{
+				qd->ld.token_auth[3] = g_new0(guint8, qd->ld.token_auth_len[3]);
+				bytes += qq_getdata(qd->ld.token_auth[3], qd->ld.token_auth_len[3], data + bytes);
+		}
+
+		/* Key to Decode verify_E5 Response Packet */
+		bytes += qq_getdata(qd->ld.token_auth[i], qd->ld.token_auth_len[i], data + bytes);
 		qq_getdata(qd->ld.keys[1], sizeof(qd->ld.keys[1]), data+bytes);
 		/* qq_show_packet("Get login token", qd->ld.login_token, qd->ld.login_token_len); */
 
-		return QQ_LOGIN_REPLY_OK;
+		if (qd->ld.token_auth_len[3])		//if have this token, we have to request verify_DE
+			return QQ_LOGIN_REPLY_DE;
+		else													//or request normal verify_E5
+			return QQ_LOGIN_REPLY_OK;
 	}
 
 	switch (ret)
@@ -726,6 +742,77 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 	return QQ_LOGIN_REPLY_ERR;
 }
 
+void qq_request_verify_DE(PurpleConnection *gc)
+{
+	qq_data *qd;
+	guint8 *buf, *raw_data;
+	gint bytes = 0;
+	guint8 *encrypted;
+	gint encrypted_len;
+
+	g_return_if_fail(gc != NULL && gc->proto_data != NULL);
+	qd = (qq_data *) gc->proto_data;
+
+	g_return_if_fail(qd->ld.token_captcha != NULL && qd->ld.token_captcha_len > 0);
+	g_return_if_fail(qd->ld.token_auth[0] != NULL && qd->ld.token_auth_len[0] > 0);
+	g_return_if_fail(qd->ld.token_auth[2] != NULL && qd->ld.token_auth_len[2] > 0);
+	g_return_if_fail(qd->ld.token_auth[3] != NULL && qd->ld.token_auth_len[3] > 0);
+	g_return_if_fail(qd->ld.keys[0] != NULL);
+
+	raw_data = g_newa(guint8, 1024);
+	memset(raw_data, 0, 1024);
+	encrypted = g_newa(guint8, 1024);	
+
+	bytes += qq_put32(raw_data + bytes, 0x00A60001);
+	bytes += qq_putdata(raw_data + bytes, touch_fill + 2, sizeof(touch_fill) - 2);
+
+	bytes += qq_put16(raw_data+bytes, qd->ld.token_captcha_len);
+	bytes += qq_putdata(raw_data+bytes, qd->ld.token_captcha, qd->ld.token_captcha_len);
+
+	bytes += qq_put8(raw_data+bytes, 0x02);
+	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[0]);
+	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[0], qd->ld.token_auth_len[0]);
+
+	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[3], qd->ld.token_auth_len[3]);
+
+	memset(raw_data+bytes, 0x00, 22);
+	*(raw_data+bytes+0) = 0x02;
+	*(raw_data+bytes+4) = 0x01;
+	bytes += 22;
+
+	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.keys[0]);
+
+	buf = g_newa(guint8, 1024);
+	memset(buf, 0, 1024);
+	bytes = 0;
+	bytes += qq_put16(buf+bytes, qd->ld.token_auth_len[2]);
+	bytes += qq_putdata(buf+bytes, qd->ld.token_auth[2], qd->ld.token_auth_len[2]);
+	bytes += qq_putdata(buf + bytes, encrypted, encrypted_len);
+
+	qd->send_seq++;
+	qq_send_cmd_encrypted(gc, QQ_CMD_VERIFY_DE, qd->send_seq, buf, bytes, TRUE);
+}
+
+guint8 qq_process_verify_DE( PurpleConnection *gc, guint8 *data, gint data_len )
+{
+	qq_data *qd;
+	int bytes;
+
+	g_return_val_if_fail(data != NULL && data_len != 0, QQ_LOGIN_REPLY_ERR);
+
+	g_return_val_if_fail(gc != NULL  && gc->proto_data != NULL, QQ_LOGIN_REPLY_ERR);
+	qd = (qq_data *) gc->proto_data;
+
+	/*	qq_show_packet("Verify DE", data, data_len); */
+
+	bytes = 4;
+	bytes += 2;	//size of size + token
+
+	bytes += qq_get16(&qd->ld.token_verify_de_len, data+bytes);
+	bytes += qq_getdata(qd->ld.token_verify_de, qd->ld.token_verify_de_len, data+bytes);
+
+	return QQ_LOGIN_REPLY_OK;
+}
 
 void qq_request_verify_E5(PurpleConnection *gc)
 {
@@ -741,6 +828,7 @@ void qq_request_verify_E5(PurpleConnection *gc)
 	g_return_if_fail(qd->ld.token_captcha != NULL && qd->ld.token_captcha_len > 0);
 	g_return_if_fail(qd->ld.token_auth[0] != NULL && qd->ld.token_auth_len[0] > 0);
 	g_return_if_fail(qd->ld.token_auth[1] != NULL && qd->ld.token_auth_len[1] > 0);
+	g_return_if_fail(qd->ld.token_auth[2] != NULL && qd->ld.token_auth_len[2] > 0);
 	g_return_if_fail(qd->ld.keys[0] != NULL);
 
 	raw_data = g_newa(guint8, 1024);
@@ -762,9 +850,17 @@ void qq_request_verify_E5(PurpleConnection *gc)
 	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[1]);
 	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[1], qd->ld.token_auth_len[1]);
 
-	memset(raw_data+bytes, 0x00, 7);
-	*(raw_data+bytes+2) = 0x01;
-	bytes += 7;
+	if (qd->ld.token_verify_de && qd->ld.token_verify_de_len > 0)
+	{
+		bytes += qq_put16(raw_data+bytes, qd->ld.token_verify_de_len + 3);
+		bytes += qq_put8(raw_data+bytes, 0x02);
+		bytes += qq_put16(raw_data+bytes, qd->ld.token_verify_de_len);
+		bytes += qq_putdata(raw_data+bytes, qd->ld.token_verify_de, qd->ld.token_verify_de_len);
+	} else bytes += qq_put16(raw_data+bytes, 0x0000);
+	
+	memset(raw_data+bytes, 0x00, 5);
+	*(raw_data+bytes+0) = 0x01;
+	bytes += 5;
 
 	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.keys[0]);
 
@@ -777,7 +873,6 @@ void qq_request_verify_E5(PurpleConnection *gc)
 
 	qd->send_seq++;
 	qq_send_cmd_encrypted(gc, QQ_CMD_VERIFY_E5, qd->send_seq, buf, bytes, TRUE);
-
 }
 
 guint8 qq_process_verify_E5( PurpleConnection *gc, guint8 *data, gint data_len )

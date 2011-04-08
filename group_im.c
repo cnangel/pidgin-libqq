@@ -416,7 +416,7 @@ static void request_room_send_im(PurpleConnection *gc, guint32 room_id, qq_im_fo
 	bytes += qq_puttime(raw_data + bytes, &now);
 	/* could be a random int */
 	srand((unsigned)now);
-	bytes += qq_put32(raw_data + bytes, rand());
+	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 	/* font attr set */
 	bytes += qq_put8(raw_data + bytes, 0x00);
 	bytes += qq_put8(raw_data + bytes, fmt->rgb[2]);

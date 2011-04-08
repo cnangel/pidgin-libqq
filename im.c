@@ -1075,7 +1075,7 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	bytes += qq_puttime(raw_data + bytes, &send_time);
 	/* Likely a random int */
 	srand((unsigned)send_time);
-	bytes += qq_put32(raw_data + bytes, rand());
+	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 	/* font attr set */
 	bytes += qq_put8(raw_data + bytes, 0x00);
 	bytes += qq_put8(raw_data + bytes, fmt->rgb[2]);

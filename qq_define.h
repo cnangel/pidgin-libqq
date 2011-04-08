@@ -70,6 +70,7 @@ enum {
 	QQ_CMD_TOUCH_SERVER = 0x0091,					/* touch login server */
 	QQ_CMD_CAPTCHA = 0x00BA,						/* verify LOGIN captcha */
 	QQ_CMD_AUTH = 0x00DD,				/* Password verify */
+	QQ_CMD_VERIFY_DE = 0x00DE,
 	QQ_CMD_VERIFY_E5 = 0x00E5,
 	QQ_CMD_VERIFY_E3 = 0x00E3,
 	QQ_CMD_LOGIN = 0x0030,

@@ -34,6 +34,7 @@
 #define QQ_LOGIN_REPLY_CAPTCHA_DLG			0xfd
 #define QQ_LOGIN_REPLY_NEXT_CAPTCHA		0xfe
 #define QQ_LOGIN_REPLY_ERR							0xff
+#define QQ_LOGIN_REPLY_DE								0xde
 
 #define QQ_LOGIN_MODE_NORMAL		0x0a
 #define QQ_LOGIN_MODE_AWAY	    	0x1e
@@ -49,7 +50,7 @@ static guint8 header_fill[] = {
 static guint8 touch_fill[] = {
 	0x00, 0x01,
 	0x00, 0x00, 0x04, 0x09, 0x01, 0xE0,		/* touch Data1*/
-	0x00, 0x00, 0x03, 0x30, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0B, 0xC5		/* touch Data2 */
+	0x00, 0x00, 0x03, 0x20, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0B, 0xC5		/* touch Data2 */
 };
 
 static guint8 auth_key[][16] = {
@@ -76,6 +77,9 @@ void qq_captcha_input_dialog(PurpleConnection *gc,qq_captcha_data *captcha);
 void qq_request_auth(PurpleConnection *gc);
 guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len);
 
+void qq_request_verify_DE(PurpleConnection *gc);
+guint8 qq_process_verify_DE(PurpleConnection *gc, guint8 *data, gint data_len);
+
 void qq_request_verify_E5(PurpleConnection *gc);
 guint8 qq_process_verify_E5(PurpleConnection *gc, guint8 *data, gint data_len);
 
@@ -95,4 +99,5 @@ guint8 qq_process_login_getlist(PurpleConnection *gc, guint8 *data, gint data_le
 void qq_clean_group_buddy_list(PurpleConnection *gc);
 extern void qq_buddy_free(PurpleBuddy *buddy);
 extern void qq_room_remove(PurpleConnection *gc, guint32 id);
+
 #endif

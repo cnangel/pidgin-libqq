@@ -324,6 +324,7 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 		case QQ_CMD_TOUCH_SERVER:
 		case QQ_CMD_CAPTCHA:
 		case QQ_CMD_AUTH:
+		case QQ_CMD_VERIFY_DE:
 		case QQ_CMD_VERIFY_E5:
 		case QQ_CMD_VERIFY_E3:
 		case QQ_CMD_LOGIN:

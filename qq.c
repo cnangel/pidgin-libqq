@@ -229,7 +229,7 @@ void qq_close(PurpleConnection *gc)
 	if (qd->captcha.token) g_free(qd->captcha.token);
 	if (qd->captcha.data) g_free(qd->captcha.data);
 	if (qd->ld.token_auth) {
-		for (i=0; i<3; ++i) if (qd->ld.token_auth[i]) g_free(qd->ld.token_auth[i]);
+		for (i=0; i<4; ++i) if (qd->ld.token_auth[i]) g_free(qd->ld.token_auth[i]);
 		g_free(qd->ld.token_auth);
 	}
 	if (qd->ld.token_verify) {
@@ -237,6 +237,7 @@ void qq_close(PurpleConnection *gc)
 		if (qd->ld.token_verify) g_free(qd->ld.token_verify);
 	}
 	if (qd->ld.token_login) g_free(qd->ld.token_login);
+	if (qd->ld.token_verify_de) g_free(qd->ld.token_verify_de);
 	
 	server_list_remove_all(qd);
 
