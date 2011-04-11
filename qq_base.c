@@ -678,7 +678,7 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 			bytes += qq_getdata(qd->ld.token_auth[i], qd->ld.token_auth_len[i], data + bytes);
 		}
 
-		/* Key Used in verify_E5 or verify_DE Packet */
+		/* Key Used in verify_E5 or verify_DE Request Packet */
 		bytes += qq_getdata(qd->ld.keys[0], sizeof(qd->ld.keys[0]), data+bytes);
 
 		/* token_DE used in verify_DE Packet */
@@ -686,12 +686,13 @@ guint8 qq_process_auth( PurpleConnection *gc, guint8 *data, gint data_len)
 		bytes += qq_get16(&qd->ld.token_auth_len[3], data + bytes);
 		if (qd->ld.token_auth_len[3])		//if user don't have QQ ling pai (dynamic token), it's 00 00
 		{
-				qd->ld.token_auth[3] = g_new0(guint8, qd->ld.token_auth_len[3]);
-				bytes += qq_getdata(qd->ld.token_auth[3], qd->ld.token_auth_len[3], data + bytes);
+			bytes++;  //fill 02
+			bytes += qq_get16(&qd->ld.token_auth_len[3], data + bytes);	//size (strip prefix)
+			qd->ld.token_auth[3] = g_new0(guint8, qd->ld.token_auth_len[3]);
+			bytes += qq_getdata(qd->ld.token_auth[3], qd->ld.token_auth_len[3], data + bytes);
 		}
 
 		/* Key to Decode verify_E5 Response Packet */
-		bytes += qq_getdata(qd->ld.token_auth[i], qd->ld.token_auth_len[i], data + bytes);
 		qq_getdata(qd->ld.keys[1], sizeof(qd->ld.keys[1]), data+bytes);
 		/* qq_show_packet("Get login token", qd->ld.login_token, qd->ld.login_token_len); */
 
@@ -773,6 +774,8 @@ void qq_request_verify_DE(PurpleConnection *gc)
 	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[0]);
 	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[0], qd->ld.token_auth_len[0]);
 
+	bytes += qq_put8(raw_data+bytes, 0x02);
+	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[3]);
 	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[3], qd->ld.token_auth_len[3]);
 
 	memset(raw_data+bytes, 0x00, 22);
