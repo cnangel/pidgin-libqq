@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign 1.6
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = libpurple \
-	Makefile.mingw
+	Makefile.mingw pidgin-qq.spec.in
 
 
 
@@ -110,3 +110,16 @@ AM_CPPFLAGS += ${PURPLE_CFLAGS}  \
 # remove .la files, DESTDIR is here for make install DESTDIR=somedir
 install-data-hook:
 	rm -f ${DESTDIR}$(pluginsdir)/libqq.la
+
+
+rpm: dist pidgin-qq.spec
+	rpmbuild  --nodeps -bb \
+	--define "_sourcedir `pwd`" \
+	--define "_builddir `pwd`" \
+	--define "_specdir `pwd`" \
+	--define "_rpmdir `pwd`" \
+	--define "_srcrpmdir `pwd`" \
+	pidgin-qq.spec 
+	echo rpm is at `pwd`/`arch`/@PACKAGE_NAME@-@VERSION@-1.`arch`.rpm
+
+
