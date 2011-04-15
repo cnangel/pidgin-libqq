@@ -57,7 +57,7 @@
 #include "utils.h"
 #include "version.h"
 
-#define LIBQQ_VERSION 		"0.68"
+#define LIBQQ_VERSION 		"0.70"
 
 static GList *server_list_build(gchar select)
 {
@@ -175,12 +175,12 @@ static void qq_login(PurpleAccount *account)
 	if (qd->resend_times <= 1) qd->itv_config.resend = 4;
 
 	qd->itv_config.resend = purple_prefs_get_int("/plugins/prpl/qq/resend_interval");
-	if (qd->itv_config.resend <= 0) qd->itv_config.resend = 3;
+	if (qd->itv_config.resend <= 0) qd->itv_config.resend = 4;
 	purple_debug_info("QQ", "Resend interval %d, retries %d\n",
 			qd->itv_config.resend, qd->resend_times);
 
 	qd->itv_config.keep_alive = purple_account_get_int(account, "keep_alive_interval", 60);
-	if (qd->itv_config.keep_alive < 30) qd->itv_config.keep_alive = 30;
+	if (qd->itv_config.keep_alive < 30) qd->itv_config.keep_alive = 40;
 	qd->itv_config.keep_alive /= qd->itv_config.resend;
 	qd->itv_count.keep_alive = qd->itv_config.keep_alive;
 
@@ -313,7 +313,8 @@ static void qq_tooltip_text(PurpleBuddy *b, PurpleNotifyUserInfo *user_info, gbo
 	if (bd == NULL)
 		return;
 
-	qq_request_get_level(purple_account_get_connection(purple_buddy_get_account(b)), bd->uid);
+	if (bd->level == NULL)
+		qq_request_get_level(purple_account_get_connection(purple_buddy_get_account(b)), bd->uid);
 
 	/* if (PURPLE_BUDDY_IS_ONLINE(b) && bd != NULL) */
 	if (bd->ip.s_addr != 0) {
@@ -1219,7 +1220,7 @@ static void init_plugin(PurplePlugin *plugin)
 	purple_prefs_add_bool("/plugins/prpl/qq/show_status_by_icon", TRUE);
 	purple_prefs_add_bool("/plugins/prpl/qq/show_fake_video", FALSE);
 	purple_prefs_add_bool("/plugins/prpl/qq/auto_get_authorize_info", TRUE);
-	purple_prefs_add_int("/plugins/prpl/qq/resend_interval", 3);
+	purple_prefs_add_int("/plugins/prpl/qq/resend_interval", 4);
 	purple_prefs_add_int("/plugins/prpl/qq/resend_times", 10);
 }
 

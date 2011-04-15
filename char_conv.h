@@ -33,7 +33,7 @@
 #define QQ_CHARSET_ENG        "ISO-8859-1"
 
 gint qq_get_vstr(gchar **ret, const gchar *from_charset, gsize len_size, guint8 *data);
-gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, const gchar *to_charset);
+gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, gsize len_size, const gchar *to_charset);
 
 gchar *utf8_to_qq(const gchar *str, const gchar *to_charset);
 gchar *qq_to_utf8(const gchar *str, const gchar *from_charset);

@@ -43,33 +43,20 @@
 
 #define QQ_REMOVE_SELF_REPLY_OK       0x00
 
-enum {
-	QQ_MY_AUTH_APPROVE = 0x30,	/* ASCII value of "0" */
-	QQ_MY_AUTH_REJECT = 0x31,	/* ASCII value of "1" */
-	QQ_MY_AUTH_REQUEST = 0x32	/* ASCII value of "2" */
-};
-
-typedef struct _qq_buddy_req {
-	PurpleConnection *gc;
-	guint32 uid;
-	guint8 *auth;
-	guint8 auth_len;
-} qq_buddy_req;
-
-void add_buddy_authorize_input(PurpleConnection *gc, guint32 uid,
-		guint8 *auth, guint8 auth_len);
-
-static void buddy_req_free(qq_buddy_req *add_req)
+static void buddy_opt_req_free(qq_buddy_opt_req *opt_req)
 {
-	g_return_if_fail(add_req != NULL);
-	if (add_req->auth) g_free(add_req->auth);
-	g_free(add_req);
+	g_return_if_fail(opt_req != NULL);
+	if (opt_req->no_auth)	g_free(opt_req->no_auth);
+	if (opt_req->auth) g_free(opt_req->auth);
+	if (opt_req->session) g_free(opt_req->session);
+	if (opt_req->captcha_input) g_free(opt_req->captcha_input);
+	g_free(opt_req);
 }
 
-static void buddy_req_cancel_cb(qq_buddy_req *add_req, const gchar *msg)
+static void buddy_req_cancel_cb(qq_buddy_opt_req *opt_req, const gchar *msg)
 {
-	g_return_if_fail(add_req != NULL);
-	buddy_req_free(add_req);
+	g_return_if_fail(opt_req != NULL);
+	buddy_opt_req_free(opt_req);
 }
 
 PurpleGroup *qq_group_find_or_new(const gchar *group_name)
@@ -138,7 +125,7 @@ PurpleBuddy * qq_buddy_new( PurpleConnection *gc, guint32 uid, PurpleGroup * gro
 	gchar * group_name;
 
 	g_return_val_if_fail(gc->account != NULL && uid != 0, NULL);
-	/* deprecated when fix qq_process_add_buddy_no_auth */
+	/* deprecated when fix qq_process_add_buddy_touch */
 	if (!group)
 	{
 		group_name = g_strdup_printf(PURPLE_GROUP_QQ_FORMAT,
@@ -249,42 +236,51 @@ buddy_data_check:
 }
 
 /* send packet to remove a buddy from my buddy list */
-static void request_remove_buddy_ex(PurpleConnection *gc,
-		guint32 uid, guint8 *auth, guint8 auth_len)
+static void qq_request_remove_buddy(PurpleConnection *gc, qq_buddy_opt_req *opt_req)
 {
 	gint bytes;
 	guint8 *raw_data;
-	gchar uid_str[16];
+	gchar * uid_str;
 
-	g_return_if_fail(uid != 0);
-	g_return_if_fail(auth != NULL && auth_len > 0);
+	g_return_if_fail(opt_req && opt_req->uid != 0);
+	g_return_if_fail(opt_req->auth != NULL && opt_req->auth_len > 0);
 
-	raw_data = g_newa(guint8, auth_len + sizeof(uid_str) );
+	raw_data = g_newa(guint8, opt_req->auth_len + sizeof(uid_str));
 	bytes = 0;
-	bytes += qq_put8(raw_data + bytes, auth_len);
-	bytes += qq_putdata(raw_data + bytes, auth, auth_len);
+	bytes += qq_put8(raw_data + bytes, opt_req->auth_len);
+	bytes += qq_putdata(raw_data + bytes, opt_req->auth, opt_req->auth_len);
 
-	g_snprintf(uid_str, sizeof(uid_str), "%u", uid);
+	uid_str = uid_to_purple_name(opt_req->uid);
 	bytes += qq_putdata(raw_data + bytes, (guint8 *)uid_str, strlen(uid_str));
+	g_free(uid_str);
 
-	qq_send_cmd_mess(gc, QQ_CMD_REMOVE_BUDDY, raw_data, bytes, 0, uid);
+	qq_send_cmd_mess(gc, QQ_CMD_REMOVE_BUDDY, raw_data, bytes, 0, opt_req->uid);
+	
+	buddy_opt_req_free(opt_req);
 }
 
-void qq_request_auth_token(PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 dataptr, guint32 uid)
+void qq_request_auth_token( PurpleConnection *gc, guint8 cmd, guint16 sub_cmd, guint32 dataptr2ship, qq_buddy_opt_req *opt_req )
 {
-	guint8 raw_data[16];
+	guint8 raw_data[128];
 	gint bytes;
 
-	g_return_if_fail(uid > 0);
+	g_return_if_fail(opt_req && opt_req->uid > 0);
 	bytes = 0;
 	bytes += qq_put8(raw_data + bytes, cmd);
 	bytes += qq_put16(raw_data + bytes, sub_cmd);
-	bytes += qq_put32(raw_data + bytes, uid);
+	bytes += qq_put32(raw_data + bytes, opt_req->uid);
 
-	qq_send_cmd_mess(gc, QQ_CMD_AUTH_TOKEN, raw_data, bytes, dataptr, uid);
+	if (opt_req->captcha_input && opt_req->session)
+	{	
+		bytes += qq_put_vstr(raw_data+bytes, opt_req->captcha_input, sizeof(guint16), NULL);
+		bytes += qq_put16(raw_data+bytes, opt_req->session_len);
+		bytes += qq_putdata(raw_data+bytes, opt_req->session, opt_req->session_len);
+	}
+	
+	qq_send_cmd_mess(gc, QQ_CMD_AUTH_TOKEN, raw_data, bytes, dataptr2ship, (guintptr)opt_req);
 }
 
-void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, guint32 dataptr, guint32 uid)
+void qq_process_auth_token( PurpleConnection *gc, guint8 *data, gint data_len, guint32 dataptr, qq_buddy_opt_req *opt_req )
 {
 	gint bytes;
 	guint8 cmd, reply;
@@ -293,27 +289,45 @@ void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, gu
 	guint16 code_len = 0;
 
 	g_return_if_fail(data != NULL && data_len != 0);
-	g_return_if_fail(uid != 0);
+	g_return_if_fail(opt_req && opt_req->uid != 0);
 
-	qq_show_packet("qq_process_auth_token", data, data_len);
+	//qq_show_packet("qq_process_auth_token", data, data_len);
 	bytes = 0;
 	bytes += qq_get8(&cmd, data + bytes);
 	bytes += qq_get16(&sub_cmd, data + bytes);
 	bytes += qq_get8(&reply, data + bytes);
-	g_return_if_fail(bytes + 2 <= data_len);
 
-	bytes += qq_get16(&code_len, data + bytes);
-	g_return_if_fail(code_len > 0);
-	g_return_if_fail(bytes + code_len <= data_len);
-	code = g_newa(guint8, code_len);
-	bytes += qq_getdata(code, code_len, data + bytes);
+	/* if reply == 0x01, we need request captcha */
+	if (reply)
+	{
+		/* if this is end, means you have submitted the wrong captcha  */
+		if (bytes>=data_len)
+		{
+			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_ADD_BUDDY, 0, opt_req);
+			return;
+		}
 
-	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_REMOVE_BUDDY) {
-		//request_remove_buddy_ex(gc, uid, code, code_len);
+		bytes += qq_get_vstr(&code, NULL, sizeof(guint16), data + bytes);
+		purple_util_fetch_url_request(
+			(gchar *)code, TRUE, NULL, TRUE,  NULL, TRUE, auth_token_captcha_input_cb, opt_req);
 		return;
 	}
-	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_ADD_BUDDY) {
-		add_buddy_authorize_input(gc, uid, code, code_len);
+	
+	bytes += qq_get16(&opt_req->auth_len, data + bytes);
+	g_return_if_fail(opt_req->auth_len > 0);
+	g_return_if_fail(bytes + opt_req->auth_len <= data_len);
+	opt_req->auth = g_new0(guint8, opt_req->auth_len);
+	bytes += qq_getdata(opt_req->auth, opt_req->auth_len, data + bytes);
+
+	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_REMOVE_BUDDY) {
+		qq_request_remove_buddy(gc, opt_req);
+		return;
+	}
+	if (sub_cmd == QQ_AUTH_INFO_ADD_BUDDY) {
+		if (opt_req->auth_type == 0x01)
+			add_buddy_authorize_input(gc, opt_req);
+		else if (opt_req->auth_type == 0x00)
+			qq_request_search_uid(gc, opt_req);
 		return;
 	}
 	if (cmd == QQ_AUTH_INFO_BUDDY && sub_cmd == QQ_AUTH_INFO_UPDATE_BUDDY_INFO) {
@@ -324,29 +338,108 @@ void qq_process_auth_token(PurpleConnection *gc, guint8 *data, gint data_len, gu
 			cmd, sub_cmd, reply);
 }
 
-static void add_buddy_question_cb(qq_buddy_req *add_req, const gchar *text)
+static void auth_token_captcha_input_cancel_cb(qq_buddy_opt_req *opt_req,
+	PurpleRequestFields *fields)
 {
-	g_return_if_fail(add_req != NULL);
-	if (add_req->gc == NULL || add_req->uid == 0) {
-		buddy_req_free(add_req);
+}
+
+static void auth_token_captcha_input_ok_cb(qq_buddy_opt_req *opt_req,
+	PurpleRequestFields *fields)
+{
+	g_return_if_fail(opt_req != NULL && opt_req->gc != NULL && opt_req->uid != 0);
+
+	opt_req->captcha_input = purple_request_fields_get_string(fields, "captcha_code");
+
+	if (! strlen(opt_req->captcha_input) > 0) {
+		auth_token_captcha_input_cancel_cb(opt_req, fields);
 		return;
 	}
 
-	qq_request_question(add_req->gc, QQ_QUESTION_ANSWER, add_req->uid, NULL, text);
-	buddy_req_free(add_req);
+	qq_request_auth_token(opt_req->gc, 0x02, QQ_AUTH_INFO_ADD_BUDDY, 0, opt_req);
+}
+
+void auth_token_captcha_input_cb(PurpleUtilFetchUrlData *url_data, 
+	gpointer user_data, const gchar *url_text, gsize len, const gchar *error_message)
+{
+	PurpleAccount *account;
+	PurpleRequestFields *fields;
+	PurpleRequestFieldGroup *group;
+	PurpleRequestField *field;
+	qq_buddy_opt_req *opt_req = (qq_buddy_opt_req *)user_data;
+	gchar *end_of_headers, *p;
+	guint header_len, content_len;
+
+	g_return_if_fail(opt_req && opt_req->gc && opt_req->uid>0 );
+	g_return_if_fail(url_text && len>0);
+
+	account = purple_connection_get_account(opt_req->gc);
+
+	end_of_headers = strstr(url_text, "\r\n\r\n");
+	if (end_of_headers) {
+		header_len = (end_of_headers + 4 - url_text);
+	}
+
+	p = find_header_content(url_text, header_len, "\nContent-Length: ", sizeof("\nContent-Length: ") - 1);
+	if (p) {
+		sscanf(p, "%" G_GSIZE_FORMAT, &content_len);
+	} else {
+		purple_debug_error("QQ", "can not parse http header, maybe it's chunked!");
+	}
+
+	p = find_header_content(url_text, header_len, "\ngetqqsession: ", sizeof("\ngetqqsession: ") - 1);
+	if (!p) purple_debug_error("QQ", "can not find qqsession in http header!");
+	
+	opt_req->session_len = strstr(p, "\r\n")-p;
+	opt_req->session = g_new0(guint8, opt_req->session_len);
+	g_memmove(opt_req->session, p, opt_req->session_len);
+
+	fields = purple_request_fields_new();
+	group = purple_request_field_group_new(NULL);
+	purple_request_fields_add_group(fields, group);
+
+	field = purple_request_field_image_new("captcha_img",
+		_("Captcha Image"), url_text+header_len, content_len);
+	purple_request_field_group_add_field(group, field);
+
+	field = purple_request_field_string_new("captcha_code",
+		_("Enter code"), "", FALSE);
+	purple_request_field_string_set_masked(field, FALSE);
+	purple_request_field_group_add_field(group, field);
+
+	purple_request_fields(account,
+		_("QQ Captcha Verification"),
+		_("QQ Captcha Verification"),
+		_("Enter the text from the image"),
+		fields,
+		_("OK"), G_CALLBACK(auth_token_captcha_input_ok_cb),
+		_("Cancel"), G_CALLBACK(auth_token_captcha_input_cancel_cb),
+		account, NULL, NULL,
+		opt_req);
+}
+
+static void add_buddy_question_cb(qq_buddy_opt_req *opt_req, const gchar *text)
+{
+	g_return_if_fail(opt_req != NULL);
+	if (opt_req->gc == NULL || opt_req->uid == 0) {
+		buddy_opt_req_free(opt_req);
+		return;
+	}
+
+	qq_request_question(opt_req->gc, QQ_QUESTION_ANSWER, opt_req->uid, NULL, text);
+	buddy_opt_req_free(opt_req);
 }
 
 static void add_buddy_question_input(PurpleConnection *gc, guint32 uid, gchar *question)
 {
 	gchar *who, *msg;
-	qq_buddy_req *add_req;
+	qq_buddy_opt_req *opt_req;
 	g_return_if_fail(uid != 0);
 
-	add_req = g_new0(qq_buddy_req, 1);
-	add_req->gc = gc;
-	add_req->uid = uid;
-	add_req->auth = NULL;
-	add_req->auth_len = 0;
+	opt_req = g_new0(qq_buddy_opt_req, 1);
+	opt_req->gc = gc;
+	opt_req->uid = uid;
+	opt_req->auth = NULL;
+	opt_req->auth_len = 0;
 
 	who = uid_to_purple_name(uid);
 	msg = g_strdup_printf(_("%u requires verification: %s"), uid, question);
@@ -357,7 +450,7 @@ static void add_buddy_question_input(PurpleConnection *gc, guint32 uid, gchar *q
 			_("Send"), G_CALLBACK(add_buddy_question_cb),
 			_("Cancel"), G_CALLBACK(buddy_req_cancel_cb),
 			purple_connection_get_account(gc), who, NULL,
-			add_req);
+			opt_req);
 
 	g_free(msg);
 	g_free(who);
@@ -378,8 +471,8 @@ void qq_request_question(PurpleConnection *gc,
 		return;
 	}
 	if (cmd == QQ_QUESTION_SET) {
-		bytes += qq_put_vstr(raw_data + bytes, question_utf8, QQ_CHARSET_DEFAULT);
-		bytes += qq_put_vstr(raw_data + bytes, answer_utf8, QQ_CHARSET_DEFAULT);
+		bytes += qq_put_vstr(raw_data + bytes, question_utf8, sizeof(guint8), QQ_CHARSET_DEFAULT);
+		bytes += qq_put_vstr(raw_data + bytes, answer_utf8, sizeof(guint8), QQ_CHARSET_DEFAULT);
 		bytes += qq_put8(raw_data + bytes, 0);
 		qq_send_cmd_mess(gc, QQ_CMD_BUDDY_QUESTION, raw_data, bytes, 0, uid);
 		return;
@@ -393,13 +486,13 @@ void qq_request_question(PurpleConnection *gc,
 		qq_send_cmd_mess(gc, QQ_CMD_BUDDY_QUESTION, raw_data, bytes, 0, uid);
 		return;
 	}
-	bytes += qq_put_vstr(raw_data + bytes, answer_utf8, QQ_CHARSET_DEFAULT);
+	bytes += qq_put_vstr(raw_data + bytes, answer_utf8, sizeof(guint8), QQ_CHARSET_DEFAULT);
 	bytes += qq_put8(raw_data + bytes, 0);
 	qq_send_cmd_mess(gc, QQ_CMD_BUDDY_QUESTION, raw_data, bytes, 0, uid);
 	return;
 }
 
-static void request_add_buddy_by_question(PurpleConnection *gc, guint32 uid,
+static void qq_request_add_buddy_by_question(PurpleConnection *gc, guint32 uid,
 	guint8 *code, guint16 code_len)
 {
 	guint8 raw_data[MAX_PACKET_SIZE - 16];
@@ -420,7 +513,7 @@ static void request_add_buddy_by_question(PurpleConnection *gc, guint32 uid,
 
 	bytes += qq_put8(raw_data + bytes, 1);	/* ALLOW ADD ME FLAG */
 	bytes += qq_put8(raw_data + bytes, 0);	/* group number? */
-	qq_send_cmd(gc, QQ_CMD_ADD_BUDDY_AUTH_EX, raw_data, bytes);
+	qq_send_cmd(gc, QQ_CMD_ADD_BUDDY_POST, raw_data, bytes);
 }
 
 void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guint32 uid)
@@ -481,7 +574,7 @@ void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guin
 
 		code = g_newa(guint8, code_len);
 		bytes += qq_getdata(code, code_len, data + bytes);
-		request_add_buddy_by_question(gc, uid, code, code_len);
+		qq_request_add_buddy_by_question(gc, uid, code, code_len);
 		return;
 	}
 
@@ -489,179 +582,182 @@ void qq_process_question(PurpleConnection *gc, guint8 *data, gint data_len, guin
 }
 
 /* try to add a buddy without authentication */
-static void request_add_buddy_no_auth(PurpleConnection *gc, guint32 uid)
+static void qq_request_add_buddy_touch(PurpleConnection *gc, qq_buddy_opt_req *opt_req)
 {
 	guint bytes;
 	guint8 raw_data[16];
 
-	g_return_if_fail(uid != 0);
+	g_return_if_fail(opt_req && opt_req->uid > 0);
 
 	bytes = 0;
-	bytes += qq_put32(raw_data + bytes, uid);
-	qq_send_cmd_mess(gc, QQ_CMD_ADD_BUDDY_NO_AUTH_EX, raw_data, bytes, 0, uid);
+	bytes += qq_put32(raw_data + bytes, opt_req->uid);
+	qq_send_cmd_mess(gc, QQ_CMD_ADD_BUDDY_TOUCH, raw_data, bytes, 0, (guintptr)opt_req);
 }
 
-/* this buddy needs authentication, text conversion is done at lowest level */
-static void request_add_buddy_auth(PurpleConnection *gc, guint32 uid, const gchar response, const gchar *text)
+void qq_request_add_buddy_post(PurpleConnection *gc, qq_buddy_opt_req *opt_req, const gchar *text)
 {
-	guint8 raw_data[MAX_PACKET_SIZE - 16];
-	gint bytes;
-	gchar *msg, uid_str[11];
-	guint8 bar;
-
-	g_return_if_fail(uid != 0);
-
-	g_snprintf(uid_str, sizeof(uid_str), "%u", uid);
-	bar = 0x1f;
-
-	bytes = 0;
-	bytes += qq_putdata(raw_data + bytes, (guint8 *) uid_str, strlen(uid_str));
-	bytes += qq_put8(raw_data + bytes, bar);
-	bytes += qq_put8(raw_data + bytes, response);
-
-	if (text != NULL) {
-		msg = utf8_to_qq(text, QQ_CHARSET_DEFAULT);
-		bytes += qq_put8(raw_data + bytes, bar);
-		bytes += qq_putdata(raw_data + bytes, (guint8 *) msg, strlen(msg));
-		g_free(msg);
-	}
-
-	qq_send_cmd(gc, QQ_CMD_ADD_BUDDY_AUTH, raw_data, bytes);
-}
-
-static void request_add_buddy_auth_ex(PurpleConnection *gc, guint32 uid,
-	const gchar *text, guint8 *auth, guint8 auth_len)
-{
-	guint8 raw_data[MAX_PACKET_SIZE - 16];
+	static guint8 fill1[] = {
+		0x00, 0x0A, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	static guint8 fill2[] = {
+		0x00, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	guint8 raw_data[256];
 	gint bytes = 0;
+	guint8 cmd;
 
-	g_return_if_fail(uid != 0);
+	g_return_if_fail(opt_req && opt_req->uid!= 0);
 
-	bytes = 0;
-	bytes += qq_put8(raw_data + bytes, 0x02);
-	bytes += qq_put32(raw_data + bytes, uid);
-	bytes += qq_put16(raw_data + bytes, 0);
-
-	bytes += qq_put8(raw_data + bytes, 0);
-	if (auth == NULL || auth_len <= 0) {
-		bytes += qq_put8(raw_data + bytes, 0);
-	} else {
-		bytes += qq_put8(raw_data + bytes, auth_len);
-		bytes += qq_putdata(raw_data + bytes, auth, auth_len);
+	switch (opt_req->auth_type)
+	{
+	case 0x01:	//auth
+		cmd = 0x02;
+		break;
+	case 0x02:	//question
+		cmd = 0x10;
+		break;
+	case 0x00:	//no_auth
+	case 0x03:	//approve and add
+	case 0x04:	//approve
+	case 0x05:	//reject
+		cmd = opt_req->auth_type;
+		break;
 	}
-	bytes += qq_put8(raw_data + bytes, 1);	/* ALLOW ADD ME FLAG */
-	bytes += qq_put8(raw_data + bytes, 0);	/* group number? */
-	bytes += qq_put_vstr(raw_data + bytes, text, QQ_CHARSET_DEFAULT);
-	qq_send_cmd(gc, QQ_CMD_ADD_BUDDY_AUTH_EX, raw_data, bytes);
+	
+	bytes = 0;
+	bytes += qq_put8(raw_data + bytes, cmd);
+	bytes += qq_put32(raw_data + bytes, opt_req->uid);
+
+	if (cmd == 0x03 || cmd == 0x04 || cmd == 0x05)
+	{
+		bytes += qq_put16(raw_data + bytes, 0);
+	} else {
+		if (opt_req->no_auth && opt_req->no_auth_len > 0) {
+			bytes += qq_put16(raw_data + bytes, opt_req->no_auth_len);
+			bytes += qq_putdata(raw_data + bytes, opt_req->no_auth, opt_req->no_auth_len);
+		} else	bytes += qq_put16(raw_data + bytes, 0);
+
+		if (opt_req->auth == NULL || opt_req->auth_len <= 0) {
+			bytes += qq_put16(raw_data + bytes, 0);
+		} else {
+			bytes += qq_put16(raw_data + bytes, opt_req->auth_len);
+			bytes += qq_putdata(raw_data + bytes, opt_req->auth, opt_req->auth_len);
+		}
+		bytes += qq_put8(raw_data + bytes, 1);	/* ALLOW ADD ME FLAG */
+	}
+
+	bytes += qq_put8(raw_data + bytes, opt_req->group_id);	/* group number */
+
+	if (text) {
+		bytes += qq_put8(raw_data + bytes, strlen(text));
+		bytes += qq_putdata(raw_data + bytes, (guint8 *)text, strlen(text));
+	}
+
+	if (cmd == 0x03 || cmd == 0x04 || cmd == 0x05)
+		bytes += qq_putdata(raw_data + bytes, fill2, sizeof(fill2));
+	else
+		bytes += qq_putdata(raw_data + bytes, fill1, sizeof(fill1));
+
+	qq_send_cmd_mess(gc, QQ_CMD_ADD_BUDDY_POST, raw_data, bytes, 0, opt_req->auth_type);
+
+	buddy_opt_req_free(opt_req);
 }
 
-void qq_process_add_buddy_auth_ex(PurpleConnection *gc, guint8 *data, gint data_len, guint32 ship32)
+void qq_process_add_buddy_post( PurpleConnection *gc, guint8 *data, gint data_len, guintptr auth_type )
 {
+	guint32 uid;
 	g_return_if_fail(data != NULL && data_len != 0);
 
-	qq_show_packet("qq_process_question", data, data_len);
+	qq_get32(&uid, data+1);
+	//qq_show_packet("qq_process_add_buddy_post", data, data_len);
+
+	if (auth_type == 0)
+	{
+		qq_buddy_find_or_new(gc, uid, 0xFF);
+		qq_request_get_buddy_info(gc, uid, 0, 0);
+		qq_request_get_buddies_online(gc, 0, 0);
+		qq_request_get_level(gc, uid);
+	}
 }
 
-static void add_buddy_auth_cb(qq_buddy_req *add_req, const gchar *text)
+static void add_buddy_auth_cb(qq_buddy_opt_req *opt_req, const gchar *text)
 {
 	qq_data *qd;
-	g_return_if_fail(add_req != NULL);
-	if (add_req->gc == NULL || add_req->uid == 0) {
-		buddy_req_free(add_req);
-		return;
-	}
+	g_return_if_fail(opt_req != NULL && opt_req->gc);
 
-	qd = (qq_data *)add_req->gc->proto_data;
-	if (qd->client_version >= 2010) {
-		request_add_buddy_auth_ex(add_req->gc, add_req->uid,
-				text, add_req->auth, add_req->auth_len);
-	}
-	buddy_req_free(add_req);
+	qd = (qq_data *)opt_req->gc->proto_data;
+	qq_request_add_buddy_post(opt_req->gc, opt_req, text);
 }
 
 /* the real packet to reject and request is sent from here */
-static void buddy_add_deny_reason_cb(qq_buddy_req *add_req, const gchar *reason)
+static void buddy_add_deny_reason_cb(qq_buddy_opt_req *opt_req, const gchar *reason)
 {
-	g_return_if_fail(add_req != NULL);
-	if (add_req->gc == NULL || add_req->uid == 0) {
-		buddy_req_free(add_req);
+	g_return_if_fail(opt_req != NULL);
+	if (opt_req->gc == NULL || opt_req->uid == 0) {
+		buddy_opt_req_free(opt_req);
 		return;
 	}
 
-	request_add_buddy_auth(add_req->gc, add_req->uid, QQ_MY_AUTH_REJECT, reason);
-	buddy_req_free(add_req);
+	opt_req->auth_type = 0x05;
+
+	qq_request_add_buddy_post(opt_req->gc, opt_req, reason);
 }
 
-static void buddy_add_deny_noreason_cb(qq_buddy_req *add_req)
+static void buddy_add_deny_noreason_cb(qq_buddy_opt_req *opt_req)
 {
-	buddy_add_deny_reason_cb(add_req, NULL);
+	buddy_add_deny_reason_cb(opt_req, NULL);
 }
 
 /* we approve other's request of adding me as friend */
 static void buddy_add_authorize_cb(gpointer data)
 {
-	qq_buddy_req *add_req = (qq_buddy_req *)data;
+	qq_buddy_opt_req *opt_req = (qq_buddy_opt_req *)data;
 
-	g_return_if_fail(add_req != NULL);
-	if (add_req->gc == NULL || add_req->uid == 0) {
-		buddy_req_free(add_req);
+	g_return_if_fail(opt_req != NULL);
+	if (opt_req->gc == NULL || opt_req->uid == 0) {
+		buddy_opt_req_free(opt_req);
 		return;
 	}
 
-	request_add_buddy_auth(add_req->gc, add_req->uid, QQ_MY_AUTH_APPROVE, NULL);
-	buddy_req_free(add_req);
+	opt_req->auth_type = 0x03;
+
+	qq_request_add_buddy_post(opt_req->gc, opt_req, NULL);
 }
 
 /* we reject other's request of adding me as friend */
 static void buddy_add_deny_cb(gpointer data)
 {
-	qq_buddy_req *add_req = (qq_buddy_req *)data;
-	gchar *who = uid_to_purple_name(add_req->uid);
-	purple_request_input(add_req->gc, NULL, _("Authorization denied message:"),
+	qq_buddy_opt_req *opt_req = (qq_buddy_opt_req *)data;
+	gchar *who = uid_to_purple_name(opt_req->uid);
+	purple_request_input(opt_req->gc, NULL, _("Authorization denied message:"),
 			NULL, _("Sorry, you're not my style."), TRUE, FALSE, NULL,
 			_("OK"), G_CALLBACK(buddy_add_deny_reason_cb),
 			_("Cancel"), G_CALLBACK(buddy_add_deny_noreason_cb),
-			purple_connection_get_account(add_req->gc), who, NULL,
-			add_req);
+			purple_connection_get_account(opt_req->gc), who, NULL,
+			opt_req);
 	g_free(who);
 }
 
-static void add_buddy_no_auth_cb(qq_buddy_req *add_req)
+static void add_buddy_no_auth_cb(qq_buddy_opt_req *opt_req)
 {
 	qq_data *qd;
-	g_return_if_fail(add_req != NULL);
-	if (add_req->gc == NULL || add_req->uid == 0) {
-		buddy_req_free(add_req);
+	g_return_if_fail(opt_req != NULL);
+	if (opt_req->gc == NULL || opt_req->uid == 0) {
+		buddy_opt_req_free(opt_req);
 		return;
 	}
 
-	qd = (qq_data *) add_req->gc->proto_data;
-	if (qd->client_version >= 2010) {
-		request_add_buddy_no_auth(add_req->gc, add_req->uid);
-	}
-	buddy_req_free(add_req);
+	qd = (qq_data *) opt_req->gc->proto_data;
+	qq_request_add_buddy_touch(opt_req->gc, opt_req);
 }
 
-void add_buddy_authorize_input(PurpleConnection *gc, guint32 uid,
-		guint8 *auth, guint8 auth_len)
+void add_buddy_authorize_input( PurpleConnection *gc, qq_buddy_opt_req *opt_req )
 {
 	gchar *who, *msg;
-	qq_buddy_req *add_req;
-	g_return_if_fail(uid != 0);
+	g_return_if_fail(opt_req && opt_req->uid != 0 && opt_req->auth && opt_req->auth_len > 0);
 
-	add_req = g_new0(qq_buddy_req, 1);
-	add_req->gc = gc;
-	add_req->uid = uid;
-	add_req->auth = NULL;
-	add_req->auth_len = 0;
-	if (auth != NULL && auth_len > 0) {
-		add_req->auth = g_new0(guint8, auth_len);
-		g_memmove(add_req->auth, auth, auth_len);
-		add_req->auth_len = auth_len;
-	}
-
-	who = uid_to_purple_name(uid);
-	msg = g_strdup_printf(_("%u needs authorization"), uid);
+	who = uid_to_purple_name(opt_req->uid);
+	msg = g_strdup_printf(_("%s needs authorization"), who);
 	purple_request_input(gc, _("Add buddy authorize"), msg,
 			_("Enter request here"),
 			_("Would you be my friend?"),
@@ -669,7 +765,7 @@ void add_buddy_authorize_input(PurpleConnection *gc, guint32 uid,
 			_("Send"), G_CALLBACK(add_buddy_auth_cb),
 			_("Cancel"), G_CALLBACK(buddy_req_cancel_cb),
 			purple_connection_get_account(gc), who, NULL,
-			add_req);
+			opt_req);
 
 	g_free(msg);
 	g_free(who);
@@ -682,7 +778,8 @@ void add_buddy_authorize_input(PurpleConnection *gc, guint32 uid,
 void qq_add_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *group)
 {
 	qq_data *qd;
-	guint32 uid;
+	gchar * group_name;
+	qq_buddy_opt_req *opt_req;
 
 	g_return_if_fail(NULL != gc && NULL != gc->proto_data);
 	g_return_if_fail(buddy != NULL);
@@ -691,40 +788,45 @@ void qq_add_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *group)
 	if (!qd->is_login)
 		return;		/* IMPORTANT ! */
 
-	uid = purple_name_to_uid(purple_buddy_get_name(buddy));
-	if (uid > 0) {
-			request_add_buddy_no_auth(gc, uid);
+	if (purple_buddy_get_protocol_data(buddy))
+	{
+		purple_notify_error(gc, _("QQ Buddy"), _("Add buddy"), _("Buddy exists"));
+		return;
+	}
+
+	/* free it in qq_request_add_buddy_touch */
+	opt_req = g_new0(qq_buddy_opt_req, 1);
+	opt_req->gc = gc;
+	opt_req->uid = purple_name_to_uid(purple_buddy_get_name(buddy));
+
+	if (group)
+	{
+		group_name = purple_group_get_name(group);
+		if (!group_name)
+		{
+			purple_notify_error(gc, _("QQ Buddy"), _("Add buddy"), _("Group not exists"));
+			goto free;
+		}
+		opt_req->group_id = group_name_to_id(gc, group_name);
+		if (opt_req->group_id == 0xFF)
+		{
+			purple_notify_error(gc, _("QQ Buddy"), _("Add buddy"), _("Chosen Group not associated with this account"));
+			goto free;
+		}
+	} else opt_req->group_id = 0;
+	
+
+	if (opt_req->uid > 0) {
+		qq_request_add_buddy_touch(gc, opt_req);
 		return;
 	}
 
 	purple_notify_error(gc, _("QQ Buddy"), _("Add buddy"), _("Invalid QQ Number"));
-	if (buddy == NULL) {
-		return;
-	}
 
-	purple_debug_info("QQ", "Remove buddy with invalid QQ number %u\n", uid);
+free:
+	if (buddy == NULL)
+		return;
 	qq_buddy_free(buddy);
-}
-
-/*  process reply to add_buddy_auth request */
-void qq_process_add_buddy_auth(guint8 *data, gint data_len, PurpleConnection *gc)
-{
-	gchar **segments, *msg_utf8;
-
-	g_return_if_fail(data != NULL && data_len != 0);
-
-	if (data[0] == '0') {
-		purple_debug_info("QQ", "Reply OK for sending authorize\n");
-		return;
-	}
-
-	if (NULL == (segments = split_data(data, data_len, "\x1f", 2))) {
-		purple_notify_error(gc, _("QQ Buddy"), _("Failed sending authorize"), NULL);
-		return;
-	}
-	msg_utf8 = qq_to_utf8(segments[1], QQ_CHARSET_DEFAULT);
-	purple_notify_error(gc, _("QQ Buddy"), _("Failed sending authorize"), msg_utf8);
-	g_free(msg_utf8);
 }
 
 /* process the server reply for my request to remove a buddy */
@@ -766,117 +868,57 @@ void qq_process_buddy_remove_me(PurpleConnection *gc, guint8 *data, gint data_le
 	g_free(msg);
 }
 
-void qq_process_add_buddy_no_auth(PurpleConnection *gc,
-		guint8 *data, gint data_len, guint32 uid)
-{
-	qq_data *qd;
-	gchar **segments;
-	gchar *dest_uid, *reply;
-	PurpleBuddy *buddy;
-	qq_buddy_data *bd;
-
-	g_return_if_fail(data != NULL && data_len != 0);
-	g_return_if_fail(uid != 0);
-
-	qd = (qq_data *) gc->proto_data;
-
-	purple_debug_info("QQ", "Process buddy add for id [%u]\n", uid);
-	qq_show_packet("buddy_add_no_auth", data, data_len);
-
-	if (NULL == (segments = split_data(data, data_len, "\x1f", 2)))
-		return;
-
-	dest_uid = segments[0];
-	reply = segments[1];
-	if (strtoul(dest_uid, NULL, 10) != qd->uid) {	/* should not happen */
-		purple_debug_error("QQ", "Add buddy reply is to [%s], not me!\n", dest_uid);
-		g_strfreev(segments);
-		return;
-	}
-
-	if (strtol(reply, NULL, 10) == 0) {
-		/* add OK */
-		qq_buddy_find_or_new(gc, uid, 0xFF);
-
-		qq_request_get_buddy_info(gc, uid, 0, 0);
-		qq_request_get_level(gc, uid);
-		qq_request_get_buddies_online(gc, 0, 0);
-
-		purple_debug_info("QQ", "Succeed adding into %u's buddy list\n", uid);
-		g_strfreev(segments);
-		return;
-	}
-
-	/* need auth */
-	purple_debug_warning("QQ", "Failed adding buddy, need authorize\n");
-
-	buddy = qq_buddy_find(gc, uid);
-	if (buddy == NULL) {
-		buddy = qq_buddy_new(gc, uid, NULL);
-	}
-	if (buddy != NULL && (bd = purple_buddy_get_protocol_data(buddy)) != NULL) {
-		/* Not authorized now, free buddy data */
-		qq_buddy_data_free(bd);
-		purple_buddy_set_protocol_data(buddy, NULL);
-	}
-
-	add_buddy_authorize_input(gc, uid, NULL, 0);
-	g_strfreev(segments);
-}
-
-void qq_process_add_buddy_no_auth_ex(PurpleConnection *gc,
-		guint8 *data, gint data_len, guint32 uid)
+void qq_process_add_buddy_touch( PurpleConnection *gc, guint8 *data, gint data_len, qq_buddy_opt_req *opt_req )
 {
 	qq_data *qd;
 	gint bytes;
 	guint32 dest_uid;
 	guint8 reply;
-	guint8 auth_type;
 
 	g_return_if_fail(data != NULL && data_len >= 5);
-	g_return_if_fail(uid != 0);
+	g_return_if_fail(opt_req && opt_req->uid != 0);
 
 	qd = (qq_data *) gc->proto_data;
 
-	purple_debug_info("QQ", "Process buddy add no auth for id [%u]\n", uid);
+	purple_debug_info("QQ", "Process buddy add no auth for id [%u]\n", opt_req->uid);
 	qq_show_packet("buddy_add_no_auth_ex", data, data_len);
 
 	bytes = 0;
 	bytes += qq_get32(&dest_uid, data + bytes);
 	bytes += qq_get8(&reply, data + bytes);
 
-	g_return_if_fail(dest_uid == uid);
+	g_return_if_fail(dest_uid == opt_req->uid);
 
 	if (reply == 0x99) {
-		purple_debug_info("QQ", "Successfully added buddy %u\n", uid);
-		qq_buddy_find_or_new(gc, uid, 0xFF);
-
-		qq_request_get_buddy_info(gc, uid, 0, 0);
-		qq_request_get_level(gc, uid);
+		purple_debug_info("QQ", "Successfully added buddy %u\n", opt_req->uid);
+		qq_buddy_find_or_new(gc, opt_req->uid, opt_req->group_id);
+		qq_request_get_buddy_info(gc, opt_req->uid, 0, 0);
+		qq_request_get_level(gc, opt_req->uid);
 		qq_request_get_buddies_online(gc, 0, 0);
 		return;
 	}
 
 	if (reply != 0) {
 		purple_debug_info("QQ", "Failed adding buddy %u, Unknown reply 0x%02X\n",
-			uid, reply);
+			opt_req->uid, reply);
 	}
 
 	/* need auth */
 	g_return_if_fail(data_len > bytes);
-	bytes += qq_get8(&auth_type, data + bytes);
-	purple_debug_warning("QQ", "Adding buddy needs authorize 0x%02X\n", auth_type);
+	bytes += qq_get8(&opt_req->auth_type, data + bytes);
+	purple_debug_warning("QQ", "Adding buddy needs authorize 0x%02X\n", opt_req->auth_type);
 
-	switch (auth_type) {
+	switch (opt_req->auth_type) {
 		case 0x00:	/* no authorize */
-			break;
 		case 0x01:	/* authorize */
-			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_ADD_BUDDY, 0, uid);
+			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_ADD_BUDDY, 0, opt_req);
 			break;
 		case 0x02:	/* disable */
 			break;
 		case 0x03:	/* answer question */
-			qq_request_question(gc, QQ_QUESTION_REQUEST, uid, NULL, NULL);
+			qq_request_question(gc, QQ_QUESTION_REQUEST, opt_req->uid, NULL, NULL);
+			break;
+		case 0x04: /* deny! */
 			break;
 		default:
 			g_return_if_reached();
@@ -890,7 +932,7 @@ void qq_remove_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *grou
 {
 	qq_data *qd;
 	qq_buddy_data *bd;
-	guint32 uid;
+	qq_buddy_opt_req *opt_req;
 
 	g_return_if_fail(gc != NULL && gc->proto_data != NULL);
 	g_return_if_fail(buddy != NULL);
@@ -899,11 +941,14 @@ void qq_remove_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *grou
 	if (!qd->is_login)
 		return;
 
-	uid = purple_name_to_uid(purple_buddy_get_name(buddy));
-	if (uid > 0 && uid != qd->uid) {
-		if (qd->client_version >= 2010) {
-			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_REMOVE_BUDDY, 0, uid);
-		}	}
+	/* free it in qq_request_remove_buddy */
+	opt_req = g_new0(qq_buddy_opt_req, 1);
+	opt_req->gc = gc;
+	opt_req->uid = purple_name_to_uid(purple_buddy_get_name(buddy));
+	
+	if (opt_req->uid  > 0 && opt_req->uid  != qd->uid) {
+			qq_request_auth_token(gc, QQ_AUTH_INFO_BUDDY, QQ_AUTH_INFO_REMOVE_BUDDY, 0, opt_req);
+	}
 
 	if ((bd = purple_buddy_get_protocol_data(buddy)) != NULL) {
 		qq_buddy_data_free(bd);
@@ -911,29 +956,27 @@ void qq_remove_buddy(PurpleConnection *gc, PurpleBuddy *buddy, PurpleGroup *grou
 	} else {
 		purple_debug_warning("QQ", "Empty buddy data of %s\n", purple_buddy_get_name(buddy));
 	}
-
-	/* Do not call purple_blist_remove_buddy,
-	 * otherwise purple segmentation fault */
 }
 
 static void buddy_add_input(PurpleConnection *gc, guint32 uid, gchar *reason)
 {
 	PurpleAccount *account = purple_connection_get_account(gc);
-	qq_buddy_req *add_req;
+	qq_buddy_opt_req *opt_req;
 	gchar *who;
 
 	g_return_if_fail(uid != 0 && reason != NULL);
 
 	purple_debug_info("QQ", "Buddy %u request adding, msg: %s\n", uid, reason);
 
-	add_req = g_new0(qq_buddy_req, 1);
-	add_req->gc = gc;
-	add_req->uid = uid;
+	/* free it in qq_process_add_buddy_post */
+	opt_req = g_new0(qq_buddy_opt_req, 1);
+	opt_req->gc = gc;
+	opt_req->uid = uid;
 
 	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
-		qq_request_get_buddy_info(gc, add_req->uid, 0, QQ_BUDDY_INFO_DISPLAY);
+		qq_request_get_buddy_info(gc, opt_req->uid, 0, QQ_BUDDY_INFO_DISPLAY);
 	}
-	who = uid_to_purple_name(add_req->uid);
+	who = uid_to_purple_name(opt_req->uid);
 
 	purple_account_request_authorization(account,
 	 		who, NULL,
@@ -941,39 +984,12 @@ static void buddy_add_input(PurpleConnection *gc, guint32 uid, gchar *reason)
 			purple_find_buddy(account, who) != NULL,
 			buddy_add_authorize_cb,
 			buddy_add_deny_cb,
-			add_req);
+			opt_req);
 
 	g_free(who);
 }
 
-/* someone wants to add you to his buddy list */
-static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *to,
-		guint8 *data, gint data_len)
-{
-	guint32 uid;
-	gchar *msg, *reason;
-
-	g_return_if_fail(from != NULL && to != NULL);
-	uid = strtoul(from, NULL, 10);
-	g_return_if_fail(uid != 0);
-
-	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
-		qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
-	}
-
-	if (data_len <= 0) {
-		reason = g_strdup( _("No reason given") );
-	} else {
-		msg = g_strndup((gchar *)data, data_len);
-		reason = qq_to_utf8(msg, QQ_CHARSET_DEFAULT);
-		if (reason == NULL)	reason = g_strdup( _("Unknown reason") );
-		g_free(msg);
-	}
-
-	buddy_add_input(gc, uid, reason);
-	g_free(reason);
-}
-
+/* no longer needed
 void qq_process_buddy_check_code(PurpleConnection *gc, guint8 *data, gint data_len)
 {
 	gint bytes;
@@ -987,7 +1003,7 @@ void qq_process_buddy_check_code(PurpleConnection *gc, guint8 *data, gint data_l
 	qq_show_packet("buddy_check_code", data, data_len);
 
 	bytes = 0;
-	bytes += qq_get8(&cmd, data + bytes);		/* 0x03 */
+	bytes += qq_get8(&cmd, data + bytes);		//0x03
 	bytes += qq_get8(&reply, data + bytes);
 
 	if (reply == 0) {
@@ -1051,8 +1067,10 @@ static gint server_buddy_check_code(PurpleConnection *gc,
 	request_buddy_check_code(gc, from, code, code_len);
 	return bytes;
 }
+*/
 
-static void server_buddy_add_request_ex(PurpleConnection *gc, gchar *from, gchar *to,
+/* someone wants to add you to his buddy list */
+static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *to,
 		guint8 *data, gint data_len)
 {
 	gint bytes;
@@ -1065,12 +1083,12 @@ static void server_buddy_add_request_ex(PurpleConnection *gc, gchar *from, gchar
 	uid = strtoul(from, NULL, 10);
 	g_return_if_fail(uid != 0);
 
-	/* qq_show_packet("server_buddy_add_request_ex", data, data_len); */
+	/* qq_show_packet("server_buddy_add_request", data, data_len); */
 
 	bytes = 0;
 	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, sizeof(guint8), data+bytes);
 	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
-	server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
+	//server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 
 	if (strlen(msg) <= 0) {
 		g_free(msg);
@@ -1084,58 +1102,22 @@ static void server_buddy_add_request_ex(PurpleConnection *gc, gchar *from, gchar
 static void server_buddy_added(PurpleConnection *gc, gchar *from, gchar *to,
 		guint8 *data, gint data_len)
 {
-	PurpleAccount *account = purple_connection_get_account(gc);
-	PurpleBuddy *buddy;
 	guint32 uid;
-	qq_buddy_req *add_req;
-	gchar *who;
-	gchar *primary;
 
 	g_return_if_fail(from != NULL && to != NULL);
+	g_return_if_fail(data != NULL);
 
-	uid = strtoul(from, NULL, 10);
-	who = uid_to_purple_name(uid);
+	qq_show_packet("server_buddy_added", data, data_len);
 
-	buddy = purple_find_buddy(account, who);
-	if (buddy != NULL) {
-		purple_account_notify_added(account, from, to, NULL, NULL);
-	}
+	purple_debug_info("QQ", "Buddy %s added \n", from);
 
-	add_req = g_new0(qq_buddy_req, 1);
-	add_req->gc = gc;
-	add_req->uid = uid;	/* only need to get value */
-	primary = g_strdup_printf(_("You have been added by %s"), from);
-	purple_request_action(gc, NULL, primary,
-			_("Would you like to add him?"),
-			PURPLE_DEFAULT_ACTION_NONE,
-			purple_connection_get_account(gc), who, NULL,
-			add_req, 2,
-			_("Add"), G_CALLBACK(add_buddy_no_auth_cb),
-			_("Cancel"), G_CALLBACK(buddy_req_cancel_cb));
+	//server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 
-	g_free(who);
-	g_free(primary);
-}
-
-static void server_buddy_added_ex(PurpleConnection *gc, gchar *from, gchar *to,
-		guint8 *data, gint data_len)
-{
-	gint bytes;
-	guint8 allow_reverse;
-	gchar *msg;
-
-	g_return_if_fail(from != NULL && to != NULL);
-	g_return_if_fail(data != NULL && data_len >= 3);
-
-	qq_show_packet("server_buddy_added_ex", data, data_len);
-
-	bytes = 0;
-	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, sizeof(guint8), data+bytes);	/* always empty msg */
-	purple_debug_info("QQ", "Buddy added msg: %s\n", msg);
-	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
-	server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
-
-	g_free(msg);
+	uid = purple_name_to_uid(from);
+	qq_buddy_find_or_new(gc, uid, 0xFF);
+	qq_request_get_buddy_info(gc, uid, 0, 0);
+	qq_request_get_buddies_online(gc, 0, 0);
+	qq_request_get_level(gc, uid);
 }
 
 static void server_buddy_adding_ex(PurpleConnection *gc, gchar *from, gchar *to,
@@ -1151,7 +1133,7 @@ static void server_buddy_adding_ex(PurpleConnection *gc, gchar *from, gchar *to,
 
 	bytes = 0;
 	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
-	server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
+	//server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 }
 
 /* the buddy approves your request of adding him/her as your friend */
@@ -1169,7 +1151,7 @@ static void server_buddy_added_me(PurpleConnection *gc, gchar *from, gchar *to,
 	uid = strtoul(from, NULL, 10);
 	g_return_if_fail(uid > 0);
 
-	server_buddy_check_code(gc, from, data, data_len);
+	//server_buddy_check_code(gc, from, data, data_len);
 
 	qq_buddy_find_or_new(gc, uid, 0xFF);
 	qq_request_get_buddy_info(gc, uid, 0, 0);
@@ -1204,7 +1186,7 @@ static void server_buddy_rejected_me(PurpleConnection *gc, gchar *from, gchar *t
 			g_strfreev(segments);
 			bytes = strlen(msg) + 1;
 			if (bytes < data_len) {
-				server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
+				//server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 			}
 		} else {
 			msg = g_strdup( _("No reason given") );
@@ -1240,14 +1222,8 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 		gchar *from, gchar *to, guint8 *data, gint data_len)
 {
 	switch (funct) {
-	case QQ_SERVER_BUDDY_ADDED:
-		server_buddy_added(gc, from, to, data, data_len);
-		break;
 	case QQ_SERVER_BUDDY_ADD_REQUEST:
 		server_buddy_add_request(gc, from, to, data, data_len);
-		break;
-	case QQ_SERVER_BUDDY_ADD_REQUEST_EX:
-		server_buddy_add_request_ex(gc, from, to, data, data_len);
 		break;
 	case QQ_SERVER_BUDDY_ADDED_ME:
 		server_buddy_added_me(gc, from, to, data, data_len);
@@ -1255,8 +1231,8 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 	case QQ_SERVER_BUDDY_REJECTED_ME:
 		server_buddy_rejected_me(gc, from, to, data, data_len);
 		break;
-	case QQ_SERVER_BUDDY_ADDED_EX:
-		server_buddy_added_ex(gc, from, to, data, data_len);
+	case QQ_SERVER_BUDDY_ACCEPTED:
+		server_buddy_added(gc, from, to, data, data_len);
 		break;
 	case QQ_SERVER_BUDDY_ADDING_EX:
 	case QQ_SERVER_BUDDY_ADDED_ANSWER:
@@ -1266,4 +1242,73 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 		purple_debug_warning("QQ", "Unknow buddy operate (%d) from server\n", funct);
 		break;
 	}
+}
+
+void qq_request_search_uid(PurpleConnection *gc, qq_buddy_opt_req *opt_req)
+{
+	guint8 raw_data[8];
+	gint bytes;
+
+	g_return_if_fail(opt_req && opt_req->uid > 0);
+	
+	bytes = 0;
+	bytes += qq_put8(raw_data + bytes, 0x03);
+	bytes += qq_put32(raw_data + bytes, opt_req->uid);
+
+	qq_send_cmd_mess(gc, QQ_CMD_SEARCH_UID, raw_data, bytes, 0, (guintptr)opt_req);
+}
+
+void qq_process_search_uid( PurpleConnection *gc, guint8 *data, gint data_len, qq_buddy_opt_req *opt_req )
+{
+	gint bytes;
+	guint32 uid;
+	guint8 status;
+	gchar * name;
+	guint16 icon;
+
+	g_return_if_fail(data != NULL && data_len != 0);
+	g_return_if_fail(opt_req && opt_req->uid != 0);
+
+	//qq_show_packet("qq_process_search_uid", data, data_len);
+	bytes = 7;
+	bytes += qq_get32(&uid, data + bytes);
+	g_return_if_fail(uid == opt_req->uid);
+
+	bytes ++;
+	bytes += qq_get8(&status, data + bytes);
+
+	bytes += 4;
+	bytes += qq_get_vstr(&name, NULL, sizeof(guint8), data + bytes);
+	bytes += qq_get16(&icon, data + bytes);
+
+	bytes += 13;
+	bytes += qq_get16(&opt_req->no_auth_len, data + bytes);
+	if (opt_req->no_auth)
+	{
+		opt_req->no_auth = g_new0(guint8, opt_req->no_auth_len);
+		bytes += qq_getdata(opt_req->no_auth, opt_req->no_auth_len, data + bytes);
+	}
+
+	qq_request_add_buddy_post(gc, opt_req, NULL);
+}
+
+guint8 group_name_to_id(PurpleConnection *gc, const gchar * group_name)
+{
+	qq_data * qd;
+	GSList *l;
+	qq_group *g;
+	g_return_val_if_fail(gc && gc->proto_data, 0xFF);
+
+	qd = (qq_data *)gc->proto_data;
+
+	for(l=qd->group_list; l; l=l->next)
+	{
+		g = l->data;
+		if (g_strcmp0(g->group_name, group_name) ==0)
+			break;
+	}
+	if (l)
+		return g->group_id;
+	else
+		return 0xFF;
 }

@@ -59,7 +59,7 @@ struct _qq_transaction {
 	gint scan_times;
 
 	guint32 update_class;
-	guint32 ship32;
+	guintptr ship_value;
 };
 
 gboolean qq_trans_is_server(qq_transaction *trans)
@@ -103,11 +103,11 @@ guint32 qq_trans_get_class(qq_transaction *trans)
 guint32 qq_trans_get_ship(qq_transaction *trans)
 {
 	g_return_val_if_fail(trans != NULL, 0);
-	return trans->ship32;
+	return trans->ship_value;
 }
 
 static qq_transaction *trans_create(PurpleConnection *gc, gint fd,
-	guint16 cmd, guint16 seq, guint8 *data, gint data_len, guint32 update_class, guint32 ship32)
+	guint16 cmd, guint16 seq, guint8 *data, gint data_len, guint32 update_class, guintptr ship_value)
 {
 	qq_transaction *trans;
 
@@ -129,7 +129,7 @@ static qq_transaction *trans_create(PurpleConnection *gc, gint fd,
 	}
 
 	trans->update_class = update_class;
-	trans->ship32 = ship32;
+	trans->ship_value = ship_value;
 	return trans;
 }
 
@@ -178,10 +178,10 @@ static qq_transaction *trans_find(PurpleConnection *gc, guint16 cmd, guint16 seq
 }
 
 void qq_trans_add_client_cmd(PurpleConnection *gc,
-	guint16 cmd, guint16 seq, guint8 *data, gint data_len, guint32 update_class, guint32 ship32)
+	guint16 cmd, guint16 seq, guint8 *data, gint data_len, guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd = (qq_data *)gc->proto_data;
-	qq_transaction *trans = trans_create(gc, qd->fd, cmd, seq, data, data_len, update_class, ship32);
+	qq_transaction *trans = trans_create(gc, qd->fd, cmd, seq, data, data_len, update_class, ship_value);
 
 	if (cmd == QQ_CMD_LOGIN || cmd == QQ_CMD_KEEP_ALIVE) {
 		trans->flag |= QQ_TRANS_IS_IMPORT;
@@ -218,11 +218,11 @@ qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 s
 
 void qq_trans_add_room_cmd(PurpleConnection *gc,
 		guint16 seq, guint8 room_cmd, guint32 room_id, guint8 *data, gint data_len,
-		guint32 update_class, guint32 ship32)
+		guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd = (qq_data *)gc->proto_data;
 	qq_transaction *trans = trans_create(gc, qd->fd, QQ_CMD_ROOM, seq, data, data_len,
-			update_class, ship32);
+			update_class, ship_value);
 
 	trans->room_cmd = room_cmd;
 	trans->room_id = room_id;

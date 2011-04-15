@@ -121,7 +121,7 @@ static gint get_buddy_status(qq_buddy_status *bs, guint8 *data)
 	/* 000-003: uid */
 	bytes += qq_get32(&bs->uid, data + bytes);
 	/* 004-004: 0x01 */
-	bytes += qq_get8(&bs->unknown1, data + bytes);
+	bytes += qq_get8(&bs->flag1, data + bytes);
 	/* this is no longer the IP, it seems QQ (as of 2006) no longer sends
 	 * the buddy's IP in this packet. all 0s */
 	/* 005-008: ip */
@@ -129,8 +129,8 @@ static gint get_buddy_status(qq_buddy_status *bs, guint8 *data)
 	/* port info is no longer here either */
 	/* 009-010: port */
 	bytes += qq_get16(&bs->port, data + bytes);
-	/* 011-011: 0x00 */
-	bytes += qq_get8(&bs->unknown2, data + bytes);
+	/* 011-011: normally 0x00, if send blacklist notify, it's sizeof data after */
+	bytes += qq_get8(&bs->flag2, data + bytes);
 	/* 012-012: status */
 	bytes += qq_get8(&bs->status, data + bytes);
 	/* 013-014: client tag */
@@ -138,16 +138,16 @@ static gint get_buddy_status(qq_buddy_status *bs, guint8 *data)
 	/* 015-030: unknown key */
 	bytes += qq_getdata(bs->key, QQ_KEY_LENGTH, data + bytes);
 	/* 031-032: */
-	bytes += qq_get16(&bs->unknown3, data + bytes);
+	bytes += qq_get16(&bs->unknown, data + bytes);
 	/* 033-033: ext_flag */
 	bytes += qq_get8(&bs->ext_flag, data + bytes);
 	/* 034-034: comm_flag */
 	bytes += qq_get8(&bs->comm_flag, data + bytes);
 
-	purple_debug_info("QQ", "Status: %d, uid: %u, ip: %s:%d, Group id: 0x%X, Flag: 0x%X, U: %d - %d - %d, Ver: %04X\n",
+	purple_debug_info("QQ", "Status: %d, uid: %u, ip: %s:%d Flag: 0x%X - 0x%X, Unknown: %d - %d - %d, Ver: %04X\n",
 			bs->status, bs->uid, inet_ntoa(bs->ip), bs->port,
 			bs->ext_flag, bs->comm_flag, 
-			bs->unknown1, bs->unknown2, bs->unknown3, bs->version);
+			bs->flag1, bs->flag2, bs->unknown, bs->version);
 
 	return bytes;
 }
@@ -164,8 +164,6 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 	int entry_len = 42;
 
 	qq_buddy_status bs;
-	guint16 unknown;
-	guint8 ending;		/* 0x00 */
 
 	g_return_val_if_fail(data != NULL && data_len != 0, -1);
 
@@ -191,11 +189,11 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 		/* 000-034 qq_buddy_status */
 		bytes += get_buddy_status(&bs, data + bytes);
 		/* 035-036: */
-		bytes += qq_get16(&unknown, data + bytes);
+		//bytes += qq_get16(&unknown, data + bytes);
 		/* 037-037: */
-		bytes += qq_get8(&ending, data + bytes);	/* 0x00 */
+		//bytes += qq_get8(&ending, data + bytes);	/* 0x00 */
 
-		bytes += 4;
+		bytes += 7;
 
 		if (bs.uid == 0 || (bytes - bytes_start) != entry_len) {
 			purple_debug_error("QQ", "uid=0 or entry complete len(%d) != %d\n",
@@ -215,10 +213,7 @@ guint8 qq_process_get_buddies_online(guint8 *data, gint data_len, PurpleConnecti
 					"Got an online buddy %u, but not in my buddy list\n", bs.uid);
 			continue;
 		}
-		/*
-		if(0 != fe->s->client_tag)
-			q_bud->client_tag = fe->s->client_tag;
-		*/
+
 		if (bd->status != bs.status || bd->comm_flag != bs.comm_flag) {
 			bd->status = bs.status;
 			bd->comm_flag = bs.comm_flag;
@@ -351,7 +346,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 
 		qq_filter_str(bd.nickname);
 
-		/* Fixme: merge following as 32bit flag */
+		/* TODO: merge following as 32bit flag */
 		bytes += qq_get16(&unknown, data + bytes);
 		bytes += qq_get8(&bd.ext_flag, data + bytes);
 		bytes += qq_get8(&bd.comm_flag, data + bytes);
@@ -496,7 +491,6 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 {
 	qq_data *qd;
 	gint bytes;
-	guint32 my_uid;
 	PurpleBuddy *buddy;
 	qq_buddy_data *bd;
 	qq_buddy_status bs;
@@ -505,10 +499,12 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 
 	qd = (qq_data *) gc->proto_data;
 
+	/*
 	if (data_len < 35) {
 		purple_debug_error("QQ", "[buddy status change] only %d, need 35 bytes\n", data_len);
 		return;
 	}
+	*/
 
 	memset(&bs, 0, sizeof(bs));
 	bytes = 0;
@@ -517,16 +513,25 @@ void qq_process_buddy_change_status(guint8 *data, gint data_len, PurpleConnectio
 	/* 034-037:  my uid */
 	/* This has a value of 0 when we've changed our status to
 	 * QQ_BUDDY_ONLINE_INVISIBLE */
-	bytes += qq_get32(&my_uid, data + bytes);
+	//bytes += qq_get32(&my_uid, data + bytes);
 
-	/* update buddy information */
 	buddy = qq_buddy_find_or_new(gc, bs.uid, 0xFF);
+
+	/* qq has been blacklisted! */
+	if (bs.flag1 == 0x00 && bs.flag2 == 0x14)
+	{
+		purple_debug_warning("QQ", "%u blacklist us!\n", bs.uid);
+		if (buddy) qq_buddy_free(buddy);
+		return;
+	}
+
 	bd = (buddy == NULL) ? NULL : (qq_buddy_data *)purple_buddy_get_protocol_data(buddy);
 	if (bd == NULL) {
 		purple_debug_warning("QQ", "Got status of no-auth buddy %u\n", bs.uid);
 		return;
 	}
 
+	/* update buddy information */
 	if(bs.ip.s_addr != 0) {
 		bd->ip.s_addr = bs.ip.s_addr;
 		bd->port = bs.port;

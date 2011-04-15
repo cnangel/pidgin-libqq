@@ -41,12 +41,9 @@ enum {
 	QQ_CMD_LOGOUT = 0x0062,				/* log out */
 				/* get onlines from tencent */
 	QQ_CMD_UPDATE_INFO = 0x0004,			/* update information */
-	QQ_CMD_SEARCH_USER = 0x0005,			/* search for user */
 	QQ_CMD_GET_BUDDY_INFO = 0x003C,			/* get user information */
 	QQ_CMD_GET_BUDDIES_SIGN = 	0x0067,			/* get buddy signature */
-	QQ_CMD_ADD_BUDDY_NO_AUTH = 0x0009,		/* add buddy without auth */
 	QQ_CMD_REMOVE_BUDDY = 0x000a,			/* delete a buddy  */
-	QQ_CMD_ADD_BUDDY_AUTH = 0x000b,			/* buddy authentication */
 	QQ_CMD_CHANGE_STATUS = 0x000d,		/* change my online status */
 	QQ_CMD_GET_GROUP_LIST = 0x0001,		/* get buddy group label */
 	QQ_CMD_ACK_SYS_MSG = 0x0012,			/* ack system message */
@@ -62,7 +59,7 @@ enum {
 	QQ_CMD_CELL_PHONE_2 = 0x0029,			/* cell phone 2 */
 	QQ_CMD_ROOM = 0x0002,			/* room command */
 	QQ_CMD_GET_LEVEL = 0x005C,			/* get level for one or more buddies */
-	QQ_CMD_RECV_NOTIFY = 0x0080,			/* receive a system message */
+	QQ_CMD_RECV_MSG_SYS = 0x0080,			/* receive a system message */
 	QQ_CMD_BUDDY_CHANGE_STATUS = 0x0081,	/* buddy change status */
 	QQ_CMD_BUDDY_MEMO = 0x003E,    /* the message about buddy memo */
 
@@ -80,10 +77,10 @@ enum {
 	QQ_CMD_LOGIN_EC = 0x00EC,
 	QQ_CMD_LOGIN_ED = 0x00ED,
 	QQ_CMD_KEEP_ALIVE = 0x0058,
-
+	QQ_CMD_SEARCH_UID = 0x0115,
 	QQ_CMD_AUTH_TOKEN = 0x00AE,				/* the request verification of information */
-	QQ_CMD_ADD_BUDDY_NO_AUTH_EX = 0x00A7,			/* add friend without auth */
-	QQ_CMD_ADD_BUDDY_AUTH_EX = 0x00A8, 				/* add buddy with auth */
+	QQ_CMD_ADD_BUDDY_TOUCH = 0x00A7,			/* add friend without auth */
+	QQ_CMD_ADD_BUDDY_POST = 0x00A8, 				/* add buddy with auth */
 	QQ_CMD_BUDDY_CHECK_CODE =  0x00B5,
 	QQ_CMD_BUDDY_QUESTION =  0x00B7
 };
@@ -121,16 +118,14 @@ enum {
 const gchar *qq_get_room_cmd_desc(gint room_cmd);
 
 enum {
-	QQ_SERVER_BUDDY_ADDED = 1,
-	QQ_SERVER_BUDDY_ADD_REQUEST = 2,
 	QQ_SERVER_BUDDY_ADDED_ME = 3,
 	QQ_SERVER_BUDDY_REJECTED_ME = 4,
 	QQ_SERVER_NOTICE= 6,
 	QQ_SERVER_NEW_CLIENT = 9,
 	QQ_SERVER_BUDDY_ADDING_EX = 40,
-	QQ_SERVER_BUDDY_ADD_REQUEST_EX = 41,
+	QQ_SERVER_BUDDY_ADD_REQUEST = 41,
 	QQ_SERVER_BUDDY_ADDED_ANSWER = 42,
-	QQ_SERVER_BUDDY_ADDED_EX = 43
+	QQ_SERVER_BUDDY_ACCEPTED = 43
 };
 
 enum {

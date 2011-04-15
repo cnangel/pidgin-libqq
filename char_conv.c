@@ -95,21 +95,29 @@ gint qq_get_vstr( gchar **ret, const gchar *from_charset, gsize len_size, guint8
 	return len + len_size;
 }
 
-gint qq_put_vstr(guint8 *buf, const gchar *str_utf8, const gchar *to_charset)
+gint qq_put_vstr( guint8 *buf, const gchar *str_utf8, gsize len_size, const gchar *to_charset )
 {
 	gchar *str;
 	guint32 len;
+	guint i;
 
-	if (str_utf8 == NULL || str_utf8[0] == '\0') {
-		buf[0] = 0;
-		return 1;
+
+	if (str_utf8 == NULL)	len = 0;
+	else	{
+		len = strlen(str_utf8);
+
+		if (to_charset) {
+			str = do_convert(str_utf8, -1, &len, to_charset, UTF8);
+			if (len > 0)	g_memmove(buf + len_size, str, len);
+		}
+		else	g_memmove(buf + len_size, str_utf8, len);
 	}
-	str = do_convert(str_utf8, -1, &len, to_charset, UTF8);
-	buf[0] = len;
-	if (len > 0) {
-		memcpy(buf + 1, str, len);
-	}
-	return 1 + len;
+	
+	/* TODO: this part not working on BIG ENDIAN */
+	for (i=0; i<len_size; ++i)
+		buf[i] = *((guint8 *)(&len)+len_size-1-i);
+
+	return len_size + len;
 }
 
 /* Warning: do not return NULL */

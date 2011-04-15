@@ -365,7 +365,7 @@ typedef struct {
 	guint16 token_len;
 } qq_captcha_request;
 
-static void captcha_request_destory(qq_captcha_request *captcha_req)
+static void captcha_request_destroy(qq_captcha_request *captcha_req)
 {
 	g_return_if_fail(captcha_req != NULL);
 	if (captcha_req->token) g_free(captcha_req->token);
@@ -379,7 +379,7 @@ static void captcha_input_cancel_cb(qq_captcha_request *captcha_req,
 			PURPLE_CONNECTION_ERROR_AUTHENTICATION_FAILED,
 			_("Failed captcha verification"));
 
-	captcha_request_destory(captcha_req);
+	captcha_request_destroy(captcha_req);
 }
 
 static void captcha_input_ok_cb(qq_captcha_request *captcha_req,
@@ -402,7 +402,7 @@ static void captcha_input_ok_cb(qq_captcha_request *captcha_req,
 			captcha_req->token, captcha_req->token_len,
 			(guint8 *)code, strlen(code));
 
-	captcha_request_destory(captcha_req);
+	captcha_request_destroy(captcha_req);
 }
 
 void qq_captcha_input_dialog(PurpleConnection *gc,qq_captcha_data *captcha)
@@ -812,6 +812,7 @@ guint8 qq_process_verify_DE( PurpleConnection *gc, guint8 *data, gint data_len )
 	bytes += 2;	//size of size + token
 
 	bytes += qq_get16(&qd->ld.token_verify_de_len, data+bytes);
+	qd->ld.token_verify_de = g_new0(guint8, qd->ld.token_verify_de_len);
 	bytes += qq_getdata(qd->ld.token_verify_de, qd->ld.token_verify_de_len, data+bytes);
 
 	return QQ_LOGIN_REPLY_OK;

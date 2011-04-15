@@ -31,14 +31,14 @@
 #include "qq.h"
 typedef struct _qq_buddy_status {
 	guint32 uid;
-	guint8 unknown1;
+	guint8 flag1;
 	struct in_addr ip;
 	guint16 port;
-	guint8 unknown2;
+	guint8 flag2;
 	guint8 status;
 	guint16 version;
 	guint8 key[QQ_KEY_LENGTH];
-	guint16 unknown3;
+	guint16 unknown;
 	guint8 ext_flag;
 	guint8 comm_flag;
 } qq_buddy_status;

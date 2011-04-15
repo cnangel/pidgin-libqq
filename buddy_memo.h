@@ -34,7 +34,7 @@
 /* clan command for memo */
 #define 	QQ_BUDDY_MEMO_MODIFY 0x01		/* upload memo */
 #define 	QQ_BUDDY_MEMO_REMOVE	0x02	/* remove memo */
-#define 	QQ_BUDDY_MEMO_GET 0x67		/* get memo */
+#define 	QQ_BUDDY_MEMO_GET 0x6f		/* get memo */
 #define  QQ_BUDDY_MEMO_ALIAS 0x68		/* get buddies alias list */
 
 

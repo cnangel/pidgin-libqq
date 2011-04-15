@@ -139,16 +139,14 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_KEEP_ALIVE";
 	case QQ_CMD_UPDATE_INFO:
 		return "CMD_UPDATE_INFO";
-	case QQ_CMD_SEARCH_USER:
-		return "CMD_SEARCH_USER";
 	case QQ_CMD_GET_BUDDY_INFO:
 		return "CMD_GET_BUDDY_INFO";
-	case QQ_CMD_ADD_BUDDY_NO_AUTH:
-		return "CMD_ADD_BUDDY_NO_AUTH";
+	case QQ_CMD_ADD_BUDDY_TOUCH:
+		return "CMD_ADD_BUDDY_TOUCH";
 	case QQ_CMD_REMOVE_BUDDY:
 		return "CMD_REMOVE_BUDDY";
-	case QQ_CMD_ADD_BUDDY_AUTH:
-		return "CMD_ADD_BUDDY_AUTH";
+	case QQ_CMD_ADD_BUDDY_POST:
+		return "CMD_ADD_BUDDY_POST";
 	case QQ_CMD_CHANGE_STATUS:
 		return "CMD_CHANGE_STATUS";
 	case QQ_CMD_ACK_SYS_MSG:
@@ -181,7 +179,7 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_ROOM";
 	case QQ_CMD_GET_LEVEL:
 		return "CMD_GET_LEVEL";
-	case QQ_CMD_RECV_NOTIFY:
+	case QQ_CMD_RECV_MSG_SYS:
 		return "CMD_RECV_MSG_SYS";
 	case QQ_CMD_BUDDY_CHANGE_STATUS:
 		return "CMD_BUDDY_CHANGE_STATUS";
@@ -199,10 +197,8 @@ const gchar *qq_get_cmd_desc(gint cmd)
 		return "CMD_VERIFY_E3";
 	case QQ_CMD_AUTH_TOKEN:
 		return "CMD_AUTH_TOKEN";
-	case QQ_CMD_ADD_BUDDY_NO_AUTH_EX:
-		return "CMD_ADD_BUDDY_NO_AUTH_EX";
-	case QQ_CMD_ADD_BUDDY_AUTH_EX:
-		return "CMD_BUDDY_ADD_AUTH_EX";
+	case QQ_CMD_SEARCH_UID:
+		return "CMD_SEARCH_UID";
 	case QQ_CMD_BUDDY_CHECK_CODE:
 		return "CMD_BUDDY_CHECK_CODE";
 	case QQ_CMD_BUDDY_QUESTION:

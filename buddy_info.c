@@ -318,16 +318,18 @@ void request_change_info(PurpleConnection *gc, guint8 *data, guint8 *token, guin
 	guint8 raw_data[MAX_PACKET_SIZE - 128] = {0};
 	guint i = 0;
 	guint16 size;
+	qq_buddy_opt_req *opt_req;
 
 	g_return_if_fail(data != NULL);
 
 	if (!token_size || token == NULL)
 	{
-		qq_request_auth_token(gc, 0x01, 0x0007, (guint32)data, 0);
+		/* free it in request_add_buddy_auth */
+		opt_req = g_new0(qq_buddy_opt_req, 1);
+		qq_request_auth_token(gc, 0x01, 0x0007, (guint32)data, opt_req);
 		return;
 	}
 	
-
 	bytes += qq_put8(raw_data + bytes, (guint8)token_size);
 	bytes += qq_putdata(raw_data + bytes, token, token_size);
 	bytes += qq_put16(raw_data + bytes, 0x0001);

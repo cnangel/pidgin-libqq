@@ -295,9 +295,9 @@ void qq_process_get_buddy_memo( PurpleConnection *gc, guint8* data, gint data_le
 	guint i;
 
 	g_return_if_fail(NULL != gc && NULL != data && 0 != data_len);
-	/*
-	   qq_show_packet("MEMO REACH", data, data_len);
-	   */
+
+	//qq_show_packet("MEMO REACH", data, data_len);
+
 	purple_debug_info("QQ", "index=0x%02X\n", index);
 
 	bytes = 0;
@@ -397,11 +397,11 @@ void qq_request_buddy_memo( PurpleConnection *gc, guint32 index, guint32 update_
 		/* need one byte of bd_index, just make a conversion */
 	} else {
 		bytes += qq_put32(raw_data+bytes, index);
+		memset(raw_data+bytes, 0x00, 4);
+		bytes += 4;
 	}
 	
-	/*
-	   qq_show_packet("MEMO REQUEST", raw_data, bytes);
-	   */
+	//qq_show_packet("MEMO REQUEST", raw_data, bytes);
 
 	qq_send_cmd_mess(gc, QQ_CMD_BUDDY_MEMO, (guint8*)raw_data, bytes, update_class , index);
 }

@@ -52,7 +52,7 @@ struct _qq_room_data {
 	guint8 auth_type;
 	gchar *name;
 	gchar *bulletin;	
-	gchar *intro;			/* TOFIX display these info */
+	gchar *intro;			/* TODO: display these info */
 	guint8 *token;
 	/* all these will be loaded from the network */
 

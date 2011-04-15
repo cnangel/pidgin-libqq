@@ -270,7 +270,7 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 	guint8 room_cmd;
 	guint32 room_id;
 	guint32 update_class;
-	guint32 ship32;
+	guintptr ship_value;
 	int ret;
 
 	qq_transaction *trans;
@@ -315,9 +315,9 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 	}
 
 	update_class = qq_trans_get_class(trans);
-	ship32 = qq_trans_get_ship(trans);
-	if (update_class != 0 || ship32 != 0) {
-		purple_debug_info("QQ", "Update class %d, ship32 %d\n", update_class, ship32);
+	ship_value = qq_trans_get_ship(trans);
+	if (update_class != 0 || ship_value != 0) {
+		purple_debug_info("QQ", "Update class %d, ship_value %d\n", update_class, ship_value);
 	}
 
 	switch (cmd) {
@@ -333,7 +333,7 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 		case QQ_CMD_LOGIN_GETLIST:
 		case QQ_CMD_LOGIN_ED:
 		case QQ_CMD_LOGIN_EC:
-			ret = qq_proc_login_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship32);
+			ret = qq_proc_login_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship_value);
 			if (ret != QQ_LOGIN_REPLY_OK) {
 				if (ret == QQ_TOUCH_REPLY_REDIRECT) {
 					redirect_server(gc);
@@ -344,10 +344,10 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 		case QQ_CMD_ROOM:
 			room_cmd = qq_trans_get_room_cmd(trans);
 			room_id = qq_trans_get_room_id(trans);
-			qq_proc_room_cmds(gc, seq, room_cmd, room_id, buf + bytes, bytes_not_read, update_class, ship32);
+			qq_proc_room_cmds(gc, seq, room_cmd, room_id, buf + bytes, bytes_not_read, update_class, ship_value);
 			break;
 		default:
-			qq_proc_client_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship32);
+			qq_proc_client_cmds(gc, cmd, seq, buf + bytes, bytes_not_read, update_class, ship_value);
 			break;
 	}
 
@@ -685,9 +685,7 @@ static gboolean network_timeout(gpointer data)
 	qd->itv_count.keep_alive--;
 	if (qd->itv_count.keep_alive <= 0) {
 		qd->itv_count.keep_alive = qd->itv_config.keep_alive;
-		if (qd->client_version >= 2010) {
-			qq_request_keep_alive(gc);
-		}
+		qq_request_keep_alive(gc);
 		return TRUE;
 	}
 
@@ -1138,7 +1136,7 @@ gint qq_send_cmd_encrypted(PurpleConnection *gc, guint16 cmd, guint16 seq,
 /* Encrypt data with session_key, and send packet out */
 static gint send_cmd_detail(PurpleConnection *gc, guint16 cmd, guint16 seq,
 	guint8 *data, gint data_len, gboolean is_save2trans,
-        guint32 update_class, guint32 ship32)
+        guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd;
 	guint8 *encrypted;
@@ -1162,13 +1160,13 @@ static gint send_cmd_detail(PurpleConnection *gc, guint16 cmd, guint16 seq,
 
 	if (is_save2trans)  {
 		qq_trans_add_client_cmd(gc, cmd, seq, encrypted, encrypted_len,
-				update_class, ship32);
+				update_class, ship_value);
 	}
 	return bytes_sent;
 }
 
 gint qq_send_cmd_mess(PurpleConnection *gc, guint16 cmd, guint8 *data, gint data_len,
-		guint32 update_class, guint32 ship32)
+		guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd;
 	guint16 seq;
@@ -1182,7 +1180,7 @@ gint qq_send_cmd_mess(PurpleConnection *gc, guint16 cmd, guint8 *data, gint data
 		purple_debug_info("QQ", "<== [%05d] %s(0x%04X), datalen %d\n",
 				seq, qq_get_cmd_desc(cmd), cmd, data_len);
 #endif
-	return send_cmd_detail(gc, cmd, seq, data, data_len, TRUE, update_class, ship32);
+	return send_cmd_detail(gc, cmd, seq, data, data_len, TRUE, update_class, ship_value);
 }
 
 /* set seq and is_save2trans, then call send_cmd_detail */
@@ -1242,7 +1240,7 @@ gint qq_send_server_reply(PurpleConnection *gc, guint16 cmd, guint16 seq, guint8
 }
 
 static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id,
-		guint8 *data, gint data_len, guint32 update_class, guint32 ship32)
+		guint8 *data, gint data_len, guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd;
 	guint8 *buf;
@@ -1279,7 +1277,7 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 	case QQ_ROOM_CMD_GET_INFO:
 		buf_len = qq_put8(buf, QQ_ROOM_CMD_GET_INFO);
 		buf_len += qq_put32(buf+buf_len, room_id);
-		buf_len += qq_put32(buf+buf_len, ship32);
+		buf_len += qq_put32(buf+buf_len, ship_value);
 		break;
 	case QQ_ROOM_CMD_GET_MEMBERS_INFO:
 	case QQ_ROOM_CMD_GET_ONLINES:
@@ -1322,15 +1320,15 @@ static gint send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id
 #endif
 
 	qq_trans_add_room_cmd(gc, seq, room_cmd, room_id, encrypted, encrypted_len,
-			update_class, ship32);
+			update_class, ship_value);
 	return bytes_sent;
 }
 
 gint qq_send_room_cmd_mess(PurpleConnection *gc, guint8 room_cmd, guint32 room_id,
-		guint8 *data, gint data_len, guint32 update_class, guint32 ship32)
+		guint8 *data, gint data_len, guint32 update_class, guintptr ship_value)
 {
 	g_return_val_if_fail(room_cmd > 0, -1);
-	return send_room_cmd(gc, room_cmd, room_id, data, data_len, update_class, ship32);
+	return send_room_cmd(gc, room_cmd, room_id, data, data_len, update_class, ship_value);
 }
 
 gint qq_send_room_cmd(PurpleConnection *gc, guint8 room_cmd, guint32 room_id,

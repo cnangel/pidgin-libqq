@@ -47,7 +47,7 @@ enum {
 };
 
 void qq_request_room_search(PurpleConnection *gc, guint32 qun_id, int action);
-void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guint32 ship32);
+void qq_process_room_search(PurpleConnection *gc, guint8 *data, gint len, guintptr ship_value);
 
 void qq_send_cmd_group_auth(PurpleConnection *gc, qq_room_data *rmd, guint8 opt, guint32 uid, const gchar *reason_utf8);
 void qq_group_join(PurpleConnection *gc, GHashTable *data);

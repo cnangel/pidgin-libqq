@@ -49,7 +49,6 @@ void qq_show_packet(const gchar *desc, const guint8 *buf, gint len);
 void qq_hex_dump(PurpleDebugLevel level, const char *category,
 		const guint8 *pdata, gint bytes,
 		const char *format, ...);
-guint8 *hex_str_to_bytes(const gchar *const buf, gint *out_len);
-
 void qq_filter_str(gchar *str);
+const char * find_header_content(const char *data, size_t data_len, const char *header, size_t header_len);
 #endif
