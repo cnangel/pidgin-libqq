@@ -839,7 +839,12 @@ void qq_request_verify_E5(PurpleConnection *gc)
 	memset(raw_data, 0, 1024);
 	encrypted = g_newa(guint8, 1024);	
 
-	bytes += qq_put32(raw_data + bytes, 0x010E0001);
+	if (qd->ld.token_verify_de && qd->ld.token_verify_de_len > 0)
+		bytes += qq_put16(raw_data + bytes, 0x010E + qd->ld.token_verify_de_len +3);	//size plus token_verify_de
+	else
+		bytes += qq_put16(raw_data + bytes, 0x010E);	//normal size
+
+	bytes += qq_put16(raw_data + bytes, 0x0001);
 	bytes += qq_putdata(raw_data + bytes, touch_fill + 1, sizeof(touch_fill) - 1);
 
 	bytes += qq_put16(raw_data+bytes, qd->ld.token_captcha_len);
@@ -847,7 +852,7 @@ void qq_request_verify_E5(PurpleConnection *gc)
 	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[0]);
 	bytes += qq_putdata(raw_data+bytes, qd->ld.token_auth[0], qd->ld.token_auth_len[0]);
 
-	bytes += qq_put16(raw_data+bytes, 0x0098);
+	bytes += qq_put16(raw_data+bytes, qd->ld.token_auth_len[1] + 8);
 	bytes += qq_put16(raw_data+bytes,0x0002);
 	bytes += qq_puttime(raw_data+bytes, &qd->login_time);
 
