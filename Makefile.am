@@ -112,7 +112,7 @@ install-data-hook:
 	rm -f ${DESTDIR}$(pluginsdir)/libqq.la
 
 
-rpm: dist pidgin-qq.spec
+rpm: distdir pidgin-qq.spec
 	rpmbuild  --nodeps -bb \
 	--define "_sourcedir `pwd`" \
 	--define "_builddir `pwd`" \

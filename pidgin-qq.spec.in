@@ -1,6 +1,7 @@
 %define build_number 1
 %define debug_package %{nil}
 
+
 Name:           pidgin-qq
 Version:        @PACKAGE_VERSION@
 Release:        1%{?dist}
@@ -13,10 +14,14 @@ Source0:        @PACKAGE_NAME@-%{version}.tar.gz
 
 BuildRequires:  libpurple-devel
 
-%description	pidgin-qq is a pidgin plugin that will soon get merged upstream. This package is only used for people who can't wait for the merge process. 
+
+%description	
+pidgin-qq is a pidgin plugin that will soon get merged upstream. This package is only used for people who can't wait for the merge process. 
 
 %prep 
-%setup -q 
+
+cd @PACKAGE_NAME@-@PACKAGE_VERSION@
+
 %build 
 unset CFLAGS
 %configure 
