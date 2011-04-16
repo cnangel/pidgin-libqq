@@ -9,7 +9,7 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the 
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
-AC_INIT([libqq-pidgin],[0.68],[http://code.google.com/p/libqq-pidgin/issues/list])
+AC_INIT([libqq-pidgin],[0.70],[http://code.google.com/p/libqq-pidgin/issues/list])
 #AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_MACRO_DIR([m4])
