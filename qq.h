@@ -66,11 +66,13 @@ struct _qq_login_data {
 
 	guint8 **token_auth;
 	guint16 token_auth_len[4];
-	guint8 keys[4][QQ_KEY_LENGTH];	/* 0,Key to VerifyE5&VerifyE3&Login Request,
+
+	guint8 keys[5][QQ_KEY_LENGTH];	/* 0,Key to VerifyE5&VerifyE3&Login Request,
 																			Sometimes to Login Response;
 																		1,Key to VerifyE5 Response;
 																		2,Key to Login Response;
-																		3,Key to VerifyE3 Response */
+																		3,Key to VerifyE3 Response
+																		4,Key to Auth Success Response */
 	guint8 *token_verify_de;
 	guint16 token_verify_de_len;
 

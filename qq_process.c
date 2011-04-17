@@ -854,7 +854,7 @@ guint8 qq_proc_login_cmds(PurpleConnection *gc,  guint16 cmd, guint16 seq,
 			if (data_len >= 0) {
 				purple_debug_warning("QQ", "Decrypt login packet by random_key, %d bytes\n", data_len);
 			} else {
-				data_len = qq_decrypt(data, rcved, rcved_len, auth_key[1]);
+				data_len = qq_decrypt(data, rcved, rcved_len, qd->ld.keys[4]);
 				if (data_len >= 0) {
 					purple_debug_warning("QQ", "Decrypt login packet by auth_key1, %d bytes\n", data_len);
 				}

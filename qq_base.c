@@ -544,9 +544,10 @@ void qq_request_auth(PurpleConnection *gc)
 {
 	qq_data *qd;
 	guint8 *buf, *raw_data;
-	gint bytes;
+	gint bytes,i;
 	guint8 *encrypted;
 	gint encrypted_len;
+	guint8 random_key[QQ_KEY_LENGTH];
 	time_t now = time(NULL);
 
 	g_return_if_fail(gc != NULL && gc->proto_data != NULL);
@@ -585,9 +586,13 @@ void qq_request_auth(PurpleConnection *gc)
 	memset(raw_data + bytes, 0x00, 8);
 	bytes += 8;
 
-	bytes += qq_put16(raw_data + bytes, sizeof(auth_key[0]));
-	bytes += qq_putdata(raw_data + bytes, auth_key[0], sizeof(auth_key[0]));
-	bytes += qq_putdata(raw_data + bytes, auth_key[1], sizeof(auth_key[1]));
+	bytes += qq_put16(raw_data + bytes, sizeof(random_key));
+	for (i = 0; i < sizeof(random_key); ++i)
+		random_key[i] = (guint8) (rand() & 0xff);
+	bytes += qq_putdata(raw_data + bytes, random_key, sizeof(random_key));
+	for (i = 0; i < sizeof(qd->ld.keys[4][i]); ++i)
+		qd->ld.keys[4][i] = (guint8) (rand() & 0xff);
+	bytes += qq_putdata(raw_data +bytes, qd->ld.keys[4], sizeof(qd->ld.keys[4]));
 
 	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.pwd_twice_md5);
 
@@ -609,14 +614,18 @@ void qq_request_auth(PurpleConnection *gc)
 	bytes += qq_put32(raw_data + bytes, 0x01772E01);
 	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 
-	bytes += qq_put16(raw_data +bytes, sizeof(auth_key[1]));
-	bytes += qq_putdata(raw_data +bytes, auth_key[1], sizeof(auth_key[1]));
+	for (i = 0; i < sizeof(random_key); ++i)
+		random_key[i] = (guint8) (rand() & 0xff);
+	bytes += qq_put16(raw_data + bytes, sizeof(random_key));
+	bytes += qq_putdata(raw_data + bytes, random_key, sizeof(random_key));
 
 	raw_data[bytes++]=0x02;
 	bytes += qq_put32(raw_data + bytes, (rand() & 0x7fff) | ((rand() & 0x7fff) << 15));
 
-	bytes += qq_put16(raw_data + bytes, sizeof(auth_key[2]));
-	bytes += qq_putdata(raw_data + bytes, auth_key[2], sizeof(auth_key[2]));
+	for (i = 0; i < sizeof(random_key); ++i)
+		random_key[i] = (guint8) (rand() & 0xff);
+	bytes += qq_put16(raw_data + bytes, sizeof(random_key));
+	bytes += qq_putdata(raw_data + bytes, random_key, sizeof(random_key));
 
 	/* 00 fill */
 	memset(raw_data + bytes, 0x00, 328);
