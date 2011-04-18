@@ -210,6 +210,11 @@ qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 s
 	/* server may not get our confirm reply before, send reply again*/
 	if (qq_trans_is_server(trans) && (trans->flag & QQ_TRANS_IS_REPLY)) {
 		if (trans->data != NULL && trans->data_len > 0) {
+			purple_debug_warning("QQ", 
+				"Server hasn't received our ack, Send reply again.\n [%05d] %s(0x%04X), rawdata_len %d\n",
+				trans->seq, qq_get_cmd_desc(cmd), cmd, trans->data_len);
+			if (trans->cmd == QQ_CMD_RECV_IM || trans->cmd == QQ_CMD_RECV_IM_CE)
+				sleep(2);		//prevent regard as spammer
 			qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
 		}
 	}
