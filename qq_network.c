@@ -269,7 +269,7 @@ static gboolean packet_process(PurpleConnection *gc, guint8 *buf, gint buf_len)
 	guint16 seq;		/* May be ack_seq or send_seq, depends on cmd */
 	guint8 room_cmd;
 	guint32 room_id;
-	guint32 update_class;
+	guint32 update_class; 
 	guintptr ship_value;
 	int ret;
 

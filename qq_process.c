@@ -225,7 +225,7 @@ static const gchar *get_im_type_desc(gint type)
 
 /* I receive a message, mainly it is text msg,
  * but we need to process other types (group etc) */
-static void process_private_msg(guint8 *data, gint data_len, guint16 seq, PurpleConnection *gc)
+static void process_private_msg(guint8 *data, gint data_len, guint16 cmd, guint16 seq, PurpleConnection *gc)
 {
 	qq_data *qd;
 	gint bytes;
@@ -250,7 +250,7 @@ static void process_private_msg(guint8 *data, gint data_len, guint16 seq, Purple
 	} else {
 		/* when we receive a message,
 		 * we send an ACK which is the first 16 bytes of incoming packet */
-		qq_send_server_reply(gc, QQ_CMD_RECV_IM, seq, data, 16);
+		qq_send_server_reply(gc, cmd, seq, data, 16);
 	}
 
 	/* check len first */
@@ -488,7 +488,7 @@ void qq_proc_server_cmd(PurpleConnection *gc, guint16 cmd, guint16 seq, guint8 *
 	switch (cmd) {
 		case QQ_CMD_RECV_IM_CE:
 		case QQ_CMD_RECV_IM:
-			process_private_msg(data, data_len, seq, gc);
+			process_private_msg(data, data_len, cmd, seq, gc);
 			break;
 		case QQ_CMD_RECV_MSG_SYS:
 			process_server_msg(gc, data, data_len, seq);
