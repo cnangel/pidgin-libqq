@@ -29,6 +29,7 @@
 #include "qq.h"
 
 typedef struct _qq_transaction qq_transaction;
+typedef struct _qq_resend_data qq_resend_data;
 
 qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 seq);
 gboolean qq_trans_is_server(qq_transaction *trans) ;

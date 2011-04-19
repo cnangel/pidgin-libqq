@@ -62,6 +62,11 @@ struct _qq_transaction {
 	guintptr ship_value;
 };
 
+struct _qq_resend_data{
+	PurpleConnection *gc;
+	qq_transaction *trans;
+};
+
 gboolean qq_trans_is_server(qq_transaction *trans)
 {
 	g_return_val_if_fail(trans != NULL, FALSE);
@@ -194,9 +199,31 @@ void qq_trans_add_client_cmd(PurpleConnection *gc,
 	qd->transactions = g_list_append(qd->transactions, trans);
 }
 
+static gboolean resend_timeout(gpointer data)
+{
+	PurpleConnection *gc;
+	qq_transaction *trans;
+	qq_resend_data *rd;
+
+	g_return_val_if_fail(data != NULL, FALSE);
+	rd = (qq_resend_data *)data;
+	gc = rd->gc;
+	trans = rd->trans;
+
+	g_return_val_if_fail(gc != NULL && gc->proto_data != NULL && trans != NULL, FALSE);
+	qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
+
+	g_free(data);
+	return FALSE;		/* if return FALSE, timeout callback stops */
+}
+
 qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 seq)
 {
 	qq_transaction *trans;
+	qq_data *qd;
+	qq_resend_data *rd;
+
+	qd = (qq_data *)gc->proto_data;
 
 	trans = trans_find(gc, cmd, seq);
 	if (trans == NULL) {
@@ -213,28 +240,36 @@ qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 s
 			purple_debug_warning("QQ", 
 				"Server hasn't received our ack, Send reply again.\n [%05d] %s(0x%04X), rawdata_len %d\n",
 				trans->seq, qq_get_cmd_desc(cmd), cmd, trans->data_len);
+			/* prevent regard as spammer */
 			if (trans->cmd == QQ_CMD_RECV_IM || trans->cmd == QQ_CMD_RECV_IM_CE)
-				sleep(2);		//prevent regard as spammer
-			qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
+			{
+				if (qd->resend_watcher > 0)
+					purple_timeout_remove(qd->resend_watcher);
+				
+				rd = g_new0(qq_resend_data, 1);
+				rd->gc = gc;
+				rd->trans = trans;
+				qd->resend_watcher = purple_timeout_add_seconds(1, resend_timeout, rd);
+			} else qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
 		}
 	}
 	return trans;
 }
 
 void qq_trans_add_room_cmd(PurpleConnection *gc,
-		guint16 seq, guint8 room_cmd, guint32 room_id, guint8 *data, gint data_len,
-		guint32 update_class, guintptr ship_value)
+	guint16 seq, guint8 room_cmd, guint32 room_id, guint8 *data, gint data_len,
+	guint32 update_class, guintptr ship_value)
 {
 	qq_data *qd = (qq_data *)gc->proto_data;
 	qq_transaction *trans = trans_create(gc, qd->fd, QQ_CMD_ROOM, seq, data, data_len,
-			update_class, ship_value);
+		update_class, ship_value);
 
 	trans->room_cmd = room_cmd;
 	trans->room_id = room_id;
 	trans->send_retries = qd->resend_times;
 #if 0
 	purple_debug_info("QQ_TRANS", "Add room cmd, seq %d, data %p, len %d\n",
-			trans->seq, trans->data, trans->data_len);
+		trans->seq, trans->data, trans->data_len);
 #endif
 	qd->transactions = g_list_append(qd->transactions, trans);
 }
