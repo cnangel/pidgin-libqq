@@ -1069,7 +1069,7 @@ void qq_proc_client_cmds(PurpleConnection *gc, guint16 cmd, guint16 seq,
 				return;
 			}
 			purple_debug_info("QQ", "All online buddies received\n");
-			qq_update_buddyies_status(gc);
+			qq_update_buddies_status(gc);
 			break;
 		case QQ_CMD_GET_LEVEL:
 			qq_process_get_level_reply(data, data_len, gc);

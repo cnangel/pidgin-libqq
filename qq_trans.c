@@ -204,16 +204,20 @@ static gboolean resend_timeout(gpointer data)
 	PurpleConnection *gc;
 	qq_transaction *trans;
 	qq_resend_data *rd;
+	qq_data *qd;
 
 	g_return_val_if_fail(data != NULL, FALSE);
 	rd = (qq_resend_data *)data;
 	gc = rd->gc;
 	trans = rd->trans;
+	qd = (qq_data *)gc->proto_data;
 
 	g_return_val_if_fail(gc != NULL && gc->proto_data != NULL && trans != NULL, FALSE);
 	qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
 
+	qd->time2resend--;
 	g_free(data);
+	
 	return FALSE;		/* if return FALSE, timeout callback stops */
 }
 
@@ -243,13 +247,14 @@ qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 s
 			/* prevent regard as spammer */
 			if (trans->cmd == QQ_CMD_RECV_IM || trans->cmd == QQ_CMD_RECV_IM_CE)
 			{
-				if (qd->resend_watcher > 0)
-					purple_timeout_remove(qd->resend_watcher);
-				
 				rd = g_new0(qq_resend_data, 1);
 				rd->gc = gc;
 				rd->trans = trans;
-				qd->resend_watcher = purple_timeout_add_seconds(1, resend_timeout, rd);
+				if (qd->time2resend) 
+					qd->time2resend++;
+				else 
+					qd->time2resend = 1;
+				g_timeout_add_seconds(qd->time2resend, resend_timeout, rd);
 			} else qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
 		}
 	}

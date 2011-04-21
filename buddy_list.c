@@ -313,6 +313,7 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 	gint nickname_len;
 	guint16 position, unknown;
 	PurpleBuddy *buddy;
+	gchar *who;
 
 	g_return_val_if_fail(data != NULL && data_len != 0, -1);
 
@@ -374,7 +375,9 @@ guint16 qq_process_get_buddies_list(guint8 *data, gint data_len, PurpleConnectio
 			g_free(bd.nickname);
 			continue;
 		}
-		purple_blist_server_alias_buddy(buddy, bd.nickname);
+		who = purple_buddy_get_name(buddy);
+		serv_got_alias(gc, who, bd.nickname);
+
 		bd.last_update = time(NULL);
 		qq_update_buddy_status(gc, bd.uid, bd.status, bd.comm_flag);
 
@@ -445,16 +448,15 @@ void qq_request_change_status(PurpleConnection *gc, guint32 update_class)
 	if (fake_video)
 		misc_status |= 0x0001;
 
-	if (qd->client_version >= 2010) {
-		bytes = 0;
-		bytes += qq_put8(raw_data + bytes, away_cmd);
-		/* status version */
-		bytes += qq_put16(raw_data + bytes, 0);
-		bytes += qq_put16(raw_data + bytes, misc_status);
-		/* Fixme: custom status message, now is empty */
-		bytes += qq_put16(raw_data + bytes, 0);
-		bytes += qq_put32(raw_data + bytes, 0);
-	}
+	bytes = 0;
+	bytes += qq_put8(raw_data + bytes, away_cmd);
+	/* status version */
+	bytes += qq_put16(raw_data + bytes, 0);
+	bytes += qq_put16(raw_data + bytes, misc_status);
+	/* Fixme: custom status message, now is empty */
+	bytes += qq_put16(raw_data + bytes, 0);
+	bytes += qq_put32(raw_data + bytes, 0);
+
 	qq_send_cmd_mess(gc, QQ_CMD_CHANGE_STATUS, raw_data, bytes, update_class, 0);
 }
 
@@ -597,7 +599,7 @@ void qq_update_buddy_status(PurpleConnection *gc, guint32 uid, guint8 status, gu
 
 /* refresh all buddies online/offline,
  * after receiving reply for get_buddies_online packet */
-void qq_update_buddyies_status(PurpleConnection *gc)
+void qq_update_buddies_status(PurpleConnection *gc)
 {
 	qq_data *qd;
 	PurpleBuddy *buddy;

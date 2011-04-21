@@ -165,7 +165,7 @@ struct _qq_data {
 	qq_interval itv_config;
 	qq_interval itv_count;
 	guint network_watcher;
-	guint resend_watcher;
+	guint time2resend;
 	gint resend_times;
 
 	GList *transactions;	/* check ack packet and resend */
