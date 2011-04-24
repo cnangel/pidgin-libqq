@@ -69,7 +69,7 @@ void qq_request_get_buddies_online(PurpleConnection *gc, guint8 position, guint3
 	/* 003-004 */
 	bytes += qq_put16(raw_data + bytes, 0x0000);
 
-	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_ONLINE, raw_data, 5, update_class, 0);
+	qq_send_cmd_mess(gc, QQ_CMD_GET_BUDDIES_ONLINE, raw_data, bytes, update_class, 0);
 }
 
 
