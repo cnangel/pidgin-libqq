@@ -64,7 +64,10 @@ struct _qq_transaction {
 
 struct _qq_resend_data{
 	PurpleConnection *gc;
-	qq_transaction *trans;
+	guint16 seq;
+	guint16 cmd;
+	guint8 *data;
+	gint data_len;
 };
 
 gboolean qq_trans_is_server(qq_transaction *trans)
@@ -201,23 +204,20 @@ void qq_trans_add_client_cmd(PurpleConnection *gc,
 
 static gboolean resend_timeout(gpointer data)
 {
-	PurpleConnection *gc;
-	qq_transaction *trans;
 	qq_resend_data *rd;
 	qq_data *qd;
 
 	g_return_val_if_fail(data != NULL, FALSE);
 	rd = (qq_resend_data *)data;
-	gc = rd->gc;
-	trans = rd->trans;
-	qd = (qq_data *)gc->proto_data;
 
-	g_return_val_if_fail(gc != NULL && gc->proto_data != NULL && trans != NULL, FALSE);
-	qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
+	g_return_val_if_fail(rd->gc != NULL && rd->gc->proto_data != NULL && rd->data != NULL, FALSE);
+	qq_send_cmd_encrypted(rd->gc, rd->cmd, rd->seq, rd->data, rd->data_len, FALSE);
 
+	qd = (qq_data *)rd->gc->proto_data;
 	qd->time2resend--;
+
+	g_free(rd->data);
 	g_free(data);
-	
 	return FALSE;		/* if return FALSE, timeout callback stops */
 }
 
@@ -249,7 +249,10 @@ qq_transaction *qq_trans_find_rcved(PurpleConnection *gc, guint16 cmd, guint16 s
 			{
 				rd = g_new0(qq_resend_data, 1);
 				rd->gc = gc;
-				rd->trans = trans;
+				rd->cmd = trans->cmd;
+				rd->seq = trans->seq;
+				rd->data = g_memdup(trans->data, trans->data_len);
+				rd->data_len = trans->data_len;
 				if (qd->time2resend) 
 					qd->time2resend++;
 				else 
