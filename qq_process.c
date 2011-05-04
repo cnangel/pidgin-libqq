@@ -155,7 +155,7 @@ static void do_got_sms(PurpleConnection *gc, guint8 *data, gint data_len)
 static void do_msg_sys(PurpleConnection *gc, guint8 *data, gint data_len)
 {
 	guint8 reply;
-	gchar *msg;
+	gchar *msg, *msg_esc;
 	qq_data * qd;
 
 	g_return_if_fail(gc != NULL && gc->proto_data != NULL && data != NULL && data_len != 0);
@@ -167,11 +167,11 @@ static void do_msg_sys(PurpleConnection *gc, guint8 *data, gint data_len)
 
 	if (reply == 0x01) {
 		purple_debug_error("QQ", "We are kicked out by QQ server\n");
-		purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_OTHER_ERROR, msg);
-		qq_update_buddy_status(gc, qd->uid, QQ_BUDDY_OFFLINE, 0);
-		purple_connection_error_reason(gc,
-			PURPLE_CONNECTION_ERROR_OTHER_ERROR,
-			_("We are kicked out by QQ server"));
+		msg_esc = purple_markup_escape_text(msg, -1);
+		purple_connection_error_reason(gc, PURPLE_CONNECTION_ERROR_OTHER_ERROR, msg_esc);
+		g_free(msg);
+		g_free(msg_esc);
+		return;
 	}
 
 	qq_got_message(gc, msg);

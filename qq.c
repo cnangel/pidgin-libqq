@@ -199,7 +199,7 @@ static void qq_login(PurpleAccount *account)
 }
 
 /* clean up the given QQ connection and free all resources */
-void qq_close(PurpleConnection *gc)
+static void qq_close(PurpleConnection *gc)
 {
 	qq_data *qd;
 	guint8 i;
