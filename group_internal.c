@@ -255,13 +255,16 @@ qq_buddy_data *qq_room_buddy_find_or_new(PurpleConnection *gc, qq_room_data *rmd
 {
 	qq_buddy_data *member, *bd;
 	PurpleBuddy *buddy;
+	gchar * member_name;
 	g_return_val_if_fail(rmd != NULL && member_uid > 0, NULL);
 
 	member = qq_room_buddy_find(rmd, member_uid);
 	if (member == NULL) {	/* first appear during my session */
 		member = g_new0(qq_buddy_data, 1);
 		member->uid = member_uid;
-		buddy = purple_find_buddy(purple_connection_get_account(gc), uid_to_purple_name(member_uid));
+		member_name = uid_to_purple_name(member_uid);
+		buddy = purple_find_buddy(purple_connection_get_account(gc), member_name);
+		g_free(member_name);
 		if (buddy != NULL) {
 			const gchar *alias = NULL;
 

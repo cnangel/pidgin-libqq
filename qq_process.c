@@ -173,7 +173,7 @@ static void do_msg_sys(PurpleConnection *gc, guint8 *data, gint data_len)
 		g_free(msg_esc);
 		return;
 	}
-
+	
 	qq_got_message(gc, msg);
 }
 
