@@ -220,7 +220,7 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	guint16 max_members;
 	guint32 resend_flag, member_uid, id, qun_id, last_uid;
 	gint bytes; 
-	guint num;
+	guint num=0;
 	guint8 has_more=0;
 	gchar *topic;
 
@@ -241,7 +241,7 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 	rmd = qq_room_data_find(gc, id);
 	g_return_if_fail(rmd != NULL);
 
-	bytes += qq_get32(&resend_flag, data + bytes);		//first 00 00 00 03, second 00 00 00 02
+	bytes += qq_get32(&resend_flag, data + bytes);		//first 00 00 00 03, then 00 00 00 02
 
 	if (resend_flag == 0x00000003)
 	{
@@ -271,9 +271,15 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 		bytes += qq_get32(&last_uid, data + bytes);	/* last_uid of this recv, request more with it */
 		bytes += qq_get8(&has_more, data + bytes);	/* if there are more, request again */
 		/* now comes the member list separated by 0x00 */
+	} else {
+		/* resend_flag 00 00 00 02 is special, start with random one only 5 bytes */
+		bytes += qq_get32(&member_uid, data + bytes);
+		num++;
+		bytes += qq_get8(&organization, data + bytes);
+		bd = qq_room_buddy_find_or_new(gc, rmd, member_uid);
 	}
 
-	num = 0;
+
 	while (bytes < data_len) {
 		bytes += qq_get32(&member_uid, data + bytes);
 		num++;
@@ -285,7 +291,7 @@ void qq_process_room_cmd_get_info(guint8 *data, gint data_len, guint32 action, P
 			purple_debug_info("QQ", "%u, organization=%d, role=%d\n", member_uid, organization, role);
 		}
 #endif
-
+		
 		bd = qq_room_buddy_find_or_new(gc, rmd, member_uid);
 		if (bd != NULL)
 			bd->role = role;

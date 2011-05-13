@@ -692,7 +692,7 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 		guint8 unknown1[3];
 		guint8 fragment_count;
 		guint8 fragment_index;
-		guint32 uid_from;
+		guint32 uid;
 	} im_text;
 
 	g_return_if_fail(data != NULL && len > 0);
@@ -706,16 +706,16 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 	bytes += qq_getdata(im_text.unknown1, sizeof(im_text.unknown1), data + bytes);
 	bytes += qq_get8(&(im_text.fragment_count), data + bytes);
 	bytes += qq_get8(&(im_text.fragment_index), data + bytes);
-	bytes += qq_get32(&im_text.uid_from, data + bytes);
+	bytes += qq_get32(&im_text.uid, data + bytes);
 
-	if (im_text.uid_from != im_header->uid_from || im_text.uid_from == 256)
+	if ((im_text.uid != im_header->uid_to && im_text.uid != im_header->uid_from) || im_text.uid == 256)
 	{
 		return;
 	}
 	
-	purple_debug_info("QQ", "Vibrate from uid: %d\n", im_text.uid_from );
+	purple_debug_info("QQ", "Vibrate from uid: %d\n", im_text.uid);
 
-	who = uid_to_purple_name(im_text.uid_from);
+	who = uid_to_purple_name(im_text.uid);
 	buddy = purple_find_buddy(gc->account, who);
 	bd = (buddy == NULL) ? NULL : purple_buddy_get_protocol_data(buddy);
 	if (bd != NULL) {
@@ -734,7 +734,6 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 	g_free(msg_utf8);
 	g_free(who);
 	g_string_free (msg, FALSE);
-
 }
 
 /* process received normal text IM */

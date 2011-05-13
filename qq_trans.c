@@ -210,7 +210,8 @@ static gboolean resend_timeout(gpointer data)
 	g_return_val_if_fail(data != NULL, FALSE);
 	rd = (qq_resend_data *)data;
 
-	g_return_val_if_fail(rd->gc != NULL && rd->gc->proto_data != NULL && rd->data != NULL, FALSE);
+	g_return_val_if_fail(rd->gc != NULL && PURPLE_CONNECTION_IS_CONNECTED(rd->gc)  && 
+		rd->gc->proto_data != NULL && rd->data != NULL, FALSE);
 	qq_send_cmd_encrypted(rd->gc, rd->cmd, rd->seq, rd->data, rd->data_len, FALSE);
 
 	qd = (qq_data *)rd->gc->proto_data;
@@ -433,6 +434,7 @@ gboolean qq_trans_scan(PurpleConnection *gc)
 				"Resend [%d] %s data %p, len %d, send_retries %d\n",
 				trans->seq, qq_get_cmd_desc(trans->cmd),
 				trans->data, trans->data_len, trans->send_retries);
+
 		qq_send_cmd_encrypted(gc, trans->cmd, trans->seq, trans->data, trans->data_len, FALSE);
 	}
 
