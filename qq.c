@@ -841,7 +841,7 @@ static GList *qq_actions(PurplePlugin *plugin, gpointer context)
 	PurplePluginAction *act;
 
 	m = NULL;
-
+	/* TODO: MASK ALL UNFIXED BUT TOUCHABLE FUNCTION !!
 	act = purple_plugin_action_new(_("Change Icon"), action_change_icon);
 	m = g_list_append(m, act);
 
@@ -865,7 +865,7 @@ static GList *qq_actions(PurplePlugin *plugin, gpointer context)
 
 	act = purple_plugin_action_new(_("Update all QQ Quns"), action_update_all_rooms);
 	m = g_list_append(m, act);
-
+	*/
 	act = purple_plugin_action_new(_("About LibQQ"), action_about_libqq);
 	m = g_list_append(m, act);
 	/*
@@ -931,11 +931,12 @@ static GList *qq_buddy_menu(PurpleBuddy *buddy)
 		return m;
 	}
 
-
+	/* TODO: MASK ALL UNFIXED BUT TOUCHABLE FUNCTION !!
 	act = purple_menu_action_new(_("Modify Buddy Alias"),
 			PURPLE_CALLBACK(qq_modify_buddy_memo_from_menu_cb),
 			NULL, NULL);
 	m = g_list_append(m, act);
+	*/
 
 
 	/* TODO : not working, temp commented out by gfhuang */
@@ -965,8 +966,10 @@ static GList *qq_chat_menu(PurpleBlistNode *node)
 	act = purple_menu_action_new(_("Get Info"), PURPLE_CALLBACK(action_chat_get_info), NULL, NULL);
 	m = g_list_append(m, act);
 
+	/* TODO: MASK ALL UNFIXED BUT TOUCHABLE FUNCTION !!
 	act = purple_menu_action_new(_("Quit Qun"), PURPLE_CALLBACK(action_chat_quit), NULL, NULL);
 	m = g_list_append(m, act);
+	*/
 	return m;
 }
 
