@@ -435,12 +435,14 @@ static void process_server_msg(PurpleConnection *gc, guint8 *data, gint data_len
 
 	funct = strtol(funct_str, NULL, 10);
 	switch (funct) {
+		case QQ_SERVER_BUDDY_ADDED_DEPRECATED:
 		case QQ_SERVER_BUDDY_ADDED_ME:
+		case QQ_SERVER_BUDDY_ADD_REQUEST_DEPRECATED:
 		case QQ_SERVER_BUDDY_REJECTED_ME:
 		case QQ_SERVER_BUDDY_ADD_REQUEST:
 		case QQ_SERVER_BUDDY_ADDING_EX:
 		case QQ_SERVER_BUDDY_ADDED_ANSWER:
-		case QQ_SERVER_BUDDY_ACCEPTED:
+		case QQ_SERVER_BUDDY_ADDED:
 			qq_process_buddy_from_server(gc,  funct, from, to, data + bytes, data_len - bytes);
 			break;
 		case QQ_SERVER_NOTICE:

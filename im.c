@@ -861,7 +861,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 					break;
 				case 03:	//image
 					break;
-					/*		it's kinda complicated, TOFIX later
+					/*		TODO: it's kinda complicated, fix it later
 					msg_dataseg_pos = 0;
 					while (msg_dataseg_pos < msg_dataseg_len)
 					{
@@ -933,6 +933,7 @@ static void process_im_text(PurpleConnection *gc, guint8 *data, gint len, qq_im_
 	g_free(who);
 	g_string_free (im_text.msg, TRUE);
 }
+
 void qq_process_typing( PurpleConnection *gc, guint8 *data, gint len, guint32 uid_from )
 {
 		gint bytes = 0;

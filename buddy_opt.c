@@ -1070,6 +1070,31 @@ static gint server_buddy_check_code(PurpleConnection *gc,
 */
 
 /* someone wants to add you to his buddy list */
+static void server_buddy_add_request_deprecated(PurpleConnection *gc, gchar *from, gchar *to,
+	guint8 *data, gint data_len)
+{
+	guint32 uid;
+	gchar  *reason;
+
+	g_return_if_fail(from != NULL && to != NULL);
+	uid = strtoul(from, NULL, 10);
+	g_return_if_fail(uid != 0);
+
+	if (purple_prefs_get_bool("/plugins/prpl/qq/auto_get_authorize_info")) {
+		qq_request_get_buddy_info(gc, uid, 0, QQ_BUDDY_INFO_DISPLAY);
+	}
+
+	if (data_len <= 0) {
+		reason = g_strdup( _("No reason given") );
+	} else {
+		reason = g_strndup((gchar *)data, data_len);
+		if (reason == NULL)     reason = g_strdup( _("Unknown reason") );
+	}
+
+	buddy_add_input(gc, uid, reason);
+	g_free(reason);
+}
+
 static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *to,
 		guint8 *data, gint data_len)
 {
@@ -1099,6 +1124,42 @@ static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *t
 }
 
 /* when you are added by a person, QQ server will send sys message */
+static void server_buddy_added_deprecated(PurpleConnection *gc, gchar *from, gchar *to,
+	guint8 *data, gint data_len)
+{
+	PurpleAccount *account = purple_connection_get_account(gc);
+	PurpleBuddy *buddy;
+	guint32 uid;
+	qq_buddy_opt_req *opt_req;
+	gchar *who;
+	gchar *primary;
+
+	g_return_if_fail(from != NULL && to != NULL);
+
+	uid = strtoul(from, NULL, 10);
+	who = uid_to_purple_name(uid);
+
+	buddy = purple_find_buddy(account, who);
+	if (buddy != NULL) {
+		purple_account_notify_added(account, from, to, NULL, NULL);
+	}
+
+	opt_req = g_new0(qq_buddy_opt_req, 1);
+	opt_req->gc = gc;
+	opt_req->uid = uid;     /* only need to get value */
+	primary = g_strdup_printf(_("You have been added by %s"), from);
+	purple_request_action(gc, NULL, primary,
+		_("Would you like to add him?"),
+		PURPLE_DEFAULT_ACTION_NONE,
+		purple_connection_get_account(gc), who, NULL,
+		opt_req, 2,
+		_("Add"), G_CALLBACK(add_buddy_no_auth_cb),
+		_("Cancel"), G_CALLBACK(buddy_req_cancel_cb));
+
+	g_free(who);
+	g_free(primary);
+}
+
 static void server_buddy_added(PurpleConnection *gc, gchar *from, gchar *to,
 		guint8 *data, gint data_len)
 {
@@ -1222,6 +1283,12 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 		gchar *from, gchar *to, guint8 *data, gint data_len)
 {
 	switch (funct) {
+	case QQ_SERVER_BUDDY_ADDED_DEPRECATED:
+		server_buddy_added_deprecated(gc, from, to, data, data_len);
+		break;
+	case QQ_SERVER_BUDDY_ADD_REQUEST_DEPRECATED:
+		server_buddy_add_request_deprecated(gc, from, to, data, data_len);
+		break;
 	case QQ_SERVER_BUDDY_ADD_REQUEST:
 		server_buddy_add_request(gc, from, to, data, data_len);
 		break;
@@ -1231,7 +1298,7 @@ void qq_process_buddy_from_server(PurpleConnection *gc, int funct,
 	case QQ_SERVER_BUDDY_REJECTED_ME:
 		server_buddy_rejected_me(gc, from, to, data, data_len);
 		break;
-	case QQ_SERVER_BUDDY_ACCEPTED:
+	case QQ_SERVER_BUDDY_ADDED:
 		server_buddy_added(gc, from, to, data, data_len);
 		break;
 	case QQ_SERVER_BUDDY_ADDING_EX:
