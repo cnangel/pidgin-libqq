@@ -1111,7 +1111,7 @@ static void server_buddy_add_request(PurpleConnection *gc, gchar *from, gchar *t
 	/* qq_show_packet("server_buddy_add_request", data, data_len); */
 
 	bytes = 0;
-	bytes += qq_get_vstr(&msg, QQ_CHARSET_DEFAULT, sizeof(guint8), data+bytes);
+	bytes += qq_get_vstr(&msg, NULL, sizeof(guint8), data+bytes);
 	bytes += qq_get8(&allow_reverse, data + bytes);	/* allow_reverse = 0x01, allowed */
 	//server_buddy_check_code(gc, from, data + bytes, data_len - bytes);
 
