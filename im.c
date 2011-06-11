@@ -101,6 +101,14 @@ struct _qq_emoticon {
 	gchar *name;
 };
 
+typedef struct _qq_image qq_image;
+struct _qq_image {
+	guint8 id;
+	gchar *filename;
+	guint image_size;
+	gpointer *image_data;
+};
+
 static gboolean emoticons_is_sorted = FALSE;
 /* Map for purple smiley convert to qq, need qsort */
 static qq_emoticon emoticons[] = {
@@ -623,6 +631,42 @@ gchar * qq_im_fmt_to_purple( qq_im_format *fmt, GString *text )
 	return ret;
 }
 
+static qq_image *image_find(gchar *pos)
+{
+	gchar *end, *str, *id, *start, *filename, *fileext;
+	guint8 *md5;
+	GData *attr;
+	PurpleStoredImage *image;
+	qq_image *img = g_new0(qq_image, 1);
+
+	
+	if (g_ascii_strcasecmp(pos, "/IMG") && (end = g_utf8_strchr(pos, 14, '$')))
+	{
+		str = g_strndup(pos, end - pos + 1);
+		*str = '<';
+		*(str+(end-pos)) = '>';
+		
+		if (purple_markup_find_tag("IMG", str, &start, &end, &attr))
+		{
+			id = g_datalist_get_data(&attr, "id");
+			img->id = atoi(id);
+			if (id && (image = purple_imgstore_find_by_id(img->id))) 
+			{
+				img->image_size = purple_imgstore_get_size(image);
+				img->image_data = purple_imgstore_get_data(image);
+				filename = g_alloca(33);
+				qq_get_md5_str(filename, 33, img->image_data, img->image_size);
+				fileext = purple_imgstore_get_extension(image);
+				img->filename = g_strconcat(filename, ".", fileext, NULL);
+				g_free(fileext);
+			}
+			g_datalist_clear(&attr);
+			return img;
+		}
+	}
+	return NULL;
+}
+
 /* data includes text msg and font attr*/
 gint qq_get_im_tail(qq_im_format *fmt, guint8 *data, gint data_len)
 {
@@ -683,7 +727,6 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 	guint bytes;
 	qq_im_format *fmt = NULL;
 	GString *msg;
-	gchar *msg_utf8;
 
 	struct {
 		guint16 msg_seq;
@@ -725,15 +768,11 @@ static void process_im_vibrate(PurpleConnection *gc, guint8 *data, gint len, qq_
 
 	fmt = qq_im_fmt_new_default();
 	msg = g_string_new("a Vibrate!");
-	if (fmt != NULL) {
-		msg_utf8 = qq_im_fmt_to_purple(fmt, msg);
-		qq_im_fmt_free(fmt);
-	} 
-	serv_got_im(gc, who, msg_utf8, 0, (time_t) im_text.send_time);
 
-	g_free(msg_utf8);
+	serv_got_im(gc, who, msg->str, 0, (time_t) im_text.send_time);
+
 	g_free(who);
-	g_string_free (msg, FALSE);
+	g_string_free (msg, TRUE);
 }
 
 /* process received normal text IM */
@@ -1051,7 +1090,7 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	/* message type */
 	bytes += qq_put16(raw_data + bytes, QQ_NORMAL_IM_TEXT);
 	/* sequence number */
-	bytes += qq_put16(raw_data + bytes, qd->send_seq);
+	bytes += qq_put16(raw_data + bytes, qd->send_im_id);
 	/* send time */
 	bytes += qq_puttime(raw_data + bytes, &send_time);
 	/* sender icon */
@@ -1066,7 +1105,7 @@ static void request_send_im(PurpleConnection *gc, guint32 uid_to, guint8 type, q
 	/* slice index */
 	bytes += qq_put8(raw_data + bytes, frag_index);
 	/* msg_id */
-	bytes += qq_put16(raw_data + bytes, msg_id);
+	bytes += qq_put16(raw_data + bytes, 0x0000);
 	/* text message type (normal/auto-reply) */
 	bytes += qq_put8(raw_data + bytes, type);
 	/* "MSG" */
@@ -1099,16 +1138,20 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 {
 	GSList *string_list = NULL;
 	GString *string_seg;
-	gchar *start0=NULL, *p0=NULL, *start1=NULL, *p1=NULL, *end1=NULL;
+	gchar *start0=NULL, *p0=NULL, *start1=NULL, *p1=NULL, *end1=NULL, *tmp;
 	guint msg_len;
 	guint16 string_len=0;
 	guint16 string_ad_len;
 	qq_emoticon *emoticon;
+	qq_image *image;
 	static gchar em_prefix[] = {
 		0x00, 0x09, 0x01, 0x00, 0x01
 	};
 	static gchar em_suffix[] = {
 		0xFF, 0x00, 0x02, 0x14
+	};
+	static gchar image_fill[] = {
+		0x14, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00 
 	};
 
 	g_return_val_if_fail(msg_stripped != NULL, NULL);
@@ -1129,9 +1172,9 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 			end1 = msg_stripped + msg_len;
 		}
 		else {
-			if (emoticon = emoticon_find(p0))		//find out if it is a emoticon
+			if ((image = image_find(p0)) || (emoticon = emoticon_find(p0)))		//find out if it is a emoticon or image
 			{
-				/* if emoticon is found, append proper bytes of text before '/'  */
+				/* if found, append proper bytes of text before '/'  */
 				start1 = start0;
 				end1 = p0;
 			} else {		//just a '/'
@@ -1175,6 +1218,41 @@ GSList *qq_im_get_segments(gchar *msg_stripped, gboolean is_smiley_none)
 				g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
 				g_string_append_len(string_seg, start1, string_len);
 			}
+		}
+		
+		if (p0 && image)
+		{
+			if (string_seg->len  + 20 + 2*strlen(image->filename) > QQ_MSG_IM_MAX)
+			{
+				/* enough chars to send */
+				string_list = g_slist_append(string_list, string_seg);
+				string_seg = g_string_new("");
+			}
+
+			g_string_append_c(string_seg, 0x03);		//IMAGE FLAG
+			string_ad_len = 17 + 2*strlen(image->filename);		//len of text plus prepended data
+			string_ad_len = htons(string_ad_len);
+			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+
+			g_string_append_c(string_seg, 0x02);		//Unknown FLAG
+			string_ad_len = htons(strlen(image->filename));
+			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+			g_string_append_len(string_seg, image->filename, strlen(image->filename));
+			g_string_append_len(string_seg, image_fill, sizeof(image_fill));	//Fixed Fill
+
+			g_string_append_c(string_seg, 0xFF);		//Unknown FLAG
+			string_ad_len = htons(strlen(image->filename) + 4);
+			g_string_append_len(string_seg, (gchar *)&string_ad_len, sizeof(guint16));
+			g_string_append_c(string_seg, 0x15);
+			g_string_append_c(string_seg, 0x33);
+			g_string_append_c(string_seg, 0x32);
+			g_string_append_len(string_seg, image->filename, strlen(image->filename));
+			g_string_append_c(string_seg, 0x41);
+
+			p0 = g_utf8_strchr(p0, 14, '$');
+			p0 ++;
+			start0 = p0;
+			continue;
 		}
 		
 
@@ -1328,7 +1406,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	guint32 uid_to;
 	guint8 type;
 	qq_im_format *fmt;
-	gchar *msg_stripped, *tmp;
+	gchar *msg_stripped, *tmp, *last, *start, *end;
 	GSList *segments, *it;
 	gint msg_len;
 	const gchar *start_invalid;
@@ -1336,6 +1414,7 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 	guint8 frag_count, frag_index;
 	guint16 msg_id;
 	time_t send_time;
+	GData *attr;
 
 	g_return_val_if_fail(NULL != gc && NULL != gc->proto_data, -1);
 	g_return_val_if_fail(who != NULL && what != NULL, -1);
@@ -1352,6 +1431,17 @@ gint qq_send_im(PurpleConnection *gc, const gchar *who, const gchar *what, Purpl
 
 	type = (flags == PURPLE_MESSAGE_AUTO_RESP ? QQ_IM_AUTO_REPLY : QQ_IM_TEXT);
 	/* qq_show_packet("IM UTF8", (guint8 *)what, strlen(what)); */
+
+	if (flags & PURPLE_MESSAGE_IMAGES) {
+		last = what;
+		while (last && *last && purple_markup_find_tag("img", last, &start,
+			&end, &attr)) {
+				*start = '/';
+				*end = '$';
+				g_datalist_clear(&attr);
+				last = end+1;
+		}
+	}
 
 	msg_stripped = purple_markup_strip_html(what);
 	g_return_val_if_fail(msg_stripped != NULL, -1);

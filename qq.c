@@ -1044,7 +1044,7 @@ static gchar *qq_get_chat_buddy_real_name(PurpleConnection *gc, gint channel, co
 
 static PurplePluginProtocolInfo prpl_info =
 {
-	OPT_PROTO_CHAT_TOPIC | OPT_PROTO_USE_POINTSIZE,
+	OPT_PROTO_CHAT_TOPIC | OPT_PROTO_USE_POINTSIZE | OPT_PROTO_IM_IMAGE,
 	NULL,							/* user_splits	*/
 	NULL,							/* protocol_options */
 	{"png", 96, 96, 96, 96, 0, PURPLE_ICON_SCALE_SEND}, /* icon_spec */

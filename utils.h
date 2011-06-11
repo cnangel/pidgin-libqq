@@ -51,4 +51,5 @@ void qq_hex_dump(PurpleDebugLevel level, const char *category,
 		const char *format, ...);
 void qq_filter_str(gchar *str);
 const char * find_header_content(const char *data, size_t data_len, const char *header, size_t header_len);
+gchar *hex_dump_to_str(const guint8 *const buffer, gint bytes);
 #endif

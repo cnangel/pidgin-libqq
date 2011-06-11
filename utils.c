@@ -67,6 +67,21 @@ void qq_get_md5(guint8 *md5, gint md5_len, const guint8* const src, gint src_len
 	purple_cipher_context_destroy(context);
 }
 
+void qq_get_md5_str(guint8 *md5, gint md5_len, const guint8* const src, gint src_len)
+{
+	PurpleCipher *cipher;
+	PurpleCipherContext *context;
+
+	g_return_if_fail(md5 != NULL && md5_len > 0);
+	g_return_if_fail(src != NULL && src_len > 0);
+
+	cipher = purple_ciphers_find_cipher("md5");
+	context = purple_cipher_context_new(cipher, NULL);
+	purple_cipher_context_append(context, src, src_len);
+	purple_cipher_context_digest_to_str(context, md5_len, md5, NULL);
+	purple_cipher_context_destroy(context);
+}
+
 gchar *get_name_by_index_str(gchar **array, const gchar *index_str, gint amount)
 {
 	gint index;
@@ -274,7 +289,7 @@ static guint8 * hex_str_to_bytes( const char *const buffer, gint buf_len, gint *
 
 /* Dumps a chunk of raw data into an ASCII hex string.
  * The return should be freed later. */
-static gchar *hex_dump_to_str(const guint8 *const buffer, gint bytes)
+gchar *hex_dump_to_str(const guint8 *const buffer, gint bytes)
 {
 	GString *str;
 	gchar *ret;
