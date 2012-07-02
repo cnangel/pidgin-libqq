@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = libpurple \
 	Makefile.mingw pidgin-qq.spec.in
 
-
+SUBDIRS = . tools
 
 # If build out side pidgin source, pluginsdir will be set to @PURPLE_PLUGINDIR@
 # If build in side pidgin source, pluginsdir will be empty, with is what it should be
@@ -121,5 +121,3 @@ rpm: distdir pidgin-qq.spec
 	--define "_srcrpmdir `pwd`" \
 	pidgin-qq.spec 
 	echo rpm is at `pwd`/`arch`/@PACKAGE_NAME@-@VERSION@-1.`arch`.rpm
-
-

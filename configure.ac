@@ -39,4 +39,4 @@ AC_SUBST(pluginsdir)
 PKG_CHECK_MODULES([GLIB],[glib-2.0])
 
 AM_CONDITIONAL([STATIC_QQ],[false])
-AC_OUTPUT([Makefile pidgin-qq.spec])
+AC_OUTPUT([Makefile tools/Makefile pidgin-qq.spec])
