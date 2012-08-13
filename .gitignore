@@ -1,0 +1,84 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git-ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.lo
+*.o.*
+*.a
+*.s
+*.ko
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.lst
+*.symtypes
+*.order
+*.elf
+*.bin
+*.gz
+.libs/*
+.deps/*
+*.bak
+*.la
+*.loT
+
+#
+# Top-level generic files
+#
+tags
+TAGS
+vmlinux
+System.map
+Module.markers
+Module.symvers
+!.gitignore
+!.mailmap
+
+#
+# Generated include files
+#
+
+# stgit generated dirs
+patches-*
+*.patch
+
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+ncscope.*
+
+*.orig
+*~
+\#*#
+aclocal.m4
+autom4te.cache/
+compile
+config.guess
+config.h.in
+config.sub
+configure
+depcomp
+Makefile.in
+install-sh
+ltmain.sh
+m4/
+missing
+Makefile
+config.h
+config.log
+config.status
+libtool
+stamp-h1

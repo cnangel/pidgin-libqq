@@ -168,6 +168,10 @@ static void qq_login(PurpleAccount *account)
 			qd->client_tag = QQ_CLIENT_2227;
 			qd->client_version = 2011;
 		}
+		if (strcmp(version_str, "qq2012") == 0) {
+			qd->client_tag = QQ_CLIENT_2227;
+			qd->client_version = 2012;
+		}
 	}
 
 
@@ -1200,6 +1204,16 @@ static void init_plugin(PurplePlugin *plugin)
 	kvp = g_new0(PurpleKeyValuePair, 1);
 	kvp->key = g_strdup(_("QQ2010"));
 	kvp->value = g_strdup("qq2010");
+	version_kv_list = g_list_append(version_kv_list, kvp);
+
+	kvp = g_new0(PurpleKeyValuePair, 1);
+	kvp->key = g_strdup(_("QQ2011"));
+	kvp->value = g_strdup("qq2011");
+	version_kv_list = g_list_append(version_kv_list, kvp);
+
+	kvp = g_new0(PurpleKeyValuePair, 1);
+	kvp->key = g_strdup(_("QQ2012"));
+	kvp->value = g_strdup("qq2012");
 	version_kv_list = g_list_append(version_kv_list, kvp);
 
 	option = purple_account_option_list_new(_("Client Version"), "client_version", version_kv_list);
