@@ -34,6 +34,9 @@
 #define QQ_PACKET_TAIL			0x03	/* all QQ text packets end with it */
 
 #define QQ_CLIENT_1E0D 0x1E0D   /* QQ2010 Intl */
+#define QQ_CLIENT_2227 0x2227   /* QQ2011 Intl */
+#define QQ_CLIENT_2012 0x2012   /* QQ2012 Intl */
+
 const gchar *qq_get_ver_desc(gint source);
 
 /* list of known QQ commands */

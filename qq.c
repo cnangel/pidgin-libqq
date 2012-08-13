@@ -57,7 +57,7 @@
 #include "utils.h"
 #include "version.h"
 
-#define LIBQQ_VERSION 		"0.71"
+#define LIBQQ_VERSION 		"0.72"
 
 static GList *server_list_build(gchar select)
 {
@@ -157,12 +157,16 @@ static void qq_login(PurpleAccount *account)
 	purple_debug_info("QQ", "Server list has %d\n", g_list_length(qd->servers));
 
 	version_str = purple_account_get_string(account, "client_version", NULL);
-	qd->client_tag = QQ_CLIENT_1E0D;	/* set default as QQ2010 */
-	qd->client_version = 2010;
+	qd->client_tag = QQ_CLIENT_2227;	/* set default as QQ2011 */
+	qd->client_version = 2011;
 	if (version_str != NULL && strlen(version_str) != 0) {
 		if (strcmp(version_str, "qq2010") == 0) {
 			qd->client_tag = QQ_CLIENT_1E0D;
 			qd->client_version = 2010;
+		}
+		if (strcmp(version_str, "qq2011") == 0) {
+			qd->client_tag = QQ_CLIENT_2227;
+			qd->client_version = 2011;
 		}
 	}
 
