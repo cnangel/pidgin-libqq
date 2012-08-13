@@ -63,6 +63,7 @@ struct _qq_login_data {
 
 	guint8 pwd_md5[QQ_KEY_LENGTH];			/* password in md5 (or md5' md5) */
 	guint8 pwd_twice_md5[QQ_KEY_LENGTH];
+	guint8 pwd_qq_md5[QQ_KEY_LENGTH];
 
 	guint8 **token_auth;
 	guint16 token_auth_len[4];

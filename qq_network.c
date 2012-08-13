@@ -741,6 +741,13 @@ static void set_all_keys(PurpleConnection *gc)
 
 	dest = qd->ld.pwd_twice_md5;
 	qq_get_md5(dest, dest_len, qd->ld.pwd_md5, dest_len);
+	// password for 2011 or later
+	unsigned char source[24] = {0};
+	memcpy( source, qd->ld.pwd_md5, 16 );
+	*(unsigned int*)( &source[20] ) = htonl( qd->uid );
+
+	dest = qd->ld.pwd_qq_md5;
+	qq_get_md5(dest, dest_len, (guint8 *)source, 24);
 }
 
 /* the callback function after socket is built
