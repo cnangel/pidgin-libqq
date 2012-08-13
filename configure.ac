@@ -1,5 +1,6 @@
 # Copyright (C) 2008 Alexander Logvinov <ports@logvinov.com> 
 # Copyright (C) 2011 microcai <microcaicai@gmail.com>
+# Copyright (C) 2012 cnangel <cnangel@gmail.com>
 #   
 # This file is free software; as a special exception the author gives 
 # unlimited permission to copy and/or distribute it, with or without  
@@ -9,10 +10,11 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the 
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
-AC_INIT([libqq-pidgin],[0.71],[http://code.google.com/p/libqq-pidgin/issues/list])
+AC_INIT([libqq-pidgin],[0.72],[http://code.google.com/p/libqq-pidgin/issues/list])
 #AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_MACRO_DIR([m4])
+#AC_CONFIG_HEADERS([config.h])
 
 AC_PROG_CC
 AM_DISABLE_STATIC
@@ -39,4 +41,4 @@ AC_SUBST(pluginsdir)
 PKG_CHECK_MODULES([GLIB],[glib-2.0])
 
 AM_CONDITIONAL([STATIC_QQ],[false])
-AC_OUTPUT([Makefile tools/Makefile pidgin-qq.spec])
+AC_OUTPUT([Doxyfile Makefile tools/Makefile pidgin-libqq.spec])

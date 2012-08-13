@@ -64,6 +64,9 @@ static GList *server_list_build(gchar select)
 	GList *list = NULL;
 
 	if ( select == 'T' || select == 'A') {
+		list = g_list_append(list, "219.133.60.173:443");
+		list = g_list_append(list, "219.133.49.125:443");
+		list = g_list_append(list, "58.60.15.33:443");
 		list = g_list_append(list, "tcpconn.tencent.com:8000");
 		list = g_list_append(list, "tcpconn2.tencent.com:8000");
 		list = g_list_append(list, "tcpconn3.tencent.com:8000");
@@ -72,6 +75,9 @@ static GList *server_list_build(gchar select)
 		list = g_list_append(list, "tcpconn6.tencent.com:8000");
 	}
 	if ( select == 'U' || select == 'A') {
+		list = g_list_append(list, "219.133.49.171:8000");
+		list = g_list_append(list, "58.60.14.37:8000");
+		list = g_list_append(list, "219.133.60.36:8000");
 		list = g_list_append(list, "sz.tencent.com:8000");
 		list = g_list_append(list, "sz2.tencent.com:8000");
 		list = g_list_append(list, "sz3.tencent.com:8000");

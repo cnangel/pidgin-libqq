@@ -1,35 +1,32 @@
 %define build_number 1
 %define debug_package %{nil}
 
-
-Name:           pidgin-qq
+Name:           @PACKAGE_NAME@
 Version:        @PACKAGE_VERSION@
-Release:        1%{?dist}
+Release:        @PACKAGE_RELEASE@%{?dist}
 Summary:        The qq plugin for pidgin 
 
 Group:          Applications/Internet
 License:        GPLv2
-URL:            http://code.google.com/p/libqq-pidgin/
-Source0:        @PACKAGE_NAME@-%{version}.tar.gz
-
+URL:            @PACKAGE_URL@
+Source0:        %{name}-%{version}.tar.gz
+Requires:		libpurple pidgin
 BuildRequires:  libpurple-devel
 
 
 %description	
-pidgin-qq is a pidgin plugin that will soon get merged upstream. This package is only used for people who can't wait for the merge process. 
+%{name} is a pidgin plugin that will soon get merged upstream. This package is only used for people who can't wait for the merge process. 
 
 %prep 
-
-cd @PACKAGE_NAME@-@PACKAGE_VERSION@
+%setup -q
 
 %build 
-unset CFLAGS
 %configure 
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
+%makeinstall
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -37,3 +34,5 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 @pluginsdir@/libqq.so
+%exclude @pluginsdir@/libqq.la
+%{_datadir}

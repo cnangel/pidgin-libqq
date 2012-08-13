@@ -82,3 +82,4 @@ config.log
 config.status
 libtool
 stamp-h1
+tools/qq_decrypt
