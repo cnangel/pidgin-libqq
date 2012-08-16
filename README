@@ -3,8 +3,8 @@ pidgin-libqq
 You can use qq for pidgin in linux or unix.
 
     ./configure 
-	make 
-	install -c .libs/libqq.so /usr/lib/purple-2/libqq.so
+    make 
+    install -c .libs/libqq.so /usr/lib/purple-2/libqq.so
 
 cnangel
 2012
