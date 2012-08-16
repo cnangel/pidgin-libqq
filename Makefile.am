@@ -1,16 +1,17 @@
 AUTOMAKE_OPTIONS = foreign 1.6
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = libpurple \
-	Makefile.mingw pidgin-qq.spec.in
+	Makefile.mingw pidgin-libqq.spec.in pidgin-libqq.spec
 
-SUBDIRS = . tools
+SUBDIRS = . tools pixmaps 
 
 # If build out side pidgin source, pluginsdir will be set to @PURPLE_PLUGINDIR@
 # If build in side pidgin source, pluginsdir will be empty, with is what it should be
 # Then empty pluginsdir will be set to $(libdir)/purple-$(PURPLE_MAJOR_VERSION)
 # So this fits both situation
 
-pluginsdir ?= $(libdir)/purple-@PURPLE_MAJOR_VERSION@
+#pluginsdir ?= $(libdir)/purple-2
+pluginsdir = $(libdir)/purple-2
 
 pkgdir = ${pluginsdir}
 
@@ -104,12 +105,12 @@ install-data-hook:
 	rm -f ${DESTDIR}$(pluginsdir)/libqq.la
 
 
-rpm: distdir pidgin-qq.spec
-	rpmbuild  --nodeps -bb \
+rpm: distdir pidgin-libqq.spec
+	rpmbuild  --nodeps -ba \
 	--define "_sourcedir `pwd`" \
 	--define "_builddir `pwd`" \
 	--define "_specdir `pwd`" \
 	--define "_rpmdir `pwd`" \
 	--define "_srcrpmdir `pwd`" \
-	pidgin-qq.spec 
+	pidgin-libqq.spec 
 	echo rpm is at `pwd`/`arch`/@PACKAGE_NAME@-@VERSION@-1.`arch`.rpm

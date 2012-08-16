@@ -34,5 +34,4 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 @pluginsdir@/libqq.so
-%exclude @pluginsdir@/libqq.la
 %{_datadir}

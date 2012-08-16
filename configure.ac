@@ -16,6 +16,16 @@ AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_MACRO_DIR([m4])
 #AC_CONFIG_HEADERS([config.h])
 
+PACKAGE_RELEASE=1
+BITS=`if [[ 64 -eq $(getconf LONG_BIT) ]]; then echo -n $(getconf LONG_BIT); fi`
+PACKAGE_URL=https://github.com/cnangel/pidgin-libfetion
+DOXYGEN_OUTPUT_DIR=doc/doxygen
+
+AC_SUBST(PACKAGE_RELEASE)
+AC_SUBST(BITS)
+AC_SUBST(PACKAGE_URL)
+AC_SUBST(DOXYGEN_OUTPUT_DIR)
+
 AC_PROG_CC
 AM_DISABLE_STATIC
 AC_LIBTOOL_DLOPEN
@@ -41,4 +51,4 @@ AC_SUBST(pluginsdir)
 PKG_CHECK_MODULES([GLIB],[glib-2.0])
 
 AM_CONDITIONAL([STATIC_QQ],[false])
-AC_OUTPUT([Doxyfile Makefile tools/Makefile pidgin-libqq.spec])
+AC_OUTPUT([Doxyfile Makefile tools/Makefile pidgin-libqq.spec pixmaps/Makefile])

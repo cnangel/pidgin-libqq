@@ -3,12 +3,12 @@
 
 Name:           libqq-pidgin
 Version:        0.72
-Release:        @PACKAGE_RELEASE@%{?dist}
+Release:        1%{?dist}
 Summary:        The qq plugin for pidgin 
 
 Group:          Applications/Internet
 License:        GPLv2
-URL:            
+URL:            https://github.com/cnangel/pidgin-libfetion
 Source0:        %{name}-%{version}.tar.gz
 Requires:		libpurple pidgin
 BuildRequires:  libpurple-devel
@@ -34,5 +34,4 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 /usr/lib/purple-2/libqq.so
-%exclude /usr/lib/purple-2/libqq.la
 %{_datadir}
