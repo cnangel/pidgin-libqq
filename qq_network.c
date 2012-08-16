@@ -773,9 +773,7 @@ static void connect_cb(gpointer data, gint source, const gchar *error_message)
 	}
 
 	if (source < 0) {	/* socket returns -1 */
-		purple_debug_info("QQ_CONN",
-				"Could not establish a connection with the server:\n%s\n",
-				error_message);
+		purple_debug_info("QQ_CONN", "Could not establish a connection with the server:\n%s\n", error_message);
 		if (qd->connect_watcher > 0)	purple_timeout_remove(qd->connect_watcher);
 		qd->connect_watcher = purple_timeout_add_seconds(QQ_CONNECT_INTERVAL, qq_connect_later, gc);
 		return;
@@ -1042,6 +1040,7 @@ void qq_disconnect(PurpleConnection *gc)
 	memset(qd->ld.random_key, 0, sizeof(qd->ld.random_key));
 	memset(qd->ld.pwd_md5, 0, sizeof(qd->ld.pwd_md5));
 	memset(qd->ld.pwd_twice_md5, 0, sizeof(qd->ld.pwd_twice_md5));
+	memset(qd->ld.pwd_qq_md5, 0, sizeof(qd->ld.pwd_qq_md5));
 	memset(qd->session_key, 0, sizeof(qd->session_key));
 	memset(qd->session_md5, 0, sizeof(qd->session_md5));
 

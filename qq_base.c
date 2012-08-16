@@ -594,7 +594,8 @@ void qq_request_auth(PurpleConnection *gc)
 		qd->ld.keys[4][i] = (guint8) (rand() & 0xff);
 	bytes += qq_putdata(raw_data +bytes, qd->ld.keys[4], sizeof(qd->ld.keys[4]));
 
-	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.pwd_twice_md5);
+//	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.pwd_twice_md5);
+	encrypted_len = qq_encrypt(encrypted, raw_data, bytes, qd->ld.pwd_qq_md5);
 
 	/* create packet */
 	bytes = 0;
