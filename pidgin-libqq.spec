@@ -1,14 +1,14 @@
 %define build_number 1
 %define debug_package %{nil}
 
-Name:           libqq-pidgin
+Name:           pidgin-libqq
 Version:        0.72
 Release:        1%{?dist}
 Summary:        The qq plugin for pidgin 
 
 Group:          Applications/Internet
 License:        GPLv2
-URL:            https://github.com/cnangel/pidgin-libfetion
+URL:            https://github.com/cnangel/pidgin-libqq
 Source0:        %{name}-%{version}.tar.gz
 Requires:		libpurple pidgin
 BuildRequires:  libpurple-devel

@@ -10,7 +10,7 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the 
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 
-AC_INIT([libqq-pidgin],[0.72],[http://code.google.com/p/libqq-pidgin/issues/list])
+AC_INIT([pidgin-libqq],[0.72],[http://code.google.com/p/libqq-pidgin/issues/list])
 #AM_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,7 +18,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 PACKAGE_RELEASE=1
 BITS=`if [[ 64 -eq $(getconf LONG_BIT) ]]; then echo -n $(getconf LONG_BIT); fi`
-PACKAGE_URL=https://github.com/cnangel/pidgin-libfetion
+PACKAGE_URL=https://github.com/cnangel/pidgin-libqq
 DOXYGEN_OUTPUT_DIR=doc/doxygen
 
 AC_SUBST(PACKAGE_RELEASE)
