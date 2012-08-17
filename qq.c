@@ -676,6 +676,7 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "icesky : maintainer since 2007<br>\n");
 	g_string_append(info, "csyfek : faces, maintainer since 2007<br>\n");
 	g_string_append(info, "V.E.O : maintainer since 2011, OpenQ rename to LibQQ<br>\n");
+	g_string_append(info, "cnangel : maintainer since 2012<br>\n");
 	g_string_append(info, "<br>\n");
 
 	g_string_append(info, _("<p><b>Lovely Patch Writers</b>:<br>\n"));
@@ -698,7 +699,8 @@ static void action_about_libqq(PurplePluginAction *action)
 	g_string_append(info, "Pidgin Team : http://www.pidgin.im<br>\n");
 	g_string_append(info, "Huang Guan : http://home.xxsyzx.com<br>\n");
 	g_string_append(info, "OpenQ Google Group : http://groups.google.com/group/openq<br>\n");
-	g_string_append(info, "LibQQ Google code : http://libqq-pidgin.googlecode.com<br>\n");
+	g_string_append(info, "LibQQ Google Code : http://libqq-pidgin.googlecode.com<br>\n");
+	g_string_append(info, "LibQQ Github Code : https://github.com/cnangel/pidgin-libqq<br>\n");
 	g_string_append(info, "<br>\n");
 
 	g_string_append(info, _("<p><b>Scrupulous Testers</b>:<br>\n"));
