@@ -376,11 +376,11 @@ void qq_process_room_im(guint8 *data, gint data_len, guint32 id, PurpleConnectio
 				g_free(msg_utf8);
 				msg_utf8 =  msg_fmt;
 				qq_im_fmt_free(fmt);
+				g_free(msg_smiley);
 			} else {
 				g_free(msg_utf8);
 				msg_utf8 =  msg_smiley;
 			}
-			g_free(msg_smiley);
 			break;
 		}
 	}
